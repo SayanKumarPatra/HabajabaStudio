@@ -13,62 +13,67 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 }) => {
   const [imageFailed, setImageFailed] = useState(false);
 
-  // Dimension mapping
+  // Height mappings
   const heightClasses = {
     sm: 'h-8',
-    md: 'h-10',
+    md: 'h-11',
     lg: 'h-14',
   };
 
   return (
     <div className={`flex items-center gap-2.5 select-none ${className}`}>
-      {/* If user uploaded LOGO.png exists in root/public, try rendering it first */}
       {!imageFailed ? (
         <img
-          src="/LOGO.png"
-          alt="Habajaba Studio LIVE"
+          src="/logo.svg"
+          alt="HabaJaba Studio LIVE"
           className={`${heightClasses[size]} w-auto object-contain shrink-0`}
           referrerPolicy="no-referrer"
           onError={() => setImageFailed(true)}
         />
       ) : (
-        /* Pristine, brand-accurate SVG Vector Logo for Habajaba Studio LIVE */
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-[#ED1025] text-white shadow-sm shadow-[#ED1025]/25 shrink-0">
-            {/* Live studio acoustics icon */}
-            <svg
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              {/* Studio Microphone & Soundwaves */}
-              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" fill="white" />
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-              <line x1="12" x2="12" y1="19" y2="22" />
-              <line x1="8" x2="16" y1="22" y2="22" />
+        /* Exact Vector Reproduction matching uploaded LOGO.png */
+        <div className="flex items-center gap-2.5 shrink-0">
+          {/* Stylized Red Smiling H */}
+          <div className="relative w-8 h-8 sm:w-9 sm:h-9 shrink-0 flex items-center justify-center">
+            <svg viewBox="0 0 100 100" className="w-full h-full">
+              {/* Left Bar */}
+              <rect x="24" y="24" width="12" height="42" rx="6" fill="#ED1025" />
+              {/* Right Bar (Taller) */}
+              <rect x="54" y="16" width="12" height="52" rx="6" fill="#ED1025" />
+              {/* Smile Swoosh */}
+              <path
+                d="M 16 44 C 22 58, 62 64, 80 48"
+                fill="none"
+                stroke="#ED1025"
+                strokeWidth="5"
+                strokeLinecap="round"
+              />
+              {/* Left Hook */}
+              <path
+                d="M 16 44 C 14 38, 20 36, 22 39"
+                fill="none"
+                stroke="#ED1025"
+                strokeWidth="4"
+                strokeLinecap="round"
+              />
+              {/* Right Circle Dot */}
+              <circle cx="83" cy="46" r="4.5" fill="#ED1025" />
             </svg>
-            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
-            </span>
           </div>
 
+          {/* Typography Lockup */}
           <div className="flex flex-col leading-none">
-            <div className="flex items-center gap-1.5">
-              <span className="font-black tracking-tight text-[#171717] text-base md:text-lg">
-                HABAJABA
-              </span>
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider bg-[#ED1025] text-white uppercase">
+            <span className="font-extrabold tracking-tight text-[#ED1025] text-lg sm:text-xl">
+              HabaJaba
+            </span>
+            <div className="flex items-center gap-1 text-[10px] text-[#171717] font-bold mt-0.5">
+              <span>—</span>
+              <span>Studio</span>
+              <span className="px-1.5 py-0.2 rounded bg-[#171717] text-white text-[9px] uppercase font-black">
                 LIVE
               </span>
+              <span>—</span>
             </div>
-            <span className="text-[10px] font-medium tracking-wider text-[#6B7280] uppercase mt-0.5">
-              STUDIO
-            </span>
           </div>
         </div>
       )}

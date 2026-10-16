@@ -36,11 +36,17 @@ export const PlaylistsPage: React.FC<PlaylistsPageProps> = ({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
+  const [version, setVersion] = useState(0);
+
+  React.useEffect(() => {
+    const unsub = MusicService.subscribe(() => setVersion((v) => v + 1));
+    return unsub;
+  }, []);
 
   const curatedPlaylists = MusicService.getCuratedPlaylists();
   const allPlaylists = useMemo(() => {
     return [...curatedPlaylists, ...userPlaylists];
-  }, [curatedPlaylists, userPlaylists]);
+  }, [curatedPlaylists, userPlaylists, version]);
 
   // If a playlist is selected, find its details and tracks
   const activePlaylist = useMemo(() => {
@@ -89,9 +95,9 @@ export const PlaylistsPage: React.FC<PlaylistsPageProps> = ({
           <span>Back to All Playlists</span>
         </button>
 
-        {/* Playlist Hero */}
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 rounded-3xl bg-neutral-900 text-white border border-neutral-800 shadow-xl">
-          <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-2xl overflow-hidden shadow-2xl border border-white/10 shrink-0">
+        {/* Playlist Hero - Clean White & Red (No Black Box) */}
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white border border-[#EAEAEA] shadow-xs">
+          <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl overflow-hidden shadow-xs border border-[#EAEAEA] shrink-0">
             <CoverImage
               src={activePlaylist.coverUrl}
               alt={activePlaylist.title}
@@ -101,42 +107,42 @@ export const PlaylistsPage: React.FC<PlaylistsPageProps> = ({
             />
           </div>
 
-          <div className="text-center sm:text-left space-y-2 flex-1">
+          <div className="text-center sm:text-left space-y-1.5 flex-1">
             <div className="flex items-center justify-center sm:justify-start gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-white/15 text-white">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#ED1025]/10 text-[#ED1025]">
                 {activePlaylist.isUserCreated ? 'Personal Playlist' : 'Official Curation'}
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-[#171717]">
               {activePlaylist.title}
             </h1>
 
-            <p className="text-xs sm:text-sm text-neutral-300 max-w-xl font-medium">
+            <p className="text-xs sm:text-sm text-[#6B7280] max-w-xl font-medium line-clamp-2">
               {activePlaylist.description || 'Curated Bengali acoustic tracks.'}
             </p>
 
-            <div className="text-xs text-neutral-400 font-mono pt-1">
+            <div className="text-xs text-[#6B7280] font-mono pt-0.5">
               {playlistTracks.length} {playlistTracks.length === 1 ? 'Track' : 'Tracks'}
             </div>
 
             {/* Action Bar */}
-            <div className="pt-3 flex flex-wrap items-center justify-center sm:justify-start gap-3">
+            <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
               <button
                 onClick={handlePlayAll}
                 disabled={playlistTracks.length === 0}
-                className="min-h-[44px] px-6 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-[#ED1025]/30 disabled:opacity-50 transition-all"
+                className="min-h-[40px] px-5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-sm shadow-[#ED1025]/25 disabled:opacity-50 transition-all"
               >
-                <Play className="w-4 h-4 fill-current translate-x-0.5" />
+                <Play className="w-3.5 h-3.5 fill-current translate-x-0.5" />
                 <span>Play All</span>
               </button>
 
               <button
                 onClick={handleShuffle}
                 disabled={playlistTracks.length === 0}
-                className="min-h-[44px] px-4 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 border border-white/10 disabled:opacity-50 transition-colors"
+                className="min-h-[40px] px-4 rounded-full bg-neutral-100 hover:bg-neutral-200 text-[#171717] font-semibold text-xs sm:text-sm flex items-center gap-1.5 border border-[#EAEAEA] disabled:opacity-50 transition-colors"
               >
-                <Shuffle className="w-4 h-4" />
+                <Shuffle className="w-3.5 h-3.5" />
                 <span>Shuffle</span>
               </button>
 
@@ -146,11 +152,11 @@ export const PlaylistsPage: React.FC<PlaylistsPageProps> = ({
                     deleteUserPlaylist(activePlaylist.id);
                     onSelectPlaylist(null);
                   }}
-                  className="min-h-[44px] px-3 rounded-full text-red-400 hover:text-red-300 hover:bg-red-950/40 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                  className="min-h-[40px] px-3 rounded-full text-red-600 hover:bg-red-50 text-xs font-semibold flex items-center gap-1.5 transition-colors"
                   title="Delete this personal playlist"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete Playlist</span>
+                  <span>Delete</span>
                 </button>
               )}
             </div>

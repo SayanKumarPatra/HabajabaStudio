@@ -76,13 +76,14 @@ export const SongRow: React.FC<SongRowProps> = ({
           </span>
         )}
 
-        {/* Thumbnail with overlay play trigger */}
-        <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-lg overflow-hidden shrink-0 shadow-xs">
+        {/* 16:9 YouTube Aspect Ratio Thumbnail with overlay play trigger */}
+        <div className="relative w-16 sm:w-20 aspect-video rounded-lg overflow-hidden shrink-0 shadow-xs border border-[#EAEAEA]">
           <CoverImage
             src={track.coverUrl}
             alt={track.title}
             title={track.title}
             artist={track.artist}
+            aspectRatio="video"
             className="w-full h-full object-cover"
           />
           <div
@@ -91,9 +92,9 @@ export const SongRow: React.FC<SongRowProps> = ({
             }`}
           >
             {isRowPlaying ? (
-              <Pause className="w-5 h-5 text-white fill-current" />
+              <Pause className="w-4 h-4 text-white fill-current" />
             ) : (
-              <Play className="w-5 h-5 text-white fill-current translate-x-0.5" />
+              <Play className="w-4 h-4 text-white fill-current translate-x-0.5" />
             )}
           </div>
         </div>

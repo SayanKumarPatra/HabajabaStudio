@@ -3,8 +3,8 @@ export interface Track {
   title: string;
   artist: string;
   album: string;
-  coverUrl: string;
-  audioUrl: string;
+  coverUrl: string; // 16:9 YouTube format banner or cover image
+  audioUrl: string; // Dropbox direct link or audio stream
   duration: string;
   language: string;
   releaseDate: string;
@@ -13,6 +13,13 @@ export interface Track {
   published: boolean;
   description?: string;
   lyrics?: string;
+}
+
+export interface HeroBannerConfig {
+  title: string;
+  subtitle: string;
+  bannerUrl: string; // 16:9 banner image
+  featuredTrackId?: string;
 }
 
 export interface Album {
@@ -46,4 +53,14 @@ export interface Playlist {
   createdAt?: string;
 }
 
-export type NavigationTab = 'home' | 'songs' | 'artists' | 'search' | 'playlists' | 'favorites' | 'album-details' | 'artist-details' | 'playlist-details';
+export type NavigationTab =
+  | 'home'
+  | 'songs'
+  | 'artists'
+  | 'search'
+  | 'playlists'
+  | 'favorites'
+  | 'album-details'
+  | 'artist-details'
+  | 'playlist-details'
+  | 'admin';

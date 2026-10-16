@@ -59,7 +59,7 @@ export const MiniPlayer: React.FC = () => {
 
   return (
     <div
-      className="fixed z-40 left-0 right-0 bottom-16 md:bottom-0 bg-white/95 backdrop-blur-md border-t border-[#EAEAEA] shadow-[0_-8px_24px_rgba(0,0,0,0.06)] transition-all duration-300"
+      className="fixed z-40 left-0 right-0 bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] md:bottom-0 bg-white/95 backdrop-blur-md border-t border-[#EAEAEA] shadow-[0_-8px_24px_rgba(0,0,0,0.06)] transition-all duration-300"
       role="region"
       aria-label="Audio Player"
     >

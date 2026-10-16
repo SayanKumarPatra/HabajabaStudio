@@ -20,6 +20,12 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
 }) => {
   const { playQueue } = useAudio();
   const [searchQuery, setSearchQuery] = useState('');
+  const [version, setVersion] = useState(0);
+
+  React.useEffect(() => {
+    const unsub = MusicService.subscribe(() => setVersion((v) => v + 1));
+    return unsub;
+  }, []);
 
   const artists = MusicService.getArtists();
 
@@ -77,9 +83,9 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
           <span>Back to All Artists</span>
         </button>
 
-        {/* Artist Hero Header */}
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 rounded-3xl bg-neutral-900 text-white border border-neutral-800 shadow-xl">
-          <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-neutral-800 border-2 border-white/20 shrink-0 shadow-lg flex items-center justify-center">
+        {/* Artist Hero Header - Clean White & Red (No Black Box) */}
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white border border-[#EAEAEA] shadow-xs">
+          <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-neutral-100 border-2 border-[#ED1025]/20 shrink-0 shadow-xs flex items-center justify-center">
             {activeArtist.avatarUrl ? (
               <img
                 src={activeArtist.avatarUrl}
@@ -88,21 +94,21 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <Mic2 className="w-10 h-10 text-[#ED1025]" />
+              <Mic2 className="w-8 h-8 text-[#ED1025]" />
             )}
           </div>
 
-          <div className="text-center sm:text-left space-y-2 flex-1">
-            <span className="text-[11px] uppercase tracking-wider font-bold text-[#ED1025]">
+          <div className="text-center sm:text-left space-y-1.5 flex-1">
+            <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-bold text-[#ED1025]">
               Featured Vocalist
             </span>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-[#171717]">
               {activeArtist.name}
             </h1>
-            <p className="text-xs sm:text-sm text-neutral-300 max-w-xl font-medium">
+            <p className="text-xs sm:text-sm text-[#6B7280] max-w-xl font-medium line-clamp-2">
               {activeArtist.bio}
             </p>
-            <div className="flex items-center justify-center sm:justify-start gap-2 text-xs text-neutral-400 pt-1 font-mono">
+            <div className="flex items-center justify-center sm:justify-start gap-2 text-xs text-[#6B7280] pt-0.5 font-mono">
               <span>{artistTracks.length} Published Tracks</span>
               {artistAlbums.length > 0 && (
                 <>
@@ -116,9 +122,9 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
               <div className="pt-2">
                 <button
                   onClick={handlePlayArtistTracks}
-                  className="min-h-[44px] px-6 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-[#ED1025]/30 active:scale-95 transition-all"
+                  className="min-h-[40px] px-5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-sm shadow-[#ED1025]/25 active:scale-95 transition-all"
                 >
-                  <Play className="w-4 h-4 fill-current translate-x-0.5" />
+                  <Play className="w-3.5 h-3.5 fill-current translate-x-0.5" />
                   <span>Play All Tracks</span>
                 </button>
               </div>

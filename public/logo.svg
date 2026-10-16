@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <!-- Background transparent or clean -->
+  <g transform="translate(250, 220)">
+    <!-- Stylized H Smile Emblem -->
+    <g transform="translate(0, -60)">
+      <!-- Left Vertical Bar -->
+      <rect x="-38" y="-45" width="22" height="78" rx="11" fill="#ED1025" />
+      
+      <!-- Right Vertical Bar (Taller) -->
+      <rect x="16" y="-60" width="22" height="95" rx="11" fill="#ED1025" />
+      
+      <!-- Connecting Smile Swoosh -->
+      <path d="M -56 -10 C -45 15, 30 25, 62 -2" fill="none" stroke="#ED1025" stroke-width="8" stroke-linecap="round" />
+      
+      <!-- Left tip arc hook -->
+      <path d="M -56 -10 C -58 -18, -48 -22, -45 -18" fill="none" stroke="#ED1025" stroke-width="7" stroke-linecap="round" />
+
+      <!-- Right tip circle dot -->
+      <circle cx="68" cy="-5" r="7.5" fill="#ED1025" />
+    </g>
+
+    <!-- HabaJaba Text -->
+    <text x="0" y="70" text-anchor="middle" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="62" letter-spacing="-1.5" fill="#ED1025">HabaJaba</text>
+
+    <!-- — Studio LIVE — Subtext Lockup -->
+    <g transform="translate(0, 105)">
+      <!-- Left rule line -->
+      <line x1="-140" y1="-5" x2="-88" y2="-5" stroke="#171717" stroke-width="3" stroke-linecap="round" />
+      
+      <!-- Studio text -->
+      <text x="-32" y="0" text-anchor="middle" font-family="'Inter', sans-serif" font-weight="800" font-size="22" fill="#171717">Studio</text>
+      
+      <!-- LIVE badge -->
+      <rect x="8" y="-19" width="60" height="26" rx="6" fill="#171717" />
+      <text x="38" y="-1" text-anchor="middle" font-family="'Inter', sans-serif" font-weight="900" font-size="16" letter-spacing="0.5" fill="#FFFFFF">LIVE</text>
+      
+      <!-- Right rule line -->
+      <line x1="78" y1="-5" x2="140" y2="-5" stroke="#171717" stroke-width="3" stroke-linecap="round" />
+    </g>
+  </g>
+</svg>

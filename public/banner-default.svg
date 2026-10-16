@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="60%" stop-color="#FFF5F5" />
+      <stop offset="100%" stop-color="#FFE8EA" />
+    </linearGradient>
+
+    <!-- Crimson Brand Accent Gradient -->
+    <linearGradient id="redAccent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ED1025" />
+      <stop offset="100%" stop-color="#C80A1C" />
+    </linearGradient>
+  </defs>
+
+  <!-- Clean Light Canvas -->
+  <rect width="1280" height="720" fill="url(#bgGrad)" />
+
+  <!-- Subtle Acoustic Sound Wave / Vinyl Arcs -->
+  <g opacity="0.08" stroke="#ED1025" fill="none">
+    <circle cx="1150" cy="360" r="160" stroke-width="2" />
+    <circle cx="1150" cy="360" r="260" stroke-width="3" />
+    <circle cx="1150" cy="360" r="380" stroke-width="2" />
+    <circle cx="1150" cy="360" r="520" stroke-width="4" stroke-dasharray="12 12" />
+    <circle cx="1150" cy="360" r="680" stroke-width="2" />
+  </g>
+
+  <!-- Left Elegant Brand Frame & Poster Card -->
+  <g transform="translate(100, 100)">
+    <!-- Vertical Red Card from Reference Image -->
+    <rect x="0" y="0" width="280" height="520" rx="20" fill="#ED1025" />
+    <rect x="14" y="14" width="252" height="492" rx="14" fill="none" stroke="#FFFFFF" stroke-width="6" />
+    <rect x="22" y="22" width="236" height="476" rx="10" fill="none" stroke="#FFFFFF" stroke-width="2" />
+
+    <!-- White Logo inside Poster Card -->
+    <g transform="translate(140, 240)">
+      <g transform="translate(0, -50)">
+        <rect x="-30" y="-36" width="18" height="62" rx="9" fill="#FFFFFF" />
+        <rect x="12" y="-48" width="18" height="76" rx="9" fill="#FFFFFF" />
+        <path d="M -46 -8 C -36 12, 24 20, 50 -2" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" />
+        <path d="M -46 -8 C -48 -14, -40 -17, -37 -14" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" />
+        <circle cx="55" cy="-4" r="6" fill="#FFFFFF" />
+      </g>
+      <text x="0" y="55" text-anchor="middle" font-family="'Inter', sans-serif" font-weight="900" font-size="44" fill="#FFFFFF">HabaJaba</text>
+      
+      <!-- Studio LIVE lockup -->
+      <g transform="translate(0, 85)">
+        <line x1="-95" y1="-4" x2="-60" y2="-4" stroke="#FFFFFF" stroke-width="2" />
+        <text x="-22" y="0" text-anchor="middle" font-family="'Inter', sans-serif" font-weight="800" font-size="16" fill="#FFFFFF">Studio</text>
+        <rect x="10" y="-14" width="46" height="20" rx="4" fill="#171717" />
+        <text x="33" y="0" text-anchor="middle" font-family="'Inter', sans-serif" font-weight="900" font-size="12" fill="#FFFFFF">LIVE</text>
+        <line x1="62" y1="-4" x2="95" y2="-4" stroke="#FFFFFF" stroke-width="2" />
+      </g>
+    </g>
+  </g>
+
+  <!-- Right Typography & Brand Presentation -->
+  <g transform="translate(440, 240)">
+    <!-- Red Tag -->
+    <rect x="0" y="-70" width="180" height="36" rx="18" fill="#ED1025" />
+    <text x="90" y="-46" text-anchor="middle" font-family="'Inter', sans-serif" font-weight="800" font-size="14" fill="#FFFFFF" letter-spacing="1">OFFICIAL LIVE</text>
+
+    <!-- Main Title -->
+    <text x="0" y="20" font-family="'Inter', sans-serif" font-weight="900" font-size="76" fill="#171717" letter-spacing="-2">HABAJABA</text>
+    <text x="440" y="20" font-family="'Inter', sans-serif" font-weight="900" font-size="76" fill="#ED1025" letter-spacing="-2">LIVE</text>
+
+    <!-- Bengali Tagline -->
+    <text x="0" y="85" font-family="'Hind Siliguri', 'Inter', sans-serif" font-weight="700" font-size="34" fill="#374151">অরিজিনাল বাংলা মিউজিক স্টুডিও</text>
+
+    <!-- Subtitle Description -->
+    <text x="0" y="130" font-family="'Inter', sans-serif" font-weight="500" font-size="20" fill="#6B7280">Original Bengali Acoustic Sessions, Folk Fusion &amp; Independent Music</text>
+    
+    <!-- Accent Line -->
+    <rect x="0" y="165" width="120" height="6" rx="3" fill="#ED1025" />
+  </g>
+</svg>

@@ -46,9 +46,9 @@ export const AlbumDetailsPage: React.FC<AlbumDetailsPageProps> = ({
         <span>Back to Releases</span>
       </button>
 
-      {/* Album Header Hero */}
-      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 sm:p-8 rounded-3xl bg-neutral-900 text-white border border-neutral-800 shadow-xl">
-        <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-2xl overflow-hidden shadow-2xl border border-white/10 shrink-0">
+      {/* Album Header Hero - Clean White & Red (No Black Box) */}
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 p-4 sm:p-6 sm:p-8 rounded-2xl sm:rounded-3xl bg-white border border-[#EAEAEA] shadow-xs">
+        <div className="w-28 h-28 sm:w-40 sm:h-40 rounded-2xl overflow-hidden shadow-xs border border-[#EAEAEA] shrink-0">
           <CoverImage
             src={album.coverUrl}
             alt={album.title}
@@ -58,32 +58,32 @@ export const AlbumDetailsPage: React.FC<AlbumDetailsPageProps> = ({
           />
         </div>
 
-        <div className="text-center sm:text-left space-y-2 flex-1">
+        <div className="text-center sm:text-left space-y-1.5 flex-1">
           <div className="flex items-center justify-center sm:justify-start gap-2">
             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#ED1025] text-white">
               Studio Album
             </span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-[#171717]">
             {album.title}
           </h1>
 
           <p
             onClick={() => onSelectArtist(album.artist)}
-            className="text-sm sm:text-base text-neutral-300 font-semibold cursor-pointer hover:text-white hover:underline transition-colors"
+            className="text-sm font-semibold text-[#6B7280] cursor-pointer hover:text-[#ED1025] hover:underline transition-colors"
           >
             {album.artist}
           </p>
 
           {album.description && (
-            <p className="text-xs sm:text-sm text-neutral-400 max-w-xl font-medium pt-1">
+            <p className="text-xs sm:text-sm text-[#6B7280] max-w-xl font-medium line-clamp-2">
               {album.description}
             </p>
           )}
 
           {/* Metadata badges (clean unboxed) */}
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs text-neutral-400 pt-2 font-medium">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 text-xs text-[#6B7280] pt-1 font-medium">
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-[#ED1025]" />
               <span>{album.releaseDate}</span>
@@ -103,22 +103,22 @@ export const AlbumDetailsPage: React.FC<AlbumDetailsPageProps> = ({
           </div>
 
           {/* Action controls */}
-          <div className="pt-3 flex flex-wrap items-center justify-center sm:justify-start gap-3">
+          <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
             <button
               onClick={handlePlayAll}
               disabled={albumTracks.length === 0}
-              className="min-h-[44px] px-6 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-[#ED1025]/30 active:scale-95 disabled:opacity-50 transition-all"
+              className="min-h-[40px] px-5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-sm shadow-[#ED1025]/25 active:scale-95 disabled:opacity-50 transition-all"
             >
-              <Play className="w-4 h-4 fill-current translate-x-0.5" />
+              <Play className="w-3.5 h-3.5 fill-current translate-x-0.5" />
               <span>Play Album</span>
             </button>
 
             <button
               onClick={handleShuffle}
               disabled={albumTracks.length === 0}
-              className="min-h-[44px] px-4 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 border border-white/10 disabled:opacity-50 transition-colors"
+              className="min-h-[40px] px-4 rounded-full bg-neutral-100 hover:bg-neutral-200 text-[#171717] font-semibold text-xs sm:text-sm flex items-center gap-1.5 border border-[#EAEAEA] disabled:opacity-50 transition-colors"
             >
-              <Shuffle className="w-4 h-4" />
+              <Shuffle className="w-3.5 h-3.5" />
               <span>Shuffle</span>
             </button>
           </div>

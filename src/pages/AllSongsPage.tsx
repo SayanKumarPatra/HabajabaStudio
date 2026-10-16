@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Play, Shuffle, Filter, ArrowUpDown } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Play, Shuffle, Filter, ArrowUpDown, Plus } from 'lucide-react';
 import { Album, Track } from '../types/music';
 import { MusicService } from '../services/musicService';
 import { useAudio } from '../context/AudioContext';
@@ -17,9 +17,17 @@ export const AllSongsPage: React.FC<AllSongsPageProps> = ({
   const { playQueue } = useAudio();
   const [selectedGenre, setSelectedGenre] = useState<string>('All');
   const [sortBy, setSortBy] = useState<'newest' | 'title' | 'artist'>('newest');
+  const [version, setVersion] = useState(0);
+
+  useEffect(() => {
+    const unsub = MusicService.subscribe(() => {
+      setVersion((v) => v + 1);
+    });
+    return unsub;
+  }, []);
 
   const genres = ['All', ...MusicService.getGenres()];
-  const allTracks = MusicService.getAllTracks(sortBy);
+  const allTracks = MusicService.getAllTracks(sortBy, false);
   const albums = MusicService.getAlbums();
 
   const filteredTracks = useMemo(() => {
@@ -41,75 +49,87 @@ export const AllSongsPage: React.FC<AllSongsPageProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-6">
+    <div className="space-y-5 pb-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#EAEAEA]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#EAEAEA]">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#171717]">
             All Songs
           </h1>
-          <p className="text-xs sm:text-sm text-[#6B7280] mt-1 font-medium font-bengali">
-            {filteredTracks.length} অরিজিনাল ট্র্যাক · Original Bengali Recordings
+          <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 font-medium font-bengali">
+            {filteredTracks.length} প্রকাশিত গান · Original Bengali Audio Tracks
           </p>
         </div>
 
         {/* Global Controls */}
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={handlePlayAll}
-            disabled={filteredTracks.length === 0}
-            className="min-h-[44px] px-5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-sm shadow-[#ED1025]/25 disabled:opacity-50 transition-all"
-          >
-            <Play className="w-4 h-4 fill-current translate-x-0.5" />
-            <span>Play All</span>
-          </button>
+        <div className="flex items-center gap-2">
+          {filteredTracks.length > 0 && (
+            <>
+              <button
+                onClick={handlePlayAll}
+                className="min-h-[42px] px-5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-xs transition-all"
+              >
+                <Play className="w-4 h-4 fill-current translate-x-0.5" />
+                <span>Play All</span>
+              </button>
 
-          <button
-            onClick={handleShuffle}
-            disabled={filteredTracks.length === 0}
-            className="min-h-[44px] px-4 rounded-full bg-neutral-100 hover:bg-neutral-200 text-[#171717] font-semibold text-xs sm:text-sm flex items-center gap-1.5 border border-[#EAEAEA] disabled:opacity-50 transition-colors"
+              <button
+                onClick={handleShuffle}
+                className="min-h-[42px] px-4 rounded-full bg-neutral-100 hover:bg-neutral-200 text-[#171717] font-semibold text-xs sm:text-sm flex items-center gap-1.5 border border-[#EAEAEA] transition-colors"
+              >
+                <Shuffle className="w-4 h-4" />
+                <span className="hidden xs:inline">Shuffle</span>
+              </button>
+            </>
+          )}
+
+          <a
+            href="#admin"
+            className="min-h-[42px] px-3.5 rounded-full bg-[#171717] hover:bg-neutral-800 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors"
           >
-            <Shuffle className="w-4 h-4" />
-            <span className="hidden xs:inline">Shuffle</span>
-          </button>
+            <Plus className="w-3.5 h-3.5 text-[#ED1025]" />
+            <span>এডমিন প্যানেলে গান যোগ করুন</span>
+          </a>
         </div>
       </div>
 
       {/* Filter and Sort Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-        {/* Genre Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-          <Filter className="w-3.5 h-3.5 text-[#6B7280] mr-1 shrink-0" />
-          {genres.map((genre) => (
-            <button
-              key={genre}
-              onClick={() => setSelectedGenre(genre)}
-              className={`px-3 py-1.5 rounded-full font-medium transition-colors whitespace-nowrap shrink-0 ${
-                selectedGenre === genre
-                  ? 'bg-[#171717] text-white'
-                  : 'bg-neutral-100 text-[#6B7280] hover:text-[#171717] hover:bg-neutral-200/70'
-              }`}
-            >
-              {genre}
-            </button>
-          ))}
-        </div>
+      {genres.length > 1 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+          {/* Genre Filter Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+            <Filter className="w-3.5 h-3.5 text-[#6B7280] mr-1 shrink-0" />
+            {genres.map((genre) => (
+              <button
+                key={genre}
+                onClick={() => setSelectedGenre(genre)}
+                className={`px-3 py-1.5 rounded-full font-medium transition-colors whitespace-nowrap shrink-0 ${
+                  selectedGenre === genre
+                    ? 'bg-[#171717] text-white'
+                    : 'bg-neutral-100 text-[#6B7280] hover:text-[#171717] hover:bg-neutral-200/70'
+                }`}
+              >
+                {genre}
+              </button>
+            ))}
+          </div>
 
-        {/* Sort Select */}
-        <div className="flex items-center gap-2 shrink-0">
-          <ArrowUpDown className="w-3.5 h-3.5 text-[#6B7280]" />
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="text-xs bg-white border border-[#EAEAEA] rounded-lg px-2.5 py-1.5 text-[#171717] focus:outline-hidden focus:border-[#ED1025]"
-            aria-label="Sort tracks"
-          >
-            <option value="newest">Newest Releases</option>
-            <option value="title">Title (A-Z)</option>
-            <option value="artist">Artist Name</option>
-          </select>
+          {/* Sort Select */}
+          <div className="flex items-center gap-2 shrink-0">
+            <ArrowUpDown className="w-3.5 h-3.5 text-[#6B7280]" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="text-xs bg-white border border-[#EAEAEA] rounded-lg px-2.5 py-1.5 text-[#171717] focus:outline-hidden focus:border-[#ED1025]"
+              aria-label="Sort tracks"
+            >
+              <option value="newest">Newest Releases</option>
+              <option value="title">Title (A-Z)</option>
+              <option value="artist">Artist Name</option>
+            </select>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Song List */}
       {filteredTracks.length > 0 ? (
@@ -131,11 +151,20 @@ export const AllSongsPage: React.FC<AllSongsPageProps> = ({
           ))}
         </div>
       ) : (
-        <div className="p-12 text-center bg-neutral-50 rounded-2xl border border-dashed border-[#EAEAEA]">
-          <p className="text-sm font-semibold text-[#171717]">No tracks found</p>
-          <p className="text-xs text-[#6B7280] mt-1">
-            Try selecting another genre filter.
+        <div className="p-10 text-center bg-neutral-50 rounded-2xl border border-dashed border-[#EAEAEA] space-y-3">
+          <p className="text-sm font-semibold text-[#171717]">
+            বর্তমানে কোনো গান আপলোড করা নেই (No Tracks Published)
           </p>
+          <p className="text-xs text-[#6B7280] max-w-sm mx-auto">
+            এডমিন প্যানেলে যান এবং আপনার ড্রপবক্স লিঙ্ক দিয়ে গান আপলোড করুন।
+          </p>
+          <a
+            href="#admin"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#ED1025] text-white text-xs font-bold shadow-xs hover:bg-[#D90D20] transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>এডমিন প্যানেলে যান (Go to Admin)</span>
+          </a>
         </div>
       )}
     </div>

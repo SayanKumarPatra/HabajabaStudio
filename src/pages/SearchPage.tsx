@@ -17,10 +17,16 @@ export const SearchPage: React.FC<SearchPageProps> = ({
 }) => {
   const [query, setQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'songs' | 'albums' | 'artists'>('all');
+  const [version, setVersion] = useState(0);
+
+  React.useEffect(() => {
+    const unsub = MusicService.subscribe(() => setVersion((v) => v + 1));
+    return unsub;
+  }, []);
 
   const results = useMemo(() => {
     return MusicService.search(query);
-  }, [query]);
+  }, [query, version]);
 
   const totalResults =
     results.tracks.length + results.albums.length + results.artists.length;
