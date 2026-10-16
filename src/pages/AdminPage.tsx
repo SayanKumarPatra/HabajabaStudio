@@ -20,6 +20,7 @@ import {
   Image as ImageIcon,
   Cloud,
   Palette,
+  HelpCircle,
 } from 'lucide-react';
 import { HeroBannerConfig, Track } from '../types/music';
 import { MusicService } from '../services/musicService';
@@ -30,7 +31,11 @@ import { MediaManagementSection } from '../components/MediaManagementSection';
 import { BrandingAdminSection } from '../components/BrandingAdminSection';
 import { FirebaseAdminSection } from '../components/FirebaseAdminSection';
 
-export const AdminPage: React.FC = () => {
+interface AdminPageProps {
+  onOpenDropboxGuide?: () => void;
+}
+
+export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
   const { playTrack, isPlaying, currentTrack, togglePlay } = useAudio();
 
   const [adminTab, setAdminTab] = useState<'media' | 'songs' | 'branding' | 'firebase'>('media');
@@ -246,6 +251,17 @@ export const AdminPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          {onOpenDropboxGuide && (
+            <button
+              onClick={onOpenDropboxGuide}
+              className="min-h-[44px] px-3.5 rounded-xl border border-[#EAEAEA] bg-white hover:bg-neutral-50 text-xs font-semibold text-[#171717] flex items-center gap-1.5 transition-colors"
+              title="Open Dropbox Streaming Helper & Guide"
+            >
+              <HelpCircle className="w-4 h-4 text-[#ED1025]" />
+              <span>Dropbox Guide</span>
+            </button>
+          )}
+
           <button
             onClick={handleExportJson}
             className="min-h-[44px] px-3.5 rounded-xl border border-[#EAEAEA] bg-white hover:bg-neutral-50 text-xs font-semibold text-[#171717] flex items-center gap-1.5 transition-colors"
@@ -262,6 +278,62 @@ export const AdminPage: React.FC = () => {
             <Plus className="w-4 h-4" />
             <span>নতুন গান যোগ করুন (Add Song)</span>
           </button>
+        </div>
+      </div>
+
+      {/* Real-time Cloud Status Bar */}
+      <div
+        className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs ${
+          MusicService.isFirebaseLive()
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+            : 'bg-amber-50 border-amber-200 text-amber-950'
+        }`}
+      >
+        <div className="flex items-center gap-2.5">
+          <div
+            className={`w-3 h-3 rounded-full animate-pulse shrink-0 ${
+              MusicService.isFirebaseLive() ? 'bg-emerald-500' : 'bg-amber-500'
+            }`}
+          />
+          <div>
+            <div className="font-bold flex items-center gap-2">
+              <span>
+                {MusicService.isFirebaseLive()
+                  ? '🟢 ফায়ারবেস ক্লাউড লাইভ সক্রিয় (Real-time Live Active)'
+                  : '🟡 লোকাল মোড (গান এই ডিভাইসে সংরক্ষিত)'}
+              </span>
+            </div>
+            <p className="text-[11px] text-neutral-600 font-bengali mt-0.5">
+              {MusicService.isFirebaseLive()
+                ? 'আপনার গান, অ্যালবাম ও ব্যানার সরাসরি ক্লাউড সার্ভারে লাইভ রয়েছে এবং সব ইউজারের ডিভাইসে রিয়েল-টাইমে আপডেট হচ্ছে।'
+                : 'আপনার আপলোড করা গান বর্তমানে এই ডিভাইসে সংরক্ষিত আছে। সব ইউজারের কাছে সরাসরি লাইভ করতে "ফায়ারবেস ক্লাউড লাইভ" ট্যাবে কানেক্ট করুন।'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {!MusicService.isFirebaseLive() ? (
+            <button
+              onClick={() => setAdminTab('firebase')}
+              className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-colors shadow-xs"
+            >
+              ফায়ারবেস লাইভ কানেক্ট করুন
+            </button>
+          ) : (
+            <button
+              onClick={async () => {
+                const res = await MusicService.syncAllLocalToFirestore();
+                if (res.success) {
+                  alert(`মোট ${res.count} টি গান ও সেটিংস সফলভাবে ক্লাউডে সিঙ্ক হয়েছে!`);
+                } else {
+                  alert(`সিঙ্ক ব্যর্থ: ${res.error}`);
+                }
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-xs"
+            >
+              লাইভ ক্লাউডে সিঙ্ক করুন ({tracks.length} Tracks)
+            </button>
+          )}
         </div>
       </div>
 

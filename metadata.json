@@ -1,6 +1,8 @@
 {
-  "name": "Habajaba Studio LIVE",
+  "name": "Remix Habajaba Studio LIVE",
   "description": "Premium Bengali music streaming website for Habajaba Studio LIVE featuring original songs, albums, acoustic sessions, and playlists.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

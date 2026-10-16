@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, HelpCircle, Heart } from 'lucide-react';
+import { Search, Heart } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 import { NavigationTab } from '../types/music';
 import { useFavorites } from '../context/FavoritesContext';
@@ -7,13 +7,11 @@ import { useFavorites } from '../context/FavoritesContext';
 interface AppHeaderProps {
   currentTab: NavigationTab;
   onNavigate: (tab: NavigationTab) => void;
-  onOpenDropboxGuide: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
   currentTab,
   onNavigate,
-  onOpenDropboxGuide,
 }) => {
   const { favorites } = useFavorites();
 
@@ -63,7 +61,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           })}
         </nav>
 
-        {/* Zone 3: Actions (Favorites, Search, Dropbox Help — Admin button removed as instructed) */}
+        {/* Zone 3: Actions (Favorites, Search) */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Quick Favorites count indicator */}
           <button
@@ -96,17 +94,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             }`}
           >
             <Search className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-
-          {/* Dropbox Audio Guide & Direct Link Tester */}
-          <button
-            onClick={onOpenDropboxGuide}
-            title="Dropbox Audio Configuration & Link Tester"
-            aria-label="Dropbox Guide"
-            className="min-h-[36px] px-3 hidden lg:flex items-center gap-1.5 text-xs font-semibold text-white bg-white/15 hover:bg-white/25 rounded-lg transition-colors border border-white/20"
-          >
-            <HelpCircle className="w-3.5 h-3.5 text-white" />
-            <span className="whitespace-nowrap">Dropbox Guide</span>
           </button>
         </div>
       </div>

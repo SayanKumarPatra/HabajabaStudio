@@ -1,7 +1,8 @@
 import { collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch } from 'firebase/firestore';
+import { ref, onValue, set as rtdbSet, remove as rtdbRemove } from 'firebase/database';
 import rawMusicData from '../data/music.json';
 import { Album, Artist, BrandingConfig, HeroBannerConfig, Playlist, Track } from '../types/music';
-import { getFirebaseFirestore, getActiveFirebaseConfig } from './firebaseConfig';
+import { getFirebaseFirestore, getFirebaseRealtimeDb, getActiveFirebaseConfig } from './firebaseConfig';
 
 const STORAGE_CATALOG_KEY = 'habajaba_admin_catalog_v2';
 const STORAGE_BRANDING_KEY = 'habajaba_admin_branding_v1';
@@ -104,9 +105,13 @@ export function initFirestoreSync() {
               id: docSnap.id || data.id,
             });
           });
-          // Update tracks in state
+          // Update tracks in state with live Firestore data
           catalogState.tracks = remoteTracks;
           saveStateLocally();
+        } else if (catalogState.tracks.length > 0) {
+          // If Firestore is empty but the admin had uploaded tracks locally,
+          // automatically upload them to Firestore so they go live immediately for everyone!
+          MusicService.syncAllLocalToFirestore();
         }
       },
       (error) => {
@@ -124,6 +129,12 @@ export function initFirestoreSync() {
           if (data && data.bannerUrl) {
             catalogState.banner = data;
             saveStateLocally();
+          }
+        } else if (catalogState.banner && catalogState.banner.bannerUrl) {
+          // Seed default banner to Firestore if document does not exist yet
+          const inst = getFirebaseFirestore();
+          if (inst) {
+            setDoc(doc(inst.db, 'habajaba_settings', 'banner'), catalogState.banner).catch(() => {});
           }
         }
       },
@@ -158,8 +169,71 @@ export function initFirestoreSync() {
   }
 }
 
-// Auto-initialize Firestore sync on startup if config exists
+let isRtdbInitialized = false;
+
+// Set up real-time Firebase Realtime Database synchronization
+export function initRealtimeDbSync() {
+  const rtdbInstance = getFirebaseRealtimeDb();
+  if (!rtdbInstance) return false;
+  if (isRtdbInitialized) return true;
+
+  try {
+    const { rtdb } = rtdbInstance;
+
+    // 1. Real-time listener for Songs in Realtime Database
+    const songsRef = ref(rtdb, 'habajaba_songs');
+    onValue(songsRef, (snapshot) => {
+      const val = snapshot.val();
+      if (val && typeof val === 'object') {
+        const remoteTracks: Track[] = Object.keys(val).map((k) => ({
+          ...val[k],
+          id: k,
+        }));
+        if (remoteTracks.length > 0) {
+          catalogState.tracks = remoteTracks;
+          saveStateLocally();
+        }
+      } else if (catalogState.tracks.length > 0) {
+        // Auto-seed to RTDB if empty
+        const songsObj: Record<string, Track> = {};
+        catalogState.tracks.forEach((t) => {
+          songsObj[t.id] = t;
+        });
+        rtdbSet(songsRef, songsObj).catch(() => {});
+      }
+    });
+
+    // 2. Real-time listener for Banner in RTDB
+    const bannerRef = ref(rtdb, 'habajaba_settings/banner');
+    onValue(bannerRef, (snapshot) => {
+      const val = snapshot.val() as HeroBannerConfig | null;
+      if (val && val.bannerUrl) {
+        catalogState.banner = val;
+        saveStateLocally();
+      }
+    });
+
+    // 3. Real-time listener for Branding in RTDB
+    const brandingRef = ref(rtdb, 'habajaba_settings/branding');
+    onValue(brandingRef, (snapshot) => {
+      const val = snapshot.val() as BrandingConfig | null;
+      if (val) {
+        catalogState.branding = val;
+        saveStateLocally();
+      }
+    });
+
+    isRtdbInitialized = true;
+    return true;
+  } catch (err) {
+    console.error('Failed to setup Realtime Database listeners:', err);
+    return false;
+  }
+}
+
+// Auto-initialize both sync engines on startup if config exists
 initFirestoreSync();
+initRealtimeDbSync();
 
 export const MusicService = {
   subscribe(fn: () => void) {
@@ -170,7 +244,7 @@ export const MusicService = {
   },
 
   isFirebaseLive(): boolean {
-    return !!getActiveFirebaseConfig() && isFirestoreInitialized;
+    return !!getActiveFirebaseConfig() && (isFirestoreInitialized || isRtdbInitialized);
   },
 
   reconnectFirebase(): boolean {
@@ -178,7 +252,10 @@ export const MusicService = {
     if (unsubscribeBanner) unsubscribeBanner();
     if (unsubscribeBranding) unsubscribeBranding();
     isFirestoreInitialized = false;
-    return initFirestoreSync();
+    isRtdbInitialized = false;
+    const fsOk = initFirestoreSync();
+    const rtdbOk = initRealtimeDbSync();
+    return fsOk || rtdbOk;
   },
 
   getHeroBanner(): HeroBannerConfig {
@@ -280,6 +357,16 @@ export const MusicService = {
         console.warn('Failed to write track to Firestore:', e);
       }
     }
+
+    const rtdbInstance = getFirebaseRealtimeDb();
+    if (rtdbInstance) {
+      try {
+        const trackRef = ref(rtdbInstance.rtdb, `habajaba_songs/${track.id}`);
+        await rtdbSet(trackRef, track);
+      } catch (e) {
+        console.warn('Failed to write track to Realtime Database:', e);
+      }
+    }
   },
 
   async updateTrack(updated: Track) {
@@ -292,6 +379,16 @@ export const MusicService = {
         await setDoc(doc(firestoreInstance.db, 'habajaba_songs', updated.id), updated);
       } catch (e) {
         console.warn('Failed to update track in Firestore:', e);
+      }
+    }
+
+    const rtdbInstance = getFirebaseRealtimeDb();
+    if (rtdbInstance) {
+      try {
+        const trackRef = ref(rtdbInstance.rtdb, `habajaba_songs/${updated.id}`);
+        await rtdbSet(trackRef, updated);
+      } catch (e) {
+        console.warn('Failed to update track in Realtime Database:', e);
       }
     }
   },
@@ -309,6 +406,16 @@ export const MusicService = {
         await deleteDoc(doc(firestoreInstance.db, 'habajaba_songs', id));
       } catch (e) {
         console.warn('Failed to delete track from Firestore:', e);
+      }
+    }
+
+    const rtdbInstance = getFirebaseRealtimeDb();
+    if (rtdbInstance) {
+      try {
+        const trackRef = ref(rtdbInstance.rtdb, `habajaba_songs/${id}`);
+        await rtdbRemove(trackRef);
+      } catch (e) {
+        console.warn('Failed to delete track from Realtime Database:', e);
       }
     }
   },
@@ -466,10 +573,12 @@ export const MusicService = {
     saveStateLocally();
   },
 
-  // Sync all current local songs & banner into Firestore in one click
+  // Sync all current local songs & banner into Firebase (Firestore and/or Realtime Database) in one click
   async syncAllLocalToFirestore(): Promise<{ success: boolean; count: number; error?: string }> {
     const firestoreInstance = getFirebaseFirestore();
-    if (!firestoreInstance) {
+    const rtdbInstance = getFirebaseRealtimeDb();
+
+    if (!firestoreInstance && !rtdbInstance) {
       return {
         success: false,
         count: 0,
@@ -477,32 +586,64 @@ export const MusicService = {
       };
     }
 
-    try {
-      const { db } = firestoreInstance;
-      const batch = writeBatch(db);
+    let syncedCount = 0;
+    let anySuccess = false;
+    let lastError = '';
 
-      // Write hero banner
-      const bannerRef = doc(db, 'habajaba_settings', 'banner');
-      batch.set(bannerRef, catalogState.banner);
+    // 1. Sync to Realtime Database if present
+    if (rtdbInstance) {
+      try {
+        const songsRef = ref(rtdbInstance.rtdb, 'habajaba_songs');
+        const songsObj: Record<string, Track> = {};
+        catalogState.tracks.forEach((t) => {
+          songsObj[t.id] = t;
+        });
+        await rtdbSet(songsRef, songsObj);
 
-      // Write branding
-      if (catalogState.branding) {
-        const brandingRef = doc(db, 'habajaba_settings', 'branding');
-        batch.set(brandingRef, catalogState.branding);
+        const bannerRef = ref(rtdbInstance.rtdb, 'habajaba_settings/banner');
+        await rtdbSet(bannerRef, catalogState.banner);
+
+        if (catalogState.branding) {
+          const brandingRef = ref(rtdbInstance.rtdb, 'habajaba_settings/branding');
+          await rtdbSet(brandingRef, catalogState.branding);
+        }
+        anySuccess = true;
+        syncedCount = catalogState.tracks.length;
+      } catch (e: any) {
+        lastError = e.message || 'Realtime Database sync failed';
       }
-
-      // Write each track
-      let count = 0;
-      for (const track of catalogState.tracks) {
-        const trackRef = doc(db, 'habajaba_songs', track.id);
-        batch.set(trackRef, track);
-        count++;
-      }
-
-      await batch.commit();
-      return { success: true, count };
-    } catch (err: any) {
-      return { success: false, count: 0, error: err.message || 'Firestore batch write failed' };
     }
+
+    // 2. Sync to Firestore if present
+    if (firestoreInstance) {
+      try {
+        const { db } = firestoreInstance;
+        const batch = writeBatch(db);
+
+        const bannerRef = doc(db, 'habajaba_settings', 'banner');
+        batch.set(bannerRef, catalogState.banner);
+
+        if (catalogState.branding) {
+          const brandingRef = doc(db, 'habajaba_settings', 'branding');
+          batch.set(brandingRef, catalogState.branding);
+        }
+
+        for (const track of catalogState.tracks) {
+          const trackRef = doc(db, 'habajaba_songs', track.id);
+          batch.set(trackRef, track);
+        }
+
+        await batch.commit();
+        anySuccess = true;
+        syncedCount = catalogState.tracks.length;
+      } catch (err: any) {
+        if (!anySuccess) lastError = err.message || 'Firestore batch write failed';
+      }
+    }
+
+    if (anySuccess) {
+      return { success: true, count: syncedCount };
+    }
+    return { success: false, count: 0, error: lastError };
   },
 };

@@ -8,8 +8,6 @@ import {
   ChevronRight,
   Disc3,
   Radio,
-  Settings,
-  Plus,
 } from 'lucide-react';
 import { Album, NavigationTab, Track } from '../types/music';
 import { MusicService } from '../services/musicService';
@@ -151,27 +149,20 @@ export const HomePage: React.FC<HomePageProps> = ({
         })}
       </section>
 
-      {/* 3. If no songs published yet, show Clean Welcome State with Admin CTA */}
+      {/* 3. If no songs published yet, show Clean Welcome State for listeners */}
       {allSongs.length === 0 ? (
-        <section className="p-6 sm:p-10 text-center bg-neutral-50/70 rounded-2xl sm:rounded-3xl border border-dashed border-[#EAEAEA] space-y-3">
-          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white shadow-xs border border-[#EAEAEA] flex items-center justify-center mx-auto text-[#ED1025]">
-            <Music2 className="w-5 h-5 sm:w-6 sm:h-6" />
+        <section className="p-8 sm:p-12 text-center bg-white rounded-2xl sm:rounded-3xl border border-[#EAEAEA] shadow-xs space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-[#ED1025]/10 flex items-center justify-center mx-auto text-[#ED1025]">
+            <Music2 className="w-6 h-6" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-sm sm:text-base font-bold text-[#171717]">
-              হবজব স্টুডিও লাইভে স্বাগতম (Habajaba Studio LIVE)
+            <h3 className="text-base sm:text-lg font-black text-[#171717] tracking-tight">
+              হ্যাবাজ্যাবা স্টুডিও লাইভ (Habajaba Studio LIVE)
             </h3>
-            <p className="text-xs text-[#6B7280] max-w-md mx-auto font-bengali leading-relaxed">
-              বর্তমানে কোনো গান যুক্ত করা নেই। আপনি অ্যাডমিন প্যানেল থেকে আপনার ড্রপবক্সের অডিও লিঙ্ক দিয়ে খুব সহজেই গান যুক্ত ও ব্যানার পরিবর্তন করতে পারেন।
+            <p className="text-xs sm:text-sm text-[#6B7280] max-w-md mx-auto font-bengali leading-relaxed">
+              অরিজিনাল বাংলা মিউজিক ও লাইভ স্টুডিও সেশন। নতুন গান খুব শীঘ্রই প্রকাশিত হচ্ছে। সাথেই থাকুন।
             </p>
           </div>
-          <button
-            onClick={() => onNavigate('admin')}
-            className="px-5 py-2 sm:px-6 sm:py-2.5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white text-xs font-bold inline-flex items-center gap-2 shadow-xs transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>এডমিন প্যানেলে গান যোগ করুন (Open Admin Panel)</span>
-          </button>
         </section>
       ) : (
         <>

@@ -17,11 +17,13 @@ import {
   getActiveFirebaseConfig,
   saveFirebaseConfig,
   testFirebaseConnection,
+  getEffectiveConfigSource,
   FirebaseConfigParams,
 } from '../services/firebaseConfig';
 import { MusicService } from '../services/musicService';
 
 export const FirebaseAdminSection: React.FC = () => {
+  const [configCopied, setConfigCopied] = useState(false);
   const [config, setConfig] = useState<FirebaseConfigParams>(() => {
     const active = getActiveFirebaseConfig();
     return (
@@ -155,6 +157,15 @@ export const FirebaseAdminSection: React.FC = () => {
     }
   };
 
+  const handleCopyConfigJson = () => {
+    const json = JSON.stringify(config, null, 2);
+    navigator.clipboard?.writeText(json);
+    setConfigCopied(true);
+    setTimeout(() => setConfigCopied(false), 2000);
+  };
+
+  const configSource = getEffectiveConfigSource();
+
   return (
     <div className="space-y-6">
       {/* 1. Connection Status Banner */}
@@ -175,7 +186,7 @@ export const FirebaseAdminSection: React.FC = () => {
               <Cloud className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="font-extrabold text-base tracking-tight">
                   {isConnected
                     ? '🟢 ফায়ারবেস ক্লাউড লাইভ সংযুক্ত (Firebase Live Active)'
@@ -188,6 +199,21 @@ export const FirebaseAdminSection: React.FC = () => {
                 >
                   {isConnected ? 'Real-Time Sync' : 'Standby'}
                 </span>
+                {configSource === 'bundled' && (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
+                    কোডবেস ডিফল্ট (সবার জন্য লাইভ)
+                  </span>
+                )}
+                {configSource === 'env' && (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">
+                    Environment Variables (সবার জন্য লাইভ)
+                  </span>
+                )}
+                {configSource === 'localStorage' && (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-900">
+                    এই ব্রাউজারে সংরক্ষিত
+                  </span>
+                )}
               </div>
               <p className="text-xs text-neutral-600 mt-0.5 font-bengali">
                 {isConnected
@@ -197,7 +223,18 @@ export const FirebaseAdminSection: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {config.projectId && (
+              <button
+                onClick={handleCopyConfigJson}
+                className="px-3 py-2 rounded-xl bg-white border border-neutral-300 hover:bg-neutral-100 text-neutral-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                title="Copy configuration JSON"
+              >
+                <Copy className="w-3.5 h-3.5 text-[#ED1025]" />
+                <span>{configCopied ? 'কপি হয়েছে!' : 'কনফিগ কপি করুন'}</span>
+              </button>
+            )}
+
             {isConnected && (
               <button
                 onClick={handleSyncLocalToCloud}

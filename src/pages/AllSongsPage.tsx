@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Play, Shuffle, Filter, ArrowUpDown, Plus } from 'lucide-react';
+import { Play, Shuffle, Filter, ArrowUpDown } from 'lucide-react';
 import { Album, Track } from '../types/music';
 import { MusicService } from '../services/musicService';
 import { useAudio } from '../context/AudioContext';
@@ -82,14 +82,6 @@ export const AllSongsPage: React.FC<AllSongsPageProps> = ({
               </button>
             </>
           )}
-
-          <a
-            href="#admin"
-            className="min-h-[42px] px-3.5 rounded-full bg-[#171717] hover:bg-neutral-800 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5 text-[#ED1025]" />
-            <span>এডমিন প্যানেলে গান যোগ করুন</span>
-          </a>
         </div>
       </div>
 
@@ -151,20 +143,13 @@ export const AllSongsPage: React.FC<AllSongsPageProps> = ({
           ))}
         </div>
       ) : (
-        <div className="p-10 text-center bg-neutral-50 rounded-2xl border border-dashed border-[#EAEAEA] space-y-3">
+        <div className="p-10 text-center bg-neutral-50 rounded-2xl border border-dashed border-[#EAEAEA] space-y-2">
           <p className="text-sm font-semibold text-[#171717]">
-            বর্তমানে কোনো গান আপলোড করা নেই (No Tracks Published)
+            শীঘ্রই নতুন গান প্রকাশিত হচ্ছে (New Tracks Coming Soon)
           </p>
-          <p className="text-xs text-[#6B7280] max-w-sm mx-auto">
-            এডমিন প্যানেলে যান এবং আপনার ড্রপবক্স লিঙ্ক দিয়ে গান আপলোড করুন।
+          <p className="text-xs text-[#6B7280] max-w-sm mx-auto font-bengali">
+            হ্যাবাজ্যাবা স্টুডিও লাইভের নতুন অরিজিনাল মাস্টার্স প্রস্তুতি চলছে। সাথেই থাকুন।
           </p>
-          <a
-            href="#admin"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#ED1025] text-white text-xs font-bold shadow-xs hover:bg-[#D90D20] transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>এডমিন প্যানেলে যান (Go to Admin)</span>
-          </a>
         </div>
       )}
     </div>

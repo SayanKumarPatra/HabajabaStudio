@@ -8,7 +8,6 @@ import { BottomNavigation } from './components/BottomNavigation';
 import { MiniPlayer } from './components/MiniPlayer';
 import { ExpandedPlayer } from './components/ExpandedPlayer';
 import { DropboxGuideModal } from './components/DropboxGuideModal';
-import { Lock } from 'lucide-react';
 import { HomePage } from './pages/HomePage';
 import { AllSongsPage } from './pages/AllSongsPage';
 import { ArtistsPage } from './pages/ArtistsPage';
@@ -118,7 +117,6 @@ function AppContent() {
       <AppHeader
         currentTab={currentTab}
         onNavigate={handleNavigate}
-        onOpenDropboxGuide={() => setIsDropboxGuideOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -180,7 +178,7 @@ function AppContent() {
         )}
 
         {currentTab === 'admin' && (
-          <AdminPage />
+          <AdminPage onOpenDropboxGuide={() => setIsDropboxGuideOpen(true)} />
         )}
       </main>
 
@@ -220,34 +218,25 @@ function AppContent() {
               >
                 Playlists
               </button>
-              <span className="text-neutral-300">·</span>
-              <button
-                onClick={() => setIsDropboxGuideOpen(true)}
-                className="hover:text-[#ED1025] transition-colors"
-              >
-                Dropbox Setup
-              </button>
             </div>
           </div>
 
           <div className="pt-3 border-t border-neutral-200/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-[#9CA3AF]">
-            <div className="flex items-center gap-1.5 font-bengali">
-              <span>© {new Date().getFullYear()} Habajaba Studio LIVE. সর্বস্বত্ব সংরক্ষিত (All rights reserved).</span>
+            <div className="flex items-center gap-1 font-bengali">
+              <span
+                onClick={() => handleNavigate('admin')}
+                className="cursor-default select-none"
+                title=""
+              >
+                ©
+              </span>
+              <span>{new Date().getFullYear()} Habajaba Studio LIVE. সর্বস্বত্ব সংরক্ষিত (All rights reserved).</span>
             </div>
 
-            {/* Discreet Admin Access: situated unobtrusively in copyright line */}
             <div className="flex items-center gap-2">
-              <span>Digital Master HQ</span>
+              <span>Digital Acoustic Master</span>
               <span className="text-neutral-300">·</span>
-              <button
-                onClick={() => handleNavigate('admin')}
-                className="text-neutral-400 hover:text-[#ED1025] opacity-40 hover:opacity-100 transition-all p-1 rounded flex items-center gap-1 group"
-                title="Studio HQ Management (Shortcut: Ctrl+Shift+A)"
-                aria-label="Studio Management"
-              >
-                <Lock className="w-3 h-3 group-hover:text-[#ED1025]" />
-                <span className="text-[10px] select-none">Studio</span>
-              </button>
+              <span>High-Fidelity Bengali Audio</span>
             </div>
           </div>
         </div>
