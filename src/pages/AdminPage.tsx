@@ -18,15 +18,22 @@ import {
   Eye,
   EyeOff,
   Image as ImageIcon,
+  Cloud,
+  Palette,
 } from 'lucide-react';
 import { HeroBannerConfig, Track } from '../types/music';
 import { MusicService } from '../services/musicService';
 import { analyzeAudioUrl, testAudioStreamability } from '../utils/dropbox';
 import { useAudio } from '../context/AudioContext';
 import { CoverImage } from '../components/CoverImage';
+import { MediaManagementSection } from '../components/MediaManagementSection';
+import { BrandingAdminSection } from '../components/BrandingAdminSection';
+import { FirebaseAdminSection } from '../components/FirebaseAdminSection';
 
 export const AdminPage: React.FC = () => {
   const { playTrack, isPlaying, currentTrack, togglePlay } = useAudio();
+
+  const [adminTab, setAdminTab] = useState<'media' | 'songs' | 'branding' | 'firebase'>('media');
 
   const [tracks, setTracks] = useState<Track[]>(() =>
     MusicService.getAllTracks('newest', true)
@@ -81,6 +88,22 @@ export const AdminPage: React.FC = () => {
     setPublished(true);
     setAudioTestResult(null);
     setIsFormOpen(true);
+  };
+
+  const handleOpenAddFormWithAudio = (url: string, dur?: string) => {
+    setEditingTrackId(null);
+    setTitle('');
+    setArtist('Habajaba Studio LIVE');
+    setAlbum('');
+    setGenre('Acoustic Live');
+    setCoverUrl(banner.bannerUrl || '/banner-default.svg');
+    setAudioUrl(url);
+    setDuration(dur || '');
+    setFeatured(false);
+    setPublished(true);
+    setAudioTestResult(null);
+    setIsFormOpen(true);
+    setAdminTab('songs');
   };
 
   const handleEditTrack = (t: Track) => {
@@ -242,99 +265,69 @@ export const AdminPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 1. Website 16:9 Hero Banner Settings */}
-      <section className="bg-white rounded-3xl p-6 border border-[#EAEAEA] shadow-xs space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-[#171717] flex items-center gap-2">
-            <ImageIcon className="w-4 h-4 text-[#ED1025]" />
-            <span>ওয়েবসাইট ব্যানার পরিবর্তন (16:9 YouTube Ratio Banner)</span>
-          </h2>
-          {bannerSavedAlert && (
-            <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 animate-in fade-in">
-              <Check className="w-4 h-4" /> ব্যানার সংরক্ষিত হয়েছে!
-            </span>
-          )}
-        </div>
+      {/* Admin Tab Switcher */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-[#EAEAEA] pb-3">
+        <button
+          onClick={() => setAdminTab('media')}
+          className={`min-h-[40px] px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            adminTab === 'media'
+              ? 'bg-[#ED1025] text-white shadow-xs'
+              : 'bg-neutral-100 text-[#171717] hover:bg-neutral-200'
+          }`}
+        >
+          <ImageIcon className="w-4 h-4" />
+          <span>মিডিয়া ও ব্যানার হাব (Media &amp; Banner Hub)</span>
+        </button>
 
-        <form onSubmit={handleSaveBanner} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-bold text-[#171717] block mb-1">
-                ব্যানারের শিরোনাম (Banner Title)
-              </label>
-              <input
-                type="text"
-                value={banner.title}
-                onChange={(e) => setBanner({ ...banner, title: e.target.value })}
-                className="w-full text-xs px-3 py-2.5 rounded-xl border border-[#EAEAEA] focus:border-[#ED1025] focus:outline-hidden"
-              />
-            </div>
+        <button
+          onClick={() => setAdminTab('songs')}
+          className={`min-h-[40px] px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            adminTab === 'songs'
+              ? 'bg-[#ED1025] text-white shadow-xs'
+              : 'bg-neutral-100 text-[#171717] hover:bg-neutral-200'
+          }`}
+        >
+          <Music className="w-4 h-4" />
+          <span>গান তালিকা ও আপলোড ({tracks.length} Tracks)</span>
+        </button>
 
-            <div>
-              <label className="text-xs font-bold text-[#171717] block mb-1">
-                ব্যানারের সাবটাইটেল (Subtitle)
-              </label>
-              <input
-                type="text"
-                value={banner.subtitle}
-                onChange={(e) => setBanner({ ...banner, subtitle: e.target.value })}
-                className="w-full text-xs px-3 py-2.5 rounded-xl border border-[#EAEAEA] focus:border-[#ED1025] focus:outline-hidden"
-              />
-            </div>
-          </div>
+        <button
+          onClick={() => setAdminTab('branding')}
+          className={`min-h-[40px] px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            adminTab === 'branding'
+              ? 'bg-[#ED1025] text-white shadow-xs'
+              : 'bg-neutral-100 text-[#171717] hover:bg-neutral-200'
+          }`}
+        >
+          <Palette className="w-4 h-4" />
+          <span>লোগো ও ব্র্যান্ডিং (Logo &amp; Branding)</span>
+        </button>
 
-          <div>
-            <label className="text-xs font-bold text-[#171717] block mb-1">
-              ব্যানার ছবির ইউআরএল (16:9 Banner Image URL)
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={banner.bannerUrl}
-                onChange={(e) => setBanner({ ...banner, bannerUrl: e.target.value })}
-                placeholder="e.g. /banner-default.svg or YouTube thumbnail URL"
-                className="flex-1 text-xs px-3 py-2.5 rounded-xl border border-[#EAEAEA] focus:border-[#ED1025] focus:outline-hidden"
-              />
-              <button
-                type="button"
-                onClick={() => setBanner({ ...banner, bannerUrl: '/banner-default.svg' })}
-                className="px-3 py-2 rounded-xl text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 text-[#171717] whitespace-nowrap"
-              >
-                Reset Default
-              </button>
-            </div>
-          </div>
+        <button
+          onClick={() => setAdminTab('firebase')}
+          className={`min-h-[40px] px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            adminTab === 'firebase'
+              ? 'bg-[#ED1025] text-white shadow-xs'
+              : 'bg-neutral-100 text-[#171717] hover:bg-neutral-200'
+          }`}
+        >
+          <Cloud className="w-4 h-4" />
+          <span>ফায়ারবেস ক্লাউড লাইভ (Firebase Live Server)</span>
+        </button>
+      </div>
 
-          {/* 16:9 Banner Live Preview */}
-          <div className="space-y-1">
-            <span className="text-[11px] font-bold text-[#6B7280] block">
-              ব্যানার লাইভ প্রিভিউ (16:9 Aspect Ratio Preview):
-            </span>
-            <div className="w-full max-w-xl aspect-video rounded-2xl overflow-hidden border border-[#EAEAEA] bg-neutral-100 relative shadow-inner">
-              <img
-                src={banner.bannerUrl || '/banner-default.svg'}
-                alt="Banner Preview"
-                referrerPolicy="no-referrer"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/banner-default.svg';
-                }}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
+      {/* Tab 1: Media & Assets Management Hub */}
+      {adminTab === 'media' && (
+        <MediaManagementSection
+          tracks={tracks}
+          onOpenSongFormWithAudio={handleOpenAddFormWithAudio}
+          onRefreshCatalog={refreshCatalog}
+        />
+      )}
 
-          <button
-            type="submit"
-            className="px-5 py-2.5 rounded-xl bg-[#ED1025] hover:bg-[#D90D20] text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
-          >
-            <Save className="w-4 h-4 text-white" />
-            <span>সংরক্ষণ করুন (Save Banner)</span>
-          </button>
-        </form>
-      </section>
-
-      {/* 2. Song Management List */}
-      <section className="bg-white rounded-3xl p-6 border border-[#EAEAEA] shadow-xs space-y-4">
+      {/* Tab 2: Song Management List */}
+      {adminTab === 'songs' && (
+        <section className="bg-white rounded-3xl p-6 border border-[#EAEAEA] shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h2 className="text-base font-bold text-[#171717] flex items-center gap-2">
@@ -488,6 +481,17 @@ export const AdminPage: React.FC = () => {
           </div>
         )}
       </section>
+      )}
+
+      {/* Tab 3: Official Logo & Branding Customizer */}
+      {adminTab === 'branding' && (
+        <BrandingAdminSection />
+      )}
+
+      {/* Tab 4: Firebase Real-Time Cloud Server */}
+      {adminTab === 'firebase' && (
+        <FirebaseAdminSection />
+      )}
 
       {/* 3. Add / Edit Track Modal */}
       {isFormOpen && (

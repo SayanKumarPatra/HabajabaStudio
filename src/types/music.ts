@@ -22,6 +22,12 @@ export interface HeroBannerConfig {
   featuredTrackId?: string;
 }
 
+export interface BrandingConfig {
+  logoUrl?: string;
+  studioName?: string;
+  tagline?: string;
+}
+
 export interface Album {
   id: string;
   title: string;

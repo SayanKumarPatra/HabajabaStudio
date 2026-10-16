@@ -1,10 +1,14 @@
+import { collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch } from 'firebase/firestore';
 import rawMusicData from '../data/music.json';
-import { Album, Artist, HeroBannerConfig, Playlist, Track } from '../types/music';
+import { Album, Artist, BrandingConfig, HeroBannerConfig, Playlist, Track } from '../types/music';
+import { getFirebaseFirestore, getActiveFirebaseConfig } from './firebaseConfig';
 
 const STORAGE_CATALOG_KEY = 'habajaba_admin_catalog_v2';
+const STORAGE_BRANDING_KEY = 'habajaba_admin_branding_v1';
 
 interface CatalogState {
   banner: HeroBannerConfig;
+  branding: BrandingConfig;
   tracks: Track[];
   albums: Album[];
   playlists: Playlist[];
@@ -18,6 +22,11 @@ const defaultState: CatalogState = {
     bannerUrl: '/banner-default.svg',
     featuredTrackId: '',
   },
+  branding: {
+    logoUrl: '',
+    studioName: 'Habajaba Studio LIVE',
+    tagline: 'অরিজিনাল বাংলা মিউজিক',
+  },
   tracks: (rawMusicData.tracks as Track[]) || [],
   albums: (rawMusicData.albums as Album[]) || [],
   playlists: (rawMusicData.playlists as Playlist[]) || [],
@@ -27,10 +36,14 @@ const defaultState: CatalogState = {
 function loadState(): CatalogState {
   try {
     const saved = localStorage.getItem(STORAGE_CATALOG_KEY);
+    const savedBranding = localStorage.getItem(STORAGE_BRANDING_KEY);
+    const branding = savedBranding ? JSON.parse(savedBranding) : defaultState.branding;
+
     if (saved) {
       const parsed = JSON.parse(saved);
       return {
         banner: parsed.banner || defaultState.banner,
+        branding: parsed.branding || branding,
         tracks: Array.isArray(parsed.tracks) ? parsed.tracks : [],
         albums: Array.isArray(parsed.albums) ? parsed.albums : [],
         playlists: Array.isArray(parsed.playlists) ? parsed.playlists : defaultState.playlists,
@@ -45,19 +58,108 @@ function loadState(): CatalogState {
 
 let catalogState: CatalogState = loadState();
 const listeners = new Set<() => void>();
+let isFirestoreInitialized = false;
+let unsubscribeSongs: (() => void) | null = null;
+let unsubscribeBanner: (() => void) | null = null;
+let unsubscribeBranding: (() => void) | null = null;
 
 function notifyListeners() {
   listeners.forEach((fn) => fn());
 }
 
-function saveState() {
+function saveStateLocally() {
   try {
     localStorage.setItem(STORAGE_CATALOG_KEY, JSON.stringify(catalogState));
+    if (catalogState.branding) {
+      localStorage.setItem(STORAGE_BRANDING_KEY, JSON.stringify(catalogState.branding));
+    }
   } catch (e) {
     console.warn('Failed to save catalog to localStorage:', e);
   }
   notifyListeners();
 }
+
+// Set up real-time Firebase Firestore synchronization
+export function initFirestoreSync() {
+  const firestoreInstance = getFirebaseFirestore();
+  if (!firestoreInstance) {
+    return false;
+  }
+
+  const { db } = firestoreInstance;
+  if (isFirestoreInitialized) return true;
+
+  try {
+    // 1. Real-time listener for Songs collection
+    const songsCol = collection(db, 'habajaba_songs');
+    unsubscribeSongs = onSnapshot(
+      songsCol,
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteTracks: Track[] = [];
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data() as Track;
+            remoteTracks.push({
+              ...data,
+              id: docSnap.id || data.id,
+            });
+          });
+          // Update tracks in state
+          catalogState.tracks = remoteTracks;
+          saveStateLocally();
+        }
+      },
+      (error) => {
+        console.warn('Firestore tracks listener error (falling back to local cache):', error);
+      }
+    );
+
+    // 2. Real-time listener for Hero Banner document
+    const bannerDoc = doc(db, 'habajaba_settings', 'banner');
+    unsubscribeBanner = onSnapshot(
+      bannerDoc,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data() as HeroBannerConfig;
+          if (data && data.bannerUrl) {
+            catalogState.banner = data;
+            saveStateLocally();
+          }
+        }
+      },
+      (error) => {
+        console.warn('Firestore banner listener error:', error);
+      }
+    );
+
+    // 3. Real-time listener for Branding document (custom logo, etc.)
+    const brandingDoc = doc(db, 'habajaba_settings', 'branding');
+    unsubscribeBranding = onSnapshot(
+      brandingDoc,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data() as BrandingConfig;
+          if (data) {
+            catalogState.branding = data;
+            saveStateLocally();
+          }
+        }
+      },
+      (error) => {
+        console.warn('Firestore branding listener error:', error);
+      }
+    );
+
+    isFirestoreInitialized = true;
+    return true;
+  } catch (err) {
+    console.error('Failed to setup Firestore listeners:', err);
+    return false;
+  }
+}
+
+// Auto-initialize Firestore sync on startup if config exists
+initFirestoreSync();
 
 export const MusicService = {
   subscribe(fn: () => void) {
@@ -67,13 +169,52 @@ export const MusicService = {
     };
   },
 
+  isFirebaseLive(): boolean {
+    return !!getActiveFirebaseConfig() && isFirestoreInitialized;
+  },
+
+  reconnectFirebase(): boolean {
+    if (unsubscribeSongs) unsubscribeSongs();
+    if (unsubscribeBanner) unsubscribeBanner();
+    if (unsubscribeBranding) unsubscribeBranding();
+    isFirestoreInitialized = false;
+    return initFirestoreSync();
+  },
+
   getHeroBanner(): HeroBannerConfig {
     return catalogState.banner;
   },
 
-  saveHeroBanner(banner: HeroBannerConfig) {
+  async saveHeroBanner(banner: HeroBannerConfig) {
     catalogState.banner = banner;
-    saveState();
+    saveStateLocally();
+
+    const firestoreInstance = getFirebaseFirestore();
+    if (firestoreInstance) {
+      try {
+        await setDoc(doc(firestoreInstance.db, 'habajaba_settings', 'banner'), banner);
+      } catch (e) {
+        console.warn('Failed to sync banner to Firestore:', e);
+      }
+    }
+  },
+
+  getBranding(): BrandingConfig {
+    return catalogState.branding || defaultState.branding;
+  },
+
+  async saveBranding(branding: BrandingConfig) {
+    catalogState.branding = branding;
+    saveStateLocally();
+
+    const firestoreInstance = getFirebaseFirestore();
+    if (firestoreInstance) {
+      try {
+        await setDoc(doc(firestoreInstance.db, 'habajaba_settings', 'branding'), branding);
+      } catch (e) {
+        console.warn('Failed to sync branding to Firestore:', e);
+      }
+    }
   },
 
   getAllTracks(
@@ -117,7 +258,7 @@ export const MusicService = {
       .filter((t): t is Track => t !== undefined);
   },
 
-  addTrack(track: Track) {
+  async addTrack(track: Track) {
     catalogState.tracks = [track, ...catalogState.tracks];
     // If track has an artist not in the artists list, add artist
     if (track.artist && !catalogState.artists.some((a) => a.name.toLowerCase() === track.artist.toLowerCase())) {
@@ -129,32 +270,57 @@ export const MusicService = {
         bio: `Artist recorded with Habajaba Studio LIVE.`,
       });
     }
-    saveState();
+    saveStateLocally();
+
+    const firestoreInstance = getFirebaseFirestore();
+    if (firestoreInstance) {
+      try {
+        await setDoc(doc(firestoreInstance.db, 'habajaba_songs', track.id), track);
+      } catch (e) {
+        console.warn('Failed to write track to Firestore:', e);
+      }
+    }
   },
 
-  updateTrack(updated: Track) {
+  async updateTrack(updated: Track) {
     catalogState.tracks = catalogState.tracks.map((t) => (t.id === updated.id ? updated : t));
-    saveState();
+    saveStateLocally();
+
+    const firestoreInstance = getFirebaseFirestore();
+    if (firestoreInstance) {
+      try {
+        await setDoc(doc(firestoreInstance.db, 'habajaba_songs', updated.id), updated);
+      } catch (e) {
+        console.warn('Failed to update track in Firestore:', e);
+      }
+    }
   },
 
-  deleteTrack(id: string) {
+  async deleteTrack(id: string) {
     catalogState.tracks = catalogState.tracks.filter((t) => t.id !== id);
-    // Also remove from banner if it was featured
     if (catalogState.banner.featuredTrackId === id) {
       catalogState.banner.featuredTrackId = '';
     }
-    saveState();
+    saveStateLocally();
+
+    const firestoreInstance = getFirebaseFirestore();
+    if (firestoreInstance) {
+      try {
+        await deleteDoc(doc(firestoreInstance.db, 'habajaba_songs', id));
+      } catch (e) {
+        console.warn('Failed to delete track from Firestore:', e);
+      }
+    }
   },
 
-  togglePublishTrack(id: string) {
-    catalogState.tracks = catalogState.tracks.map((t) =>
-      t.id === id ? { ...t, published: !t.published } : t
-    );
-    saveState();
+  async togglePublishTrack(id: string) {
+    const track = catalogState.tracks.find((t) => t.id === id);
+    if (!track) return;
+    const updated = { ...track, published: !track.published };
+    await this.updateTrack(updated);
   },
 
   getAlbums(): Album[] {
-    // Generate dynamic albums based on tracks with album names
     const albumMap = new Map<string, Album>();
     catalogState.albums.forEach((a) => albumMap.set(a.title.toLowerCase(), a));
 
@@ -288,8 +454,55 @@ export const MusicService = {
     return JSON.stringify(catalogState, null, 2);
   },
 
+  async updateTrackCover(trackId: string, coverUrl: string) {
+    const track = catalogState.tracks.find((t) => t.id === trackId);
+    if (track) {
+      await this.updateTrack({ ...track, coverUrl });
+    }
+  },
+
   resetCatalog() {
     catalogState = { ...defaultState };
-    saveState();
+    saveStateLocally();
+  },
+
+  // Sync all current local songs & banner into Firestore in one click
+  async syncAllLocalToFirestore(): Promise<{ success: boolean; count: number; error?: string }> {
+    const firestoreInstance = getFirebaseFirestore();
+    if (!firestoreInstance) {
+      return {
+        success: false,
+        count: 0,
+        error: 'Firebase is not connected. Please enter your Firebase configuration in Admin first.',
+      };
+    }
+
+    try {
+      const { db } = firestoreInstance;
+      const batch = writeBatch(db);
+
+      // Write hero banner
+      const bannerRef = doc(db, 'habajaba_settings', 'banner');
+      batch.set(bannerRef, catalogState.banner);
+
+      // Write branding
+      if (catalogState.branding) {
+        const brandingRef = doc(db, 'habajaba_settings', 'branding');
+        batch.set(brandingRef, catalogState.branding);
+      }
+
+      // Write each track
+      let count = 0;
+      for (const track of catalogState.tracks) {
+        const trackRef = doc(db, 'habajaba_songs', track.id);
+        batch.set(trackRef, track);
+        count++;
+      }
+
+      await batch.commit();
+      return { success: true, count };
+    } catch (err: any) {
+      return { success: false, count: 0, error: err.message || 'Firestore batch write failed' };
+    }
   },
 };

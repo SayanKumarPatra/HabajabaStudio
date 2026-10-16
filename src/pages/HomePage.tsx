@@ -62,8 +62,8 @@ export const HomePage: React.FC<HomePageProps> = ({
     <div className="space-y-4 sm:space-y-6 pb-2 sm:pb-6">
       {/* 1. Official 16:9 YouTube Format Banner - Clean, High Quality, Zero Black Box */}
       <section className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden border border-[#EAEAEA] shadow-xs bg-white group">
-        {/* Strictly maintaining 16:9 YouTube aspect ratio, calibrated for mobile ergonomics */}
-        <div className="relative aspect-[16/9] w-full max-h-[210px] xs:max-h-[240px] sm:max-h-[300px] md:max-h-[380px] overflow-hidden bg-neutral-50 flex items-center justify-center">
+        {/* Flatter widescreen ratio for mobile ergonomics, prevents pushing songs down */}
+        <div className="relative aspect-[21/9] xs:aspect-[2.35/1] sm:aspect-[2.5/1] md:aspect-[16/9] w-full max-h-[135px] xs:max-h-[150px] sm:max-h-[220px] md:max-h-[340px] overflow-hidden bg-neutral-50 flex items-center justify-center">
           <img
             src={banner.bannerUrl || '/banner-default.svg'}
             alt="Habajaba Studio LIVE Official Banner"
@@ -75,32 +75,20 @@ export const HomePage: React.FC<HomePageProps> = ({
           />
 
           {/* Top-Left Live Studio Pill (Clean White, Zero Dark Gradient) */}
-          <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-md text-[#ED1025] text-[10px] sm:text-xs font-bold border border-white/80 shadow-xs">
+          <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-white/95 backdrop-blur-md text-[#ED1025] text-[9.5px] sm:text-xs font-bold border border-white/80 shadow-xs">
             <Radio className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#ED1025] animate-pulse" />
             <span className="font-semibold tracking-wide">Habajaba LIVE</span>
           </div>
 
-          {/* Top-Right Quick Admin / Edit Button (Clean Pill, Zero Dark Box) */}
-          <div className="absolute top-2.5 right-2.5 sm:top-4 sm:right-4 z-10">
-            <button
-              onClick={() => onNavigate('admin')}
-              className="h-7 sm:h-8 px-2 sm:px-2.5 rounded-full bg-white/95 hover:bg-white text-[#171717] hover:text-[#ED1025] text-[10px] sm:text-xs font-bold flex items-center gap-1 shadow-xs border border-white/80 transition-all active:scale-95"
-              title="Change banner or add songs in Admin Panel"
-            >
-              <Settings className="w-3 h-3 text-[#ED1025]" />
-              <span className="font-bengali">এডমিন</span>
-            </button>
-          </div>
-
           {/* Bottom-Right Play Action (Clean Floating Button, Zero Dark Gradient) */}
           {heroTrack && (
-            <div className="absolute bottom-2.5 right-2.5 sm:bottom-4 sm:right-4 z-10">
+            <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-4 z-10">
               <button
                 onClick={handleHeroPlay}
-                className="h-8 px-3 sm:h-10 sm:px-4 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-[#ED1025]/30 active:scale-95 transition-all"
+                className="h-7 px-2.5 sm:h-10 sm:px-4 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-[#ED1025]/30 active:scale-95 transition-all"
                 title={`Play ${heroTrack.title}`}
               >
-                <Play className="w-3.5 h-3.5 fill-current translate-x-0.5" />
+                <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current translate-x-0.5" />
                 <span>Play</span>
               </button>
             </div>

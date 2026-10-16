@@ -8,7 +8,7 @@ import { BottomNavigation } from './components/BottomNavigation';
 import { MiniPlayer } from './components/MiniPlayer';
 import { ExpandedPlayer } from './components/ExpandedPlayer';
 import { DropboxGuideModal } from './components/DropboxGuideModal';
-
+import { Lock } from 'lucide-react';
 import { HomePage } from './pages/HomePage';
 import { AllSongsPage } from './pages/AllSongsPage';
 import { ArtistsPage } from './pages/ArtistsPage';
@@ -52,7 +52,20 @@ function AppContent() {
 
     handleHashChange();
     window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+
+    // Discreet shortcut to jump into Admin (Ctrl+Shift+A or Cmd+Shift+A)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        handleNavigate('admin');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleNavigate = (tab: NavigationTab) => {
@@ -171,33 +184,71 @@ function AppContent() {
         )}
       </main>
 
-      {/* Desktop Clean Footer (Hidden on mobile to eliminate vertical scroll spill) */}
-      <footer className="hidden md:block border-t border-[#EAEAEA] bg-neutral-50/70 py-6 px-4 text-center text-xs text-[#6B7280]">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex flex-col sm:flex-row items-center gap-2">
-            <span className="font-bold text-[#171717]">Habajaba Studio LIVE</span>
-            <span className="hidden sm:inline" aria-hidden="true">·</span>
-            <span className="font-bengali">অরিজিনাল বাংলা মিউজিক স্টুডিও</span>
+      {/* Rich Footer with Descriptions, Copyright & Discreet Admin Access */}
+      <footer className="border-t border-[#EAEAEA] bg-neutral-50/90 py-6 px-4 text-xs text-[#6B7280]">
+        <div className="max-w-7xl mx-auto space-y-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-[#ED1025] tracking-tight">HabaJaba Studio LIVE</span>
+                <span className="text-[#9CA3AF]">·</span>
+                <span className="font-bold text-[#171717] font-bengali">অরিজিনাল বাংলা মিউজিক প্ল্যাটফর্ম</span>
+              </div>
+              <p className="text-[11px] text-[#6B7280] max-w-xl font-bengali leading-relaxed">
+                লাইভ অ্যাকোস্টিক সেশন, স্টুডিও মাস্টার্স ও অরিজিনাল বাংলা গানের ডিজিটাল হোম। সকল অডিও ড্রপবক্স ডিরেক্ট স্ট্রিমিং এবং ফায়ারবেস রিয়েল-টাইম ক্লাউড সিঙ্ক দ্বারা পরিচালিত।
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5 text-[11px]">
+              <button
+                onClick={() => handleNavigate('songs')}
+                className="hover:text-[#ED1025] transition-colors"
+              >
+                All Songs
+              </button>
+              <span className="text-neutral-300">·</span>
+              <button
+                onClick={() => handleNavigate('artists')}
+                className="hover:text-[#ED1025] transition-colors"
+              >
+                Artists
+              </button>
+              <span className="text-neutral-300">·</span>
+              <button
+                onClick={() => handleNavigate('playlists')}
+                className="hover:text-[#ED1025] transition-colors"
+              >
+                Playlists
+              </button>
+              <span className="text-neutral-300">·</span>
+              <button
+                onClick={() => setIsDropboxGuideOpen(true)}
+                className="hover:text-[#ED1025] transition-colors"
+              >
+                Dropbox Setup
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 text-[11px]">
-            <button
-              onClick={() => handleNavigate('admin')}
-              className="text-[#ED1025] font-bold hover:underline"
-            >
-              এডমিন প্যানেল (Admin Panel)
-            </button>
-            <span aria-hidden="true">·</span>
-            <button
-              onClick={() => setIsDropboxGuideOpen(true)}
-              className="text-[#6B7280] hover:text-[#ED1025] transition-colors"
-            >
-              Dropbox Setup
-            </button>
-            <span aria-hidden="true">·</span>
-            <span>Local Device Storage</span>
-            <span aria-hidden="true">·</span>
-            <span>© {new Date().getFullYear()} Habajaba Studio LIVE</span>
+          <div className="pt-3 border-t border-neutral-200/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-[#9CA3AF]">
+            <div className="flex items-center gap-1.5 font-bengali">
+              <span>© {new Date().getFullYear()} Habajaba Studio LIVE. সর্বস্বত্ব সংরক্ষিত (All rights reserved).</span>
+            </div>
+
+            {/* Discreet Admin Access: situated unobtrusively in copyright line */}
+            <div className="flex items-center gap-2">
+              <span>Digital Master HQ</span>
+              <span className="text-neutral-300">·</span>
+              <button
+                onClick={() => handleNavigate('admin')}
+                className="text-neutral-400 hover:text-[#ED1025] opacity-40 hover:opacity-100 transition-all p-1 rounded flex items-center gap-1 group"
+                title="Studio HQ Management (Shortcut: Ctrl+Shift+A)"
+                aria-label="Studio Management"
+              >
+                <Lock className="w-3 h-3 group-hover:text-[#ED1025]" />
+                <span className="text-[10px] select-none">Studio</span>
+              </button>
+            </div>
           </div>
         </div>
       </footer>
