@@ -1,77 +1,223 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%">
   <defs>
-    <!-- Background Gradient -->
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Radiant Studio Canvas Gradient (Clean, Light, Warm, Zero Black Box) -->
+    <linearGradient id="studioBg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#FFFFFF" />
-      <stop offset="60%" stop-color="#FFF5F5" />
-      <stop offset="100%" stop-color="#FFE8EA" />
+      <stop offset="45%" stop-color="#FFF9F9" />
+      <stop offset="80%" stop-color="#FFF0F1" />
+      <stop offset="100%" stop-color="#FFE4E6" />
     </linearGradient>
 
-    <!-- Crimson Brand Accent Gradient -->
-    <linearGradient id="redAccent" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#ED1025" />
-      <stop offset="100%" stop-color="#C80A1C" />
+    <!-- Vibrant Brand Red Gradients -->
+    <linearGradient id="brandRedGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF2438" />
+      <stop offset="40%" stop-color="#ED1025" />
+      <stop offset="100%" stop-color="#C50012" />
     </linearGradient>
+
+    <linearGradient id="warmRedGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF3B4E" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#ED1025" stop-opacity="0.95" />
+    </linearGradient>
+
+    <linearGradient id="softRedRibbon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ED1025" stop-opacity="0.12" />
+      <stop offset="50%" stop-color="#ED1025" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#ED1025" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Guitar Body Gradient -->
+    <linearGradient id="guitarWood" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF6B7A" />
+      <stop offset="45%" stop-color="#ED1025" />
+      <stop offset="100%" stop-color="#8F0510" />
+    </linearGradient>
+
+    <linearGradient id="guitarInner" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF5F5" />
+      <stop offset="100%" stop-color="#FFE0E3" />
+    </linearGradient>
+
+    <!-- Soft Drop Shadow for Studio Floating Elements -->
+    <filter id="softShadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#ED1025" flood-opacity="0.16" />
+    </filter>
+
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#ED1025" flood-opacity="0.2" />
+    </filter>
   </defs>
 
-  <!-- Clean Light Canvas -->
-  <rect width="1280" height="720" fill="url(#bgGrad)" />
+  <!-- Clean Radiant Canvas -->
+  <rect width="1920" height="1080" fill="url(#studioBg)" />
 
-  <!-- Subtle Acoustic Sound Wave / Vinyl Arcs -->
-  <g opacity="0.08" stroke="#ED1025" fill="none">
-    <circle cx="1150" cy="360" r="160" stroke-width="2" />
-    <circle cx="1150" cy="360" r="260" stroke-width="3" />
-    <circle cx="1150" cy="360" r="380" stroke-width="2" />
-    <circle cx="1150" cy="360" r="520" stroke-width="4" stroke-dasharray="12 12" />
-    <circle cx="1150" cy="360" r="680" stroke-width="2" />
+  <!-- Flowing Dynamic Ambient Ribbons (Music Soundwaves) -->
+  <path d="M 0 350 C 400 200, 800 500, 1300 320 C 1650 200, 1850 350, 1920 300 L 1920 1080 L 0 1080 Z" fill="url(#softRedRibbon)" />
+  <path d="M 0 650 C 350 500, 750 820, 1200 680 C 1550 560, 1800 750, 1920 700 L 1920 1080 L 0 1080 Z" fill="#ED1025" fill-opacity="0.04" />
+
+  <!-- Acoustic Ribbon Waves -->
+  <g fill="none" stroke="#ED1025" opacity="0.35">
+    <path d="M -50 480 C 300 380, 700 620, 1150 490 C 1550 370, 1800 560, 2000 480" stroke-width="3" />
+    <path d="M -50 520 C 320 420, 720 660, 1180 530 C 1580 410, 1820 600, 2000 520" stroke-width="1.5" stroke-dasharray="12 8" />
+    <path d="M -50 560 C 350 460, 750 700, 1210 570 C 1610 450, 1850 640, 2000 560" stroke-width="2.5" />
+    <path d="M -50 600 C 380 500, 780 740, 1240 610 C 1640 490, 1880 680, 2000 600" stroke-width="1" />
   </g>
 
-  <!-- Left Elegant Brand Frame & Poster Card -->
-  <g transform="translate(100, 100)">
-    <!-- Vertical Red Card from Reference Image -->
-    <rect x="0" y="0" width="280" height="520" rx="20" fill="#ED1025" />
-    <rect x="14" y="14" width="252" height="492" rx="14" fill="none" stroke="#FFFFFF" stroke-width="6" />
-    <rect x="22" y="22" width="236" height="476" rx="10" fill="none" stroke="#FFFFFF" stroke-width="2" />
+  <!-- Geometric Sound Frequency Equalizer Graphic (Top-Right) -->
+  <g transform="translate(1480, 140)" opacity="0.2">
+    <rect x="0" y="80" width="8" height="60" rx="4" fill="#ED1025" />
+    <rect x="18" y="40" width="8" height="100" rx="4" fill="#ED1025" />
+    <rect x="36" y="20" width="8" height="120" rx="4" fill="#ED1025" />
+    <rect x="54" y="60" width="8" height="80" rx="4" fill="#ED1025" />
+    <rect x="72" y="10" width="8" height="130" rx="4" fill="#ED1025" />
+    <rect x="90" y="50" width="8" height="90" rx="4" fill="#ED1025" />
+    <rect x="108" y="75" width="8" height="65" rx="4" fill="#ED1025" />
+    <rect x="126" y="30" width="8" height="110" rx="4" fill="#ED1025" />
+    <rect x="144" y="90" width="8" height="50" rx="4" fill="#ED1025" />
+    <rect x="162" y="15" width="8" height="125" rx="4" fill="#ED1025" />
+    <rect x="180" y="65" width="8" height="75" rx="4" fill="#ED1025" />
+    <rect x="198" y="35" width="8" height="105" rx="4" fill="#ED1025" />
+    <rect x="216" y="70" width="8" height="70" rx="4" fill="#ED1025" />
+  </g>
 
-    <!-- White Logo inside Poster Card -->
-    <g transform="translate(140, 240)">
-      <g transform="translate(0, -50)">
-        <rect x="-30" y="-36" width="18" height="62" rx="9" fill="#FFFFFF" />
-        <rect x="12" y="-48" width="18" height="76" rx="9" fill="#FFFFFF" />
-        <path d="M -46 -8 C -36 12, 24 20, 50 -2" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" />
-        <path d="M -46 -8 C -48 -14, -40 -17, -37 -14" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" />
-        <circle cx="55" cy="-4" r="6" fill="#FFFFFF" />
-      </g>
-      <text x="0" y="55" text-anchor="middle" font-family="'Inter', sans-serif" font-weight="900" font-size="44" fill="#FFFFFF">HabaJaba</text>
+  <!-- LEFT HERO SECTION: Iconic HabaJaba Studio LIVE Poster & Brand Lockup -->
+  <g transform="translate(140, 180)">
+    <!-- Red Floating Brand Badge -->
+    <g filter="url(#softShadow)">
+      <rect x="0" y="0" width="220" height="52" rx="26" fill="url(#brandRedGrad)" />
+      <!-- Pulsing Dot -->
+      <circle cx="34" cy="26" r="8" fill="#FFFFFF" />
+      <circle cx="34" cy="26" r="14" fill="#FFFFFF" opacity="0.3" />
+      <text x="60" y="34" font-family="'Inter', sans-serif" font-weight="900" font-size="20" fill="#FFFFFF" letter-spacing="2">OFFICIAL LIVE</text>
+    </g>
+
+    <!-- Main Title: HabaJaba -->
+    <g transform="translate(0, 160)">
+      <text x="0" y="0" font-family="'Inter', -apple-system, sans-serif" font-weight="900" font-size="124" fill="#171717" letter-spacing="-3">HabaJaba</text>
       
-      <!-- Studio LIVE lockup -->
-      <g transform="translate(0, 85)">
-        <line x1="-95" y1="-4" x2="-60" y2="-4" stroke="#FFFFFF" stroke-width="2" />
-        <text x="-22" y="0" text-anchor="middle" font-family="'Inter', sans-serif" font-weight="800" font-size="16" fill="#FFFFFF">Studio</text>
-        <rect x="10" y="-14" width="46" height="20" rx="4" fill="#171717" />
-        <text x="33" y="0" text-anchor="middle" font-family="'Inter', sans-serif" font-weight="900" font-size="12" fill="#FFFFFF">LIVE</text>
-        <line x1="62" y1="-4" x2="95" y2="-4" stroke="#FFFFFF" stroke-width="2" />
+      <!-- Studio LIVE Emblem Block -->
+      <g transform="translate(0, 35)">
+        <text x="0" y="45" font-family="'Inter', sans-serif" font-weight="800" font-size="52" fill="#ED1025" letter-spacing="-0.5">STUDIO</text>
+        <g transform="translate(230, -5)" filter="url(#softShadow)">
+          <rect x="0" y="0" width="160" height="64" rx="18" fill="url(#brandRedGrad)" />
+          <text x="80" y="44" text-anchor="middle" font-family="'Inter', sans-serif" font-weight="900" font-size="34" fill="#FFFFFF" letter-spacing="2">LIVE</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- Bengali Brand Tagline -->
+    <g transform="translate(0, 310)">
+      <text x="0" y="0" font-family="'Hind Siliguri', 'Inter', sans-serif" font-weight="700" font-size="44" fill="#171717">অরিজিনাল বাংলা মিউজিক স্টুডিও</text>
+      <text x="0" y="44" font-family="'Hind Siliguri', 'Inter', sans-serif" font-weight="600" font-size="26" fill="#ED1025">হবজব স্টুডিও লাইভ · সুর ও ছন্দের মেলবন্ধন</text>
+      <text x="0" y="86" font-family="'Inter', sans-serif" font-weight="500" font-size="22" fill="#6B7280">Original Bengali Acoustic Sessions, Folk Fusion &amp; Live Performances</text>
+    </g>
+
+    <!-- Brand Decorative Accent Pill & Musical Highlights -->
+    <g transform="translate(0, 440)">
+      <rect x="0" y="0" width="140" height="6" rx="3" fill="#ED1025" />
+      <g transform="translate(170, -12)">
+        <circle cx="20" cy="15" r="14" fill="#ED1025" opacity="0.1" />
+        <path d="M 16 11 L 24 15 L 16 19 Z" fill="#ED1025" />
+        <text x="46" y="20" font-family="'Inter', sans-serif" font-weight="700" font-size="16" fill="#171717">YouTube 16:9 Audio Sessions</text>
       </g>
     </g>
   </g>
 
-  <!-- Right Typography & Brand Presentation -->
-  <g transform="translate(440, 240)">
-    <!-- Red Tag -->
-    <rect x="0" y="-70" width="180" height="36" rx="18" fill="#ED1025" />
-    <text x="90" y="-46" text-anchor="middle" font-family="'Inter', sans-serif" font-weight="800" font-size="14" fill="#FFFFFF" letter-spacing="1">OFFICIAL LIVE</text>
+  <!-- RIGHT HERO SECTION: Aesthetic Acoustic Studio Art Composition -->
+  <g transform="translate(1320, 520)" filter="url(#cardShadow)">
+    <!-- Elegant White Stage Circle Backdrop -->
+    <circle cx="0" cy="0" r="360" fill="#FFFFFF" stroke="#F1F1F1" stroke-width="4" />
+    <circle cx="0" cy="0" r="340" fill="none" stroke="#ED1025" stroke-width="2" opacity="0.25" stroke-dasharray="16 12" />
+    <circle cx="0" cy="0" r="310" fill="#FFF8F8" />
 
-    <!-- Main Title -->
-    <text x="0" y="20" font-family="'Inter', sans-serif" font-weight="900" font-size="76" fill="#171717" letter-spacing="-2">HABAJABA</text>
-    <text x="440" y="20" font-family="'Inter', sans-serif" font-weight="900" font-size="76" fill="#ED1025" letter-spacing="-2">LIVE</text>
+    <!-- Stylized Acoustic Guitar Body -->
+    <g transform="translate(-50, -40) rotate(-22)">
+      <!-- Guitar Upper & Lower Bout Silhouette -->
+      <path d="M -110 -150 C -60 -180, 60 -180, 110 -150 C 150 -125, 150 -60, 100 -20 C 70 5, 80 40, 120 70 C 170 110, 160 210, 100 260 C 40 310, -40 310, -100 260 C -160 210, -170 110, -120 70 C -80 40, -70 5, -100 -20 C -150 -60, -150 -125, -110 -150 Z"
+            fill="url(#guitarWood)" filter="url(#softShadow)" />
 
-    <!-- Bengali Tagline -->
-    <text x="0" y="85" font-family="'Hind Siliguri', 'Inter', sans-serif" font-weight="700" font-size="34" fill="#374151">অরিজিনাল বাংলা মিউজিক স্টুডিও</text>
+      <!-- Guitar Soundboard Inner Glow -->
+      <path d="M -90 -130 C -50 -155, 50 -155, 90 -130 C 125 -110, 125 -50, 80 -15 C 50 10, 60 45, 100 75 C 140 110, 130 190, 80 230 C 30 270, -30 270, -80 230 C -130 190, -140 110, -100 75 C -60 45, -50 10, -80 -15 C -125 -50, -125 -110, -90 -130 Z"
+            fill="url(#guitarInner)" opacity="0.9" />
 
-    <!-- Subtitle Description -->
-    <text x="0" y="130" font-family="'Inter', sans-serif" font-weight="500" font-size="20" fill="#6B7280">Original Bengali Acoustic Sessions, Folk Fusion &amp; Independent Music</text>
-    
-    <!-- Accent Line -->
-    <rect x="0" y="165" width="120" height="6" rx="3" fill="#ED1025" />
+      <!-- Soundhole Rosette -->
+      <circle cx="0" cy="40" r="48" fill="#ED1025" />
+      <circle cx="0" cy="40" r="44" fill="#FFFFFF" />
+      <circle cx="0" cy="40" r="38" fill="url(#brandRedGrad)" />
+      <circle cx="0" cy="40" r="30" fill="#171717" />
+
+      <!-- Guitar Neck & Fretboard extending upward -->
+      <rect x="-18" y="-360" width="36" height="240" rx="6" fill="#ED1025" />
+      <!-- Frets -->
+      <line x1="-16" y1="-320" x2="16" y2="-320" stroke="#FFFFFF" stroke-width="3" opacity="0.8" />
+      <line x1="-16" y1="-280" x2="16" y2="-280" stroke="#FFFFFF" stroke-width="3" opacity="0.8" />
+      <line x1="-16" y1="-240" x2="16" y2="-240" stroke="#FFFFFF" stroke-width="3" opacity="0.8" />
+      <line x1="-16" y1="-200" x2="16" y2="-200" stroke="#FFFFFF" stroke-width="3" opacity="0.8" />
+      <line x1="-16" y1="-160" x2="16" y2="-160" stroke="#FFFFFF" stroke-width="3" opacity="0.8" />
+
+      <!-- Strings -->
+      <line x1="-10" y1="-360" x2="-10" y2="120" stroke="#FFFFFF" stroke-width="1.8" opacity="0.9" />
+      <line x1="-5" y1="-360" x2="-5" y2="120" stroke="#FFFFFF" stroke-width="1.5" opacity="0.9" />
+      <line x1="0" y1="-360" x2="0" y2="120" stroke="#FFFFFF" stroke-width="1.5" opacity="0.9" />
+      <line x1="5" y1="-360" x2="5" y2="120" stroke="#FFFFFF" stroke-width="1.5" opacity="0.9" />
+      <line x1="10" y1="-360" x2="10" y2="120" stroke="#FFFFFF" stroke-width="1.8" opacity="0.9" />
+
+      <!-- Bridge -->
+      <rect x="-35" y="120" width="70" height="22" rx="6" fill="#8F0510" />
+      <rect x="-24" y="125" width="48" height="6" rx="2" fill="#FFFFFF" />
+    </g>
+
+    <!-- Studio Condenser Microphone Front Accent -->
+    <g transform="translate(130, 40) scale(1.15)" filter="url(#softShadow)">
+      <!-- Microphone Stand -->
+      <rect x="-8" y="110" width="16" height="150" rx="8" fill="#ED1025" />
+      <ellipse cx="0" cy="260" rx="55" ry="16" fill="#ED1025" />
+
+      <!-- Shock Mount Ring -->
+      <circle cx="0" cy="50" r="58" fill="none" stroke="#ED1025" stroke-width="6" />
+      <circle cx="0" cy="50" r="50" fill="none" stroke="#FFFFFF" stroke-width="3" />
+
+      <!-- Studio Mic Capsule Body -->
+      <rect x="-26" y="0" width="52" height="100" rx="26" fill="url(#brandRedGrad)" />
+      <!-- Mesh Screen Top Half -->
+      <rect x="-26" y="0" width="52" height="56" rx="26" fill="#FFFFFF" opacity="0.92" />
+      <line x1="-24" y1="20" x2="24" y2="20" stroke="#ED1025" stroke-width="2" opacity="0.4" />
+      <line x1="-24" y1="36" x2="24" y2="36" stroke="#ED1025" stroke-width="2" opacity="0.4" />
+      <line x1="0" y1="6" x2="0" y2="50" stroke="#ED1025" stroke-width="2" opacity="0.4" />
+
+      <!-- Red Recording Status Indicator -->
+      <circle cx="0" cy="74" r="5" fill="#FFFFFF" />
+    </g>
+
+    <!-- Floating Crisp Musical Notes (Brand Red & Pure White) -->
+    <!-- Note 1 -->
+    <g transform="translate(-240, -180) scale(1.6)" filter="url(#softShadow)">
+      <circle cx="15" cy="50" r="11" fill="#ED1025" />
+      <circle cx="45" cy="38" r="11" fill="#ED1025" />
+      <rect x="23" y="10" width="6" height="40" fill="#ED1025" />
+      <rect x="53" y="-2" width="6" height="40" fill="#ED1025" />
+      <polygon points="23,10 59,-2 59,7 23,19" fill="#ED1025" />
+    </g>
+
+    <!-- Note 2 -->
+    <g transform="translate(-260, 140) scale(1.4)" filter="url(#softShadow)">
+      <circle cx="20" cy="40" r="11" fill="#ED1025" />
+      <rect x="28" y="10" width="5" height="30" fill="#ED1025" />
+      <path d="M 33 10 C 46 14, 48 26, 42 32" fill="none" stroke="#ED1025" stroke-width="5" stroke-linecap="round" />
+    </g>
+
+    <!-- Note 3 -->
+    <g transform="translate(180, -220) scale(1.5)" filter="url(#softShadow)">
+      <circle cx="15" cy="45" r="11" fill="#ED1025" />
+      <circle cx="45" cy="32" r="11" fill="#ED1025" />
+      <rect x="23" y="8" width="5" height="37" fill="#ED1025" />
+      <rect x="53" y="-5" width="5" height="37" fill="#ED1025" />
+      <polygon points="23,8 58,-5 58,4 23,17" fill="#ED1025" />
+    </g>
+  </g>
+
+  <!-- Clean Subtle Brand Watermark (Bottom Right) -->
+  <g transform="translate(1640, 1020)" opacity="0.6">
+    <text x="0" y="0" text-anchor="end" font-family="'Inter', sans-serif" font-weight="700" font-size="16" fill="#171717">HABAJABA STUDIO LIVE © OFFICIAL</text>
   </g>
 </svg>

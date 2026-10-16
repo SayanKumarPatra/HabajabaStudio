@@ -59,63 +59,57 @@ export const HomePage: React.FC<HomePageProps> = ({
   };
 
   return (
-    <div className="space-y-5 sm:space-y-6 pb-6">
-      {/* 1. Official 16:9 YouTube Format Banner - Clean & Light (Zero Black Box) */}
+    <div className="space-y-4 sm:space-y-6 pb-2 sm:pb-6">
+      {/* 1. Official 16:9 YouTube Format Banner - Clean, High Quality, Zero Black Box */}
       <section className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden border border-[#EAEAEA] shadow-xs bg-white group">
-        {/* Strictly maintaining 16:9 YouTube aspect ratio, capped for mobile ergonomics */}
-        <div className="relative aspect-video w-full max-h-[200px] sm:max-h-[280px] md:max-h-[360px] overflow-hidden bg-neutral-50">
+        {/* Strictly maintaining 16:9 YouTube aspect ratio, calibrated for mobile ergonomics */}
+        <div className="relative aspect-[16/9] w-full max-h-[210px] xs:max-h-[240px] sm:max-h-[300px] md:max-h-[380px] overflow-hidden bg-neutral-50 flex items-center justify-center">
           <img
             src={banner.bannerUrl || '/banner-default.svg'}
-            alt="Habajaba Studio LIVE Banner"
+            alt="Habajaba Studio LIVE Official Banner"
             referrerPolicy="no-referrer"
             onError={(e) => {
               (e.target as HTMLImageElement).src = '/banner-default.svg';
             }}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-101"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
           />
 
-          {/* Clean Floating Bottom Glass Strip - Minimalist, No Heavy Black Scrim */}
-          <div className="absolute inset-x-0 bottom-0 p-2 sm:p-4 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex items-end justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/25 backdrop-blur-md text-white text-[9px] sm:text-xs font-bold mb-0.5">
-                <Radio className="w-2.5 h-2.5 text-[#ED1025] animate-pulse" />
-                <span>Habajaba Studio LIVE</span>
-              </div>
-              <h1 className="text-sm sm:text-xl md:text-2xl font-black text-white leading-tight drop-shadow-sm truncate">
-                {banner.title || 'Habajaba Studio LIVE'}
-              </h1>
-              <p className="text-[10px] sm:text-xs text-white/90 font-medium font-bengali truncate hidden xs:block">
-                {banner.subtitle || 'অরিজিনাল বাংলা গান · Original Bengali Music'}
-              </p>
-            </div>
+          {/* Top-Left Live Studio Pill (Clean White, Zero Dark Gradient) */}
+          <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-md text-[#ED1025] text-[10px] sm:text-xs font-bold border border-white/80 shadow-xs">
+            <Radio className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#ED1025] animate-pulse" />
+            <span className="font-semibold tracking-wide">Habajaba LIVE</span>
+          </div>
 
-            {/* Quick Actions */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              {heroTrack && (
-                <button
-                  onClick={handleHeroPlay}
-                  className="min-h-[36px] sm:min-h-[42px] px-3.5 sm:px-5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-sm shadow-[#ED1025]/30 active:scale-95 transition-all"
-                >
-                  <Play className="w-3.5 h-3.5 fill-current translate-x-0.5" />
-                  <span>Play</span>
-                </button>
-              )}
+          {/* Top-Right Quick Admin / Edit Button (Clean Pill, Zero Dark Box) */}
+          <div className="absolute top-2.5 right-2.5 sm:top-4 sm:right-4 z-10">
+            <button
+              onClick={() => onNavigate('admin')}
+              className="h-7 sm:h-8 px-2 sm:px-2.5 rounded-full bg-white/95 hover:bg-white text-[#171717] hover:text-[#ED1025] text-[10px] sm:text-xs font-bold flex items-center gap-1 shadow-xs border border-white/80 transition-all active:scale-95"
+              title="Change banner or add songs in Admin Panel"
+            >
+              <Settings className="w-3 h-3 text-[#ED1025]" />
+              <span className="font-bengali">এডমিন</span>
+            </button>
+          </div>
 
+          {/* Bottom-Right Play Action (Clean Floating Button, Zero Dark Gradient) */}
+          {heroTrack && (
+            <div className="absolute bottom-2.5 right-2.5 sm:bottom-4 sm:right-4 z-10">
               <button
-                onClick={() => onNavigate('admin')}
-                className="min-h-[36px] sm:min-h-[42px] px-2.5 sm:px-3 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-semibold text-xs flex items-center gap-1 transition-colors border border-white/20"
-                title="Change banner in Admin Panel"
+                onClick={handleHeroPlay}
+                className="h-8 px-3 sm:h-10 sm:px-4 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-[#ED1025]/30 active:scale-95 transition-all"
+                title={`Play ${heroTrack.title}`}
               >
-                <Settings className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">এডমিন</span>
+                <Play className="w-3.5 h-3.5 fill-current translate-x-0.5" />
+                <span>Play</span>
               </button>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
-      {/* 2. Compact Category Shortcuts (Ergonomic Mobile Touch Targets) */}
-      <section className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+      {/* 2. Compact Category Shortcuts (Mobile 4-Column Layout, Zero Vertical Spill) */}
+      <section className="grid grid-cols-4 gap-2 sm:gap-3">
         {[
           {
             id: 'songs',
@@ -134,7 +128,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           {
             id: 'artists',
             label: 'Artists',
-            subtitle: 'Studio vocalists',
+            subtitle: 'Vocalists',
             icon: Users,
             action: () => onNavigate('artists'),
           },
@@ -151,16 +145,16 @@ export const HomePage: React.FC<HomePageProps> = ({
             <button
               key={cat.id}
               onClick={cat.action}
-              className="p-3 sm:p-3.5 rounded-2xl bg-white hover:bg-neutral-50 border border-[#EAEAEA] text-left transition-all hover:shadow-xs group flex items-center gap-3"
+              className="p-2 sm:p-3.5 rounded-xl sm:rounded-2xl bg-white hover:bg-neutral-50 border border-[#EAEAEA] text-center sm:text-left transition-all hover:shadow-xs group flex flex-col sm:flex-row items-center sm:items-start gap-1.5 sm:gap-3 cursor-pointer"
             >
-              <div className="w-9 h-9 rounded-xl bg-neutral-100 group-hover:bg-[#ED1025]/10 flex items-center justify-center text-[#171717] group-hover:text-[#ED1025] transition-colors shrink-0">
-                <Icon className="w-4 h-4" />
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-neutral-100 group-hover:bg-[#ED1025]/10 flex items-center justify-center text-[#171717] group-hover:text-[#ED1025] transition-colors shrink-0">
+                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
-              <div className="min-w-0">
-                <h4 className="text-xs sm:text-sm font-bold text-[#171717] group-hover:text-[#ED1025] transition-colors truncate">
+              <div className="min-w-0 w-full sm:w-auto">
+                <h4 className="text-[11px] sm:text-sm font-bold text-[#171717] group-hover:text-[#ED1025] transition-colors truncate">
                   {cat.label}
                 </h4>
-                <p className="text-[10px] sm:text-[11px] text-[#6B7280] truncate mt-0.5">
+                <p className="text-[9px] sm:text-[11px] text-[#6B7280] truncate hidden xs:block sm:block mt-0.5">
                   {cat.subtitle}
                 </p>
               </div>
@@ -171,21 +165,21 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {/* 3. If no songs published yet, show Clean Welcome State with Admin CTA */}
       {allSongs.length === 0 ? (
-        <section className="p-8 sm:p-12 text-center bg-neutral-50/70 rounded-3xl border border-dashed border-[#EAEAEA] space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-white shadow-xs border border-[#EAEAEA] flex items-center justify-center mx-auto text-[#ED1025]">
-            <Music2 className="w-6 h-6" />
+        <section className="p-6 sm:p-10 text-center bg-neutral-50/70 rounded-2xl sm:rounded-3xl border border-dashed border-[#EAEAEA] space-y-3">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white shadow-xs border border-[#EAEAEA] flex items-center justify-center mx-auto text-[#ED1025]">
+            <Music2 className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-base font-bold text-[#171717]">
+            <h3 className="text-sm sm:text-base font-bold text-[#171717]">
               হবজব স্টুডিও লাইভে স্বাগতম (Habajaba Studio LIVE)
             </h3>
-            <p className="text-xs text-[#6B7280] max-w-md mx-auto">
+            <p className="text-xs text-[#6B7280] max-w-md mx-auto font-bengali leading-relaxed">
               বর্তমানে কোনো গান যুক্ত করা নেই। আপনি অ্যাডমিন প্যানেল থেকে আপনার ড্রপবক্সের অডিও লিঙ্ক দিয়ে খুব সহজেই গান যুক্ত ও ব্যানার পরিবর্তন করতে পারেন।
             </p>
           </div>
           <button
             onClick={() => onNavigate('admin')}
-            className="px-6 py-2.5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white text-xs font-bold inline-flex items-center gap-2 shadow-xs transition-colors"
+            className="px-5 py-2 sm:px-6 sm:py-2.5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white text-xs font-bold inline-flex items-center gap-2 shadow-xs transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>এডমিন প্যানেলে গান যোগ করুন (Open Admin Panel)</span>

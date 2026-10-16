@@ -96,8 +96,8 @@ function AppContent() {
 
   // Determine bottom padding so content is never obscured by MiniPlayer + BottomNavigation, respecting safe areas
   const contentBottomPadding = currentTrack
-    ? 'pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] md:pb-24'
-    : 'pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] md:pb-12';
+    ? 'pb-[calc(8rem+env(safe-area-inset-bottom,0px))] md:pb-20'
+    : 'pb-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:pb-8';
 
   return (
     <div className="min-h-[100dvh] bg-white flex flex-col text-[#171717] overflow-x-hidden">
@@ -109,7 +109,7 @@ function AppContent() {
       />
 
       {/* Main Content Area */}
-      <main className={`flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pt-3 sm:pt-5 ${contentBottomPadding}`}>
+      <main className={`flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 pt-2.5 sm:pt-5 ${contentBottomPadding}`}>
         {currentTab === 'home' && (
           <HomePage
             onNavigate={handleNavigate}
