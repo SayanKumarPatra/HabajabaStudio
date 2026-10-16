@@ -1,0 +1,219 @@
+{
+  "tracks": [
+    {
+      "id": "habajaba-track-01",
+      "title": "মেঘের ডাকে (Megher Daake)",
+      "artist": "Habajaba Studio LIVE ft. Arghya",
+      "album": "Monsoon Sessions Vol. 1",
+      "coverUrl": "/covers/megher-daake.jpg",
+      "audioUrl": "https://cdn.freesound.org/previews/732/732483_11861866-lq.mp3",
+      "duration": "03:42",
+      "language": "Bengali",
+      "releaseDate": "2026-10-10",
+      "genre": "Acoustic Live",
+      "featured": true,
+      "published": true,
+      "description": "An intimate unplugged live studio performance featuring acoustic guitar, cajón, and soulful Bengali vocals recorded live at Habajaba Studio."
+    },
+    {
+      "id": "habajaba-track-02",
+      "title": "তুমি রবে নীরবে (Tumi Robe Nirobe)",
+      "artist": "Habajaba Studio LIVE ft. Debarati",
+      "album": "Rabindra Sangeet Unplugged",
+      "coverUrl": "/covers/tumi-robe.jpg",
+      "audioUrl": "https://cdn.freesound.org/previews/612/612627_11861866-lq.mp3",
+      "duration": "04:15",
+      "language": "Bengali",
+      "releaseDate": "2026-09-28",
+      "genre": "Rabindra Sangeet",
+      "featured": true,
+      "published": true,
+      "description": "Modern acoustic interpretation of Tagore's timeless melody, blended with delicate nylon guitar arrangements and ambient cello textures."
+    },
+    {
+      "id": "habajaba-track-03",
+      "title": "শহুরে বাতাস (Sohure Batash)",
+      "artist": "Habajaba Studio LIVE Band",
+      "album": "Kolkata Rooftops",
+      "coverUrl": "/covers/sohure-batash.jpg",
+      "audioUrl": "https://cdn.freesound.org/previews/708/708321_11861866-lq.mp3",
+      "duration": "03:28",
+      "language": "Bengali",
+      "releaseDate": "2026-09-15",
+      "genre": "Indie Bengali",
+      "featured": true,
+      "published": true,
+      "description": "Breezy indie folk rhythm capturing evening nostalgia on the balconies of Kolkata."
+    },
+    {
+      "id": "habajaba-track-04",
+      "title": "মন পাখি (Mon Pakhi)",
+      "artist": "Habajaba Studio LIVE ft. Sayan",
+      "album": "Monsoon Sessions Vol. 1",
+      "coverUrl": "/covers/mon-pakhi.jpg",
+      "audioUrl": "https://cdn.freesound.org/previews/732/732483_11861866-lq.mp3",
+      "duration": "04:02",
+      "language": "Bengali",
+      "releaseDate": "2026-08-30",
+      "genre": "Folk Fusion",
+      "featured": false,
+      "published": true,
+      "description": "Traditional Baul folk philosophy re-imagined with modern acoustic grooves and vibrant ektara touches."
+    },
+    {
+      "id": "habajaba-track-05",
+      "title": "অচেনা সুর (Ochena Shur)",
+      "artist": "Habajaba Studio LIVE ft. Rituparna",
+      "album": "Kolkata Rooftops",
+      "coverUrl": "/covers/ochena-shur.jpg",
+      "audioUrl": "https://cdn.freesound.org/previews/612/612627_11861866-lq.mp3",
+      "duration": "03:55",
+      "language": "Bengali",
+      "releaseDate": "2026-08-14",
+      "genre": "Romantic",
+      "featured": false,
+      "published": true,
+      "description": "Soft piano-driven acoustic ballad exploring unspoken words and gentle yearning."
+    },
+    {
+      "id": "habajaba-track-06",
+      "title": "গ্রামছাড়া ওই রাঙামাটির পথ (Gram Chhara)",
+      "artist": "Habajaba Studio LIVE ft. Debarati",
+      "album": "Rabindra Sangeet Unplugged",
+      "coverUrl": "/covers/gram-chhara.jpg",
+      "audioUrl": "https://cdn.freesound.org/previews/708/708321_11861866-lq.mp3",
+      "duration": "03:36",
+      "language": "Bengali",
+      "releaseDate": "2026-07-22",
+      "genre": "Rabindra Sangeet",
+      "featured": false,
+      "published": true,
+      "description": "Rustic, grounded rendition inspired by the red soil of Shantiniketan with dotara and flute."
+    },
+    {
+      "id": "habajaba-track-07",
+      "title": "বৃষ্টিভেজা রাত (Brishtibheja Raat)",
+      "artist": "Habajaba Studio LIVE ft. Arghya",
+      "album": "Monsoon Sessions Vol. 1",
+      "coverUrl": "/covers/brishti.jpg",
+      "audioUrl": "https://cdn.freesound.org/previews/732/732483_11861866-lq.mp3",
+      "duration": "04:30",
+      "language": "Bengali",
+      "releaseDate": "2026-07-01",
+      "genre": "Romantic",
+      "featured": false,
+      "published": true,
+      "description": "Late night studio acoustic session recorded during heavy rains in Bengal."
+    },
+    {
+      "id": "habajaba-track-08",
+      "title": "জাগো রে (Jago Re)",
+      "artist": "Habajaba Studio LIVE Band",
+      "album": "Kolkata Rooftops",
+      "coverUrl": "/covers/jago-re.jpg",
+      "audioUrl": "https://cdn.freesound.org/previews/708/708321_11861866-lq.mp3",
+      "duration": "03:48",
+      "language": "Bengali",
+      "releaseDate": "2026-06-18",
+      "genre": "Indie Bengali",
+      "featured": false,
+      "published": true,
+      "description": "Energetic contemporary Bengali rock-folk track with driving bass and upbeat percussion."
+    }
+  ],
+  "albums": [
+    {
+      "id": "album-monsoon-sessions",
+      "title": "Monsoon Sessions Vol. 1",
+      "artist": "Habajaba Studio LIVE",
+      "coverUrl": "/covers/album-monsoon.jpg",
+      "releaseDate": "2026-10-10",
+      "genre": "Acoustic Live",
+      "language": "Bengali",
+      "description": "Recorded live in the Habajaba studio control room during the monsoon season of Bengal. Raw acoustic vibes and authentic warmth.",
+      "trackIds": ["habajaba-track-01", "habajaba-track-04", "habajaba-track-07"]
+    },
+    {
+      "id": "album-rabindra-sangeet",
+      "title": "Rabindra Sangeet Unplugged",
+      "artist": "Debarati & Habajaba Studio LIVE",
+      "coverUrl": "/covers/album-rabindra.jpg",
+      "releaseDate": "2026-09-28",
+      "genre": "Rabindra Sangeet",
+      "language": "Bengali",
+      "description": "Modern minimalist acoustic arrangements of timeless Rabindranath Tagore compositions, celebrating poetic subtlety.",
+      "trackIds": ["habajaba-track-02", "habajaba-track-06"]
+    },
+    {
+      "id": "album-kolkata-rooftops",
+      "title": "Kolkata Rooftops",
+      "artist": "Habajaba Studio LIVE Band",
+      "coverUrl": "/covers/album-kolkata.jpg",
+      "releaseDate": "2026-09-15",
+      "genre": "Indie Bengali",
+      "language": "Bengali",
+      "description": "An ode to city twilight, tea stalls, tram bells, and the pulse of urban Bengali youth.",
+      "trackIds": ["habajaba-track-03", "habajaba-track-05", "habajaba-track-08"]
+    }
+  ],
+  "playlists": [
+    {
+      "id": "playlist-acoustic-evening",
+      "title": "Acoustic Evenings",
+      "description": "Mellow unplugged melodies and acoustic sessions for twilight introspection.",
+      "coverUrl": "/covers/playlist-acoustic.jpg",
+      "trackIds": ["habajaba-track-01", "habajaba-track-02", "habajaba-track-05", "habajaba-track-07"]
+    },
+    {
+      "id": "playlist-bengali-indie",
+      "title": "New Bengali Indie Wave",
+      "description": "Fresh urban melodies, contemporary Bengali lyrics, and indie vibes.",
+      "coverUrl": "/covers/playlist-indie.jpg",
+      "trackIds": ["habajaba-track-03", "habajaba-track-04", "habajaba-track-08"]
+    },
+    {
+      "id": "playlist-tagore-intimates",
+      "title": "Tagore in the Studio",
+      "description": "Acoustic, soulful renditions of beloved Rabindra Sangeet classics.",
+      "coverUrl": "/covers/playlist-tagore.jpg",
+      "trackIds": ["habajaba-track-02", "habajaba-track-06"]
+    }
+  ],
+  "artists": [
+    {
+      "id": "artist-habajaba-band",
+      "name": "Habajaba Studio LIVE Band",
+      "avatarUrl": "/artists/habajaba-band.jpg",
+      "role": "Studio Ensemble & Production",
+      "bio": "The core in-house musical collective behind Habajaba Studio LIVE, bringing live acoustic arrangements and Bengali melodies to the forefront."
+    },
+    {
+      "id": "artist-arghya",
+      "name": "Arghya",
+      "avatarUrl": "/artists/arghya.jpg",
+      "role": "Lead Vocalist & Acoustic Guitar",
+      "bio": "Known for his rich baritone and intimate acoustic phrasing on Bengali ballads."
+    },
+    {
+      "id": "artist-debarati",
+      "name": "Debarati",
+      "avatarUrl": "/artists/debarati.jpg",
+      "role": "Classical & Rabindra Sangeet Vocalist",
+      "bio": "Classically trained vocalist blending traditional nuances with modern acoustic aesthetics."
+    },
+    {
+      "id": "artist-sayan",
+      "name": "Sayan",
+      "avatarUrl": "/artists/sayan.jpg",
+      "role": "Folk Vocalist & Multi-instrumentalist",
+      "bio": "Deeply connected to rural Bengal folk traditions, playing dotara, flute, and ektara."
+    },
+    {
+      "id": "artist-rituparna",
+      "name": "Rituparna",
+      "avatarUrl": "/artists/rituparna.jpg",
+      "role": "Singer-Songwriter & Pianist",
+      "bio": "Contemporary songwriter weaving lyrical imagery into soothing piano-led melodies."
+    }
+  ]
+}
