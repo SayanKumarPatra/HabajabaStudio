@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Mic2, Play, ArrowLeft } from 'lucide-react';
+import { Search, Mic2, Play, ArrowLeft, Youtube, ExternalLink } from 'lucide-react';
 import { Album, Artist, Track } from '../types/music';
 import { MusicService } from '../services/musicService';
 import { useAudio } from '../context/AudioContext';
 import { ArtistCard } from '../components/ArtistCard';
 import { SongRow } from '../components/SongRow';
 import { AlbumCard } from '../components/AlbumCard';
+import { CoverImage } from '../components/CoverImage';
 
 interface ArtistsPageProps {
   selectedArtistName?: string | null;
@@ -87,11 +88,14 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white border border-[#EAEAEA] shadow-xs">
           <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-neutral-100 border-2 border-[#ED1025]/20 shrink-0 shadow-xs flex items-center justify-center">
             {activeArtist.avatarUrl ? (
-              <img
+              <CoverImage
                 src={activeArtist.avatarUrl}
                 alt={activeArtist.name}
-                referrerPolicy="no-referrer"
-                className="w-full h-full object-cover"
+                title={activeArtist.name}
+                artist={activeArtist.name}
+                aspectRatio="square"
+                iconType="music"
+                className="w-full h-full rounded-full"
               />
             ) : (
               <Mic2 className="w-8 h-8 text-[#ED1025]" />
@@ -118,17 +122,30 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
               )}
             </div>
 
-            {artistTracks.length > 0 && (
-              <div className="pt-2">
+            <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+              {artistTracks.length > 0 && (
                 <button
                   onClick={handlePlayArtistTracks}
-                  className="min-h-[40px] px-5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-sm shadow-[#ED1025]/25 active:scale-95 transition-all"
+                  className="min-h-[40px] px-5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-sm shadow-[#ED1025]/25 active:scale-95 transition-all cursor-pointer"
                 >
                   <Play className="w-3.5 h-3.5 fill-current translate-x-0.5" />
                   <span>Play All Tracks</span>
                 </button>
-              </div>
-            )}
+              )}
+
+              {activeArtist.youtubeUrl && (
+                <a
+                  href={activeArtist.youtubeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-h-[40px] px-4 rounded-full bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Youtube className="w-4 h-4 fill-current" />
+                  <span>YouTube Channel</span>
+                  <ExternalLink className="w-3 h-3 opacity-70" />
+                </a>
+              )}
+            </div>
           </div>
         </div>
 
@@ -197,7 +214,7 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
           </p>
         </div>
 
-        {/* Filter input */}
+        {/* Search Filter */}
         <div className="relative w-full sm:w-64">
           <Search className="w-4 h-4 text-[#6B7280] absolute left-3 top-1/2 -translate-y-1/2" />
           <input

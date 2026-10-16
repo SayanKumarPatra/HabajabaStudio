@@ -23,6 +23,7 @@ import { HeroBannerConfig, Track } from '../types/music';
 import { MusicService } from '../services/musicService';
 import { analyzeAudioUrl, getDirectAudioUrl, testAudioStreamability } from '../utils/dropbox';
 import { optimizeImageFile } from '../utils/imageOptimizer';
+import { uploadImageToCloud } from '../services/cloudStorageService';
 
 interface MediaManagementSectionProps {
   tracks: Track[];
@@ -131,41 +132,44 @@ export const MediaManagementSection: React.FC<MediaManagementSectionProps> = ({
     onRefreshCatalog();
   };
 
-  const handleBannerFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBannerFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsBannerUploading(true);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      if (result) {
-        const updated = { ...banner, bannerUrl: result };
-        setBanner(updated);
-        MusicService.saveHeroBanner(updated);
-        onRefreshCatalog();
+    try {
+      const uploadResult = await uploadImageToCloud(file, 'banners', {
+        maxWidth: 1280,
+        maxHeight: 720,
+        quality: 0.88,
+        format: 'image/jpeg',
+      });
 
-        // Add to saved assets
-        const newAsset: SavedMediaAsset = {
-          id: `asset-${Date.now()}`,
-          name: file.name.replace(/\.[^/.]+$/, ''),
-          url: result,
-          type: 'banner',
-          aspectRatio: '16:9',
-          uploadedAt: new Date().toISOString().split('T')[0],
-        };
-        saveMediaAssets([newAsset, ...mediaAssets.filter((a) => a.id !== newAsset.id)]);
+      const updated = { ...banner, bannerUrl: uploadResult.url };
+      setBanner(updated);
+      await MusicService.saveHeroBanner(updated);
+      onRefreshCatalog();
 
-        setBannerSavedAlert(true);
-        setTimeout(() => setBannerSavedAlert(false), 2500);
-      }
+      // Add to saved assets
+      const newAsset: SavedMediaAsset = {
+        id: `asset-${Date.now()}`,
+        name: file.name.replace(/\.[^/.]+$/, ''),
+        url: uploadResult.url,
+        type: 'banner',
+        aspectRatio: '16:9',
+        uploadedAt: new Date().toISOString().split('T')[0],
+      };
+      saveMediaAssets([newAsset, ...mediaAssets.filter((a) => a.id !== newAsset.id)]);
+
+      setBannerSavedAlert(true);
+      setTimeout(() => setBannerSavedAlert(false), 3000);
+    } catch (err) {
+      console.error('Failed to upload banner:', err);
+      alert('ব্যানার ফাইল আপলোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+    } finally {
       setIsBannerUploading(false);
-    };
-    reader.onerror = () => {
-      setIsBannerUploading(false);
-      alert('ইমেজ ফাইল পড়তে সমস্যা হয়েছে (Error reading image file).');
-    };
-    reader.readAsDataURL(file);
+      if (e.target) e.target.value = '';
+    }
   };
 
   // --- Dropbox Audio Ingestion Handlers ---
@@ -219,21 +223,26 @@ export const MediaManagementSection: React.FC<MediaManagementSectionProps> = ({
     if (!file) return;
 
     try {
-      const optimized = await optimizeImageFile(file, 1280, 720, 0.85, 'image/jpeg');
-      setCoverInputUrl(optimized);
+      const uploadResult = await uploadImageToCloud(file, 'covers', {
+        maxWidth: 1280,
+        maxHeight: 720,
+        quality: 0.88,
+        format: 'image/jpeg',
+      });
+      setCoverInputUrl(uploadResult.url);
 
       const newAsset: SavedMediaAsset = {
         id: `cover-${Date.now()}`,
         name: file.name.replace(/\.[^/.]+$/, ''),
-        url: optimized,
+        url: uploadResult.url,
         type: 'cover',
         aspectRatio: coverAspectRatio,
         uploadedAt: new Date().toISOString().split('T')[0],
       };
       saveMediaAssets([newAsset, ...mediaAssets]);
     } catch (err) {
-      console.error('Failed to optimize uploaded cover:', err);
-      alert('ইমেজ ফাইল প্রসেস করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      console.error('Failed to upload cover:', err);
+      alert('ইমেজ ফাইল প্রসেস বা আপলোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
     } finally {
       if (e.target) e.target.value = '';
     }

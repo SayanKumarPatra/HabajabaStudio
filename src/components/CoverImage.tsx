@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Disc3, Music2, Radio } from 'lucide-react';
+import { offlineCacheService } from '../services/offlineCacheService';
 
 interface CoverImageProps {
   src?: string;
@@ -21,6 +22,7 @@ export const CoverImage: React.FC<CoverImageProps> = ({
   iconType = 'disc',
 }) => {
   const [hasError, setHasError] = useState(false);
+  const [cachedDataUrl, setCachedDataUrl] = useState<string | null>(null);
 
   const aspectClass =
     aspectRatio === 'video'
@@ -51,8 +53,52 @@ export const CoverImage: React.FC<CoverImageProps> = ({
     return text.slice(0, 2).toUpperCase();
   };
 
-  // If source is missing or image load fails
-  if (!src || hasError) {
+  // Cache-first inspection for offline rendering
+  useEffect(() => {
+    let isMounted = true;
+    if (src && src.startsWith('http')) {
+      offlineCacheService.getCachedImage(src).then((cached) => {
+        if (isMounted && cached) {
+          setCachedDataUrl(cached);
+        } else if (isMounted && navigator.onLine) {
+          // Opportunistically cache in background
+          offlineCacheService.getOrCacheImage(src).then((newCached) => {
+            if (isMounted && newCached) {
+              setCachedDataUrl(newCached);
+            }
+          });
+        }
+      });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [src]);
+
+  // Handle image load error: if network fails and we have a cached copy, use it!
+  const handleImageError = () => {
+    if (cachedDataUrl) {
+      return;
+    }
+    // Attempt one last query to IndexedDB
+    if (src) {
+      offlineCacheService.getCachedImage(src).then((cached) => {
+        if (cached) {
+          setCachedDataUrl(cached);
+          setHasError(false);
+        } else {
+          setHasError(true);
+        }
+      });
+    } else {
+      setHasError(true);
+    }
+  };
+
+  const activeSrc = cachedDataUrl || src;
+
+  // If source is missing or image load fails and no cache exists
+  if (!activeSrc || (hasError && !cachedDataUrl)) {
     return (
       <div
         className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${getGradientForTitle(
@@ -101,11 +147,11 @@ export const CoverImage: React.FC<CoverImageProps> = ({
   return (
     <div className={`relative overflow-hidden rounded-xl bg-neutral-100 ${aspectClass} ${className}`}>
       <img
-        src={src}
+        src={activeSrc}
         alt={alt}
         referrerPolicy="no-referrer"
         loading="lazy"
-        onError={() => setHasError(true)}
+        onError={handleImageError}
         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
       />
     </div>

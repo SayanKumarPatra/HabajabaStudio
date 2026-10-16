@@ -7,14 +7,16 @@ import {
   Save,
   RotateCcw,
   Sparkles,
+  Cloud,
+  Youtube,
 } from 'lucide-react';
 import { MusicService } from '../services/musicService';
 import { BrandingConfig } from '../types/music';
-import { optimizeImageFile } from '../utils/imageOptimizer';
+import { uploadImageToCloud } from '../services/cloudStorageService';
 
 export const BrandingAdminSection: React.FC = () => {
   const [branding, setBranding] = useState<BrandingConfig>(() => MusicService.getBranding());
-  const [savedAlert, setSavedAlert] = useState(false);
+  const [savedAlert, setSavedAlert] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -24,7 +26,7 @@ export const BrandingAdminSection: React.FC = () => {
     });
   }, []);
 
-  // Handle local image file upload with optimization
+  // Handle local image file upload with cloud storage & real-time sync
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -36,20 +38,33 @@ export const BrandingAdminSection: React.FC = () => {
 
     setIsProcessing(true);
     try {
-      // Optimize image for high-definition rendering while keeping file size under ~30KB
-      const optimizedDataUrl = await optimizeImageFile(file, 480, 160, 0.9, 'image/png');
+      // Direct upload to Firebase Cloud Storage with optimized fallback
+      const uploadResult = await uploadImageToCloud(file, 'branding', {
+        maxWidth: 512,
+        maxHeight: 180,
+        quality: 0.95,
+        format: 'image/png',
+      });
+
       const updatedConfig = {
         ...branding,
-        logoUrl: optimizedDataUrl,
+        logoUrl: uploadResult.url,
       };
       setBranding(updatedConfig);
-      // Auto-persist immediately to Realtime Database & local storage
+
+      // Auto-persist immediately to Firestore, Realtime Database & local storage
       await MusicService.saveBranding(updatedConfig);
-      setSavedAlert(true);
-      setTimeout(() => setSavedAlert(false), 3500);
+
+      setSavedAlert({
+        show: true,
+        message: uploadResult.isCloudStorage
+          ? 'লোগো সফলভাবে Firebase Cloud Storage-এ আপলোড ও লাইভ সেভ হয়েছে!'
+          : 'লোগো সফলভাবে অপ্টিমাইজ ও লাইভ সেভ হয়েছে!',
+      });
+      setTimeout(() => setSavedAlert({ show: false, message: '' }), 4000);
     } catch (err) {
       console.error('Logo upload error:', err);
-      alert('ইমেজ প্রসেস করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      alert('লোগো প্রসেস বা আপলোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
     } finally {
       setIsProcessing(false);
       if (e.target) e.target.value = '';
@@ -61,8 +76,8 @@ export const BrandingAdminSection: React.FC = () => {
     setIsProcessing(true);
     await MusicService.saveBranding(branding);
     setIsProcessing(false);
-    setSavedAlert(true);
-    setTimeout(() => setSavedAlert(false), 3000);
+    setSavedAlert({ show: true, message: 'লোগো ও ব্র্যান্ডিং সফলভাবে সেভ ও লাইভ আপডেট হয়েছে!' });
+    setTimeout(() => setSavedAlert({ show: false, message: '' }), 3500);
   };
 
   const handleResetToDefault = async () => {
@@ -74,8 +89,8 @@ export const BrandingAdminSection: React.FC = () => {
       };
       setBranding(resetConfig);
       await MusicService.saveBranding(resetConfig);
-      setSavedAlert(true);
-      setTimeout(() => setSavedAlert(false), 3000);
+      setSavedAlert({ show: true, message: 'ডিফল্ট লোগো সক্রিয় করা হয়েছে।' });
+      setTimeout(() => setSavedAlert({ show: false, message: '' }), 3000);
     }
   };
 
@@ -104,10 +119,10 @@ export const BrandingAdminSection: React.FC = () => {
         </div>
 
         {/* Saved notification alert */}
-        {savedAlert && (
+        {savedAlert.show && (
           <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
             <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>লোগো ও ব্র্যান্ডিং সফলভাবে সেভ ও লাইভ আপডেট হয়েছে!</span>
+            <span>{savedAlert.message}</span>
           </div>
         )}
 
@@ -181,7 +196,43 @@ export const BrandingAdminSection: React.FC = () => {
             </div>
           </div>
 
-          {/* 3. Real-Time Previews */}
+          {/* 3. YouTube Channel Promotion Settings */}
+          <div className="p-4 rounded-xl bg-red-50/60 border border-red-200/80 space-y-3">
+            <div className="flex items-center gap-2">
+              <Youtube className="w-4 h-4 text-[#ED1025]" />
+              <span className="text-xs font-bold text-[#171717]">
+                ইউটিউব চ্যানেল প্রমোশন লিংক ও তথ্য (YouTube Channel Promotion)
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-[#171717] mb-1">
+                  ইউটিউব চ্যানেল ইউআরএল (Channel Link)
+                </label>
+                <input
+                  type="url"
+                  value={branding.youtubeChannelUrl || ''}
+                  onChange={(e) => setBranding({ ...branding, youtubeChannelUrl: e.target.value })}
+                  placeholder="https://www.youtube.com/@habajabastudio"
+                  className="w-full px-3 py-2 rounded-xl border border-neutral-300 text-xs focus:ring-2 focus:ring-[#ED1025] focus:outline-hidden bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-[#171717] mb-1">
+                  চ্যানেলের নাম (Display Name)
+                </label>
+                <input
+                  type="text"
+                  value={branding.youtubeChannelName || ''}
+                  onChange={(e) => setBranding({ ...branding, youtubeChannelName: e.target.value })}
+                  placeholder="হ্যাবাজ্যাবা স্টুডিও (Habajaba Studio)"
+                  className="w-full px-3 py-2 rounded-xl border border-neutral-300 text-xs focus:ring-2 focus:ring-[#ED1025] focus:outline-hidden bg-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Real-Time Previews */}
           <div className="space-y-3 pt-2">
             <h4 className="text-xs font-bold text-[#171717] uppercase tracking-wider">
               রিয়েল-টাইম প্রিভিউ (Live Header Preview):

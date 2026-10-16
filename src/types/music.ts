@@ -15,6 +15,14 @@ export interface Track {
   lyrics?: string;
 }
 
+export interface BannerSlide {
+  id: string;
+  imageUrl: string;
+  title?: string;
+  subtitle?: string;
+  linkUrl?: string;
+}
+
 export interface HeroBannerConfig {
   title: string;
   subtitle: string;
@@ -26,6 +34,9 @@ export interface BrandingConfig {
   logoUrl?: string;
   studioName?: string;
   tagline?: string;
+  youtubeChannelUrl?: string;
+  youtubeChannelName?: string;
+  youtubeSubscriberText?: string;
 }
 
 export interface Album {
@@ -47,6 +58,9 @@ export interface Artist {
   role: string;
   bio: string;
   trackCount?: number;
+  youtubeUrl?: string;
+  coverPhotoUrl?: string;
+  socialUrl?: string;
 }
 
 export interface Playlist {

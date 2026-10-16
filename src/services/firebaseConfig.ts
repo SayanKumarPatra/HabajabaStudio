@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore, doc, getDoc } from 'firebase/firestore';
 import { getDatabase, Database, ref, get as rtdbGet } from 'firebase/database';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
 import defaultFirebaseJson from '../config/firebaseDefaultConfig.json';
 
 export interface FirebaseConfigParams {
@@ -31,7 +32,7 @@ export function getEnvFirebaseConfig(): FirebaseConfigParams | null {
       apiKey,
       authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`,
       projectId,
-      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || `${projectId}.appspot.com`,
+      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || `${projectId}.firebasestorage.app`,
       messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
       appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
       databaseURL:
@@ -82,17 +83,20 @@ export function saveFirebaseConfig(config: FirebaseConfigParams | null) {
     cachedApp = null;
     cachedDb = null;
     cachedRtdb = null;
+    cachedStorage = null;
   } else {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
     cachedApp = null;
     cachedDb = null;
     cachedRtdb = null;
+    cachedStorage = null;
   }
 }
 
 let cachedApp: FirebaseApp | null = null;
 let cachedDb: Firestore | null = null;
 let cachedRtdb: Database | null = null;
+let cachedStorage: FirebaseStorage | null = null;
 
 // 7. Initialize or retrieve Firestore instance
 export function getFirebaseFirestore(): { app: FirebaseApp; db: Firestore } | null {
@@ -139,6 +143,31 @@ export function getFirebaseRealtimeDb(): { app: FirebaseApp; rtdb: Database } | 
     return cachedApp && cachedRtdb ? { app: cachedApp, rtdb: cachedRtdb } : null;
   } catch (error) {
     console.error('Firebase Realtime Database initialization error:', error);
+    return null;
+  }
+}
+
+// 9. Initialize or retrieve Firebase Cloud Storage instance
+export function getFirebaseStorage(): { app: FirebaseApp; storage: FirebaseStorage } | null {
+  const config = getActiveFirebaseConfig();
+  if (!config || !config.apiKey || !config.projectId) {
+    return null;
+  }
+
+  try {
+    if (!cachedApp) {
+      const existingApps = getApps();
+      cachedApp = existingApps.length > 0 ? getApp() : initializeApp(config);
+    }
+
+    if (!cachedStorage && cachedApp) {
+      const bucket = config.storageBucket || `${config.projectId}.firebasestorage.app`;
+      cachedStorage = getStorage(cachedApp, `gs://${bucket}`);
+    }
+
+    return cachedApp && cachedStorage ? { app: cachedApp, storage: cachedStorage } : null;
+  } catch (error) {
+    console.error('Firebase Storage initialization error:', error);
     return null;
   }
 }

@@ -1,14 +1,44 @@
 import { collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch } from 'firebase/firestore';
 import { ref, onValue, set as rtdbSet, remove as rtdbRemove } from 'firebase/database';
 import rawMusicData from '../data/music.json';
-import { Album, Artist, BrandingConfig, HeroBannerConfig, Playlist, Track } from '../types/music';
+import { Album, Artist, BannerSlide, BrandingConfig, HeroBannerConfig, Playlist, Track } from '../types/music';
 import { getFirebaseFirestore, getFirebaseRealtimeDb, getActiveFirebaseConfig } from './firebaseConfig';
+import { offlineCacheService } from './offlineCacheService';
 
 const STORAGE_CATALOG_KEY = 'habajaba_admin_catalog_v2';
 const STORAGE_BRANDING_KEY = 'habajaba_admin_branding_v1';
+const STORAGE_SLIDING_BANNERS_KEY = 'habajaba_sliding_banners_v1';
+
+export const defaultSlidingBanners: BannerSlide[] = [
+  {
+    id: 'slide-1',
+    imageUrl: '/banner-hero.svg',
+    title: 'Habajaba Studio LIVE',
+    subtitle: 'অরিজিনাল বাংলা লাইভ স্টুডিও সেশন',
+  },
+  {
+    id: 'slide-2',
+    imageUrl: '/banner-default.svg',
+    title: 'Acoustic Master Sessions',
+    subtitle: 'হাই-ফিডেলিটি লাইভ অ্যাকোস্টিক সাউন্ড',
+  },
+  {
+    id: 'slide-3',
+    imageUrl: '/banner-hero.svg',
+    title: 'Bengali Original Sound Master',
+    subtitle: 'ডিজিটাল হোম অফ অরিজিনাল বাংলা মিউজিক',
+  },
+  {
+    id: 'slide-4',
+    imageUrl: '/banner-default.svg',
+    title: 'Habajaba Live Production',
+    subtitle: 'বাংলা গানের স্বতন্ত্র স্টুডিও এক্সপেরিয়েন্স',
+  },
+];
 
 interface CatalogState {
   banner: HeroBannerConfig;
+  slidingBanners: BannerSlide[];
   branding: BrandingConfig;
   tracks: Track[];
   albums: Album[];
@@ -23,10 +53,14 @@ const defaultState: CatalogState = {
     bannerUrl: '/banner-default.svg',
     featuredTrackId: '',
   },
+  slidingBanners: defaultSlidingBanners,
   branding: {
     logoUrl: '',
     studioName: 'Habajaba Studio LIVE',
     tagline: 'অরিজিনাল বাংলা মিউজিক',
+    youtubeChannelUrl: 'https://www.youtube.com/@HabajabaStudioLive',
+    youtubeChannelName: 'Habajaba Studio LIVE',
+    youtubeSubscriberText: 'অফিসিয়াল ইউটিউব চ্যানেল',
   },
   tracks: (rawMusicData.tracks as Track[]) || [],
   albums: (rawMusicData.albums as Album[]) || [],
@@ -38,12 +72,15 @@ function loadState(): CatalogState {
   try {
     const saved = localStorage.getItem(STORAGE_CATALOG_KEY);
     const savedBranding = localStorage.getItem(STORAGE_BRANDING_KEY);
+    const savedSlidingBanners = localStorage.getItem(STORAGE_SLIDING_BANNERS_KEY);
     const branding = savedBranding ? JSON.parse(savedBranding) : defaultState.branding;
+    const slidingBanners = savedSlidingBanners ? JSON.parse(savedSlidingBanners) : defaultState.slidingBanners;
 
     if (saved) {
       const parsed = JSON.parse(saved);
       return {
         banner: parsed.banner || defaultState.banner,
+        slidingBanners: Array.isArray(parsed.slidingBanners) && parsed.slidingBanners.length > 0 ? parsed.slidingBanners : slidingBanners,
         branding: parsed.branding || branding,
         tracks: Array.isArray(parsed.tracks) ? parsed.tracks : [],
         albums: Array.isArray(parsed.albums) ? parsed.albums : [],
@@ -64,6 +101,9 @@ let unsubscribeSongs: (() => void) | null = null;
 let unsubscribeBanner: (() => void) | null = null;
 let unsubscribeBranding: (() => void) | null = null;
 
+let unsubscribeSlidingBanners: (() => void) | null = null;
+let unsubscribeArtists: (() => void) | null = null;
+
 function notifyListeners() {
   listeners.forEach((fn) => fn());
 }
@@ -74,10 +114,47 @@ function saveStateLocally() {
     if (catalogState.branding) {
       localStorage.setItem(STORAGE_BRANDING_KEY, JSON.stringify(catalogState.branding));
     }
+    if (catalogState.slidingBanners) {
+      localStorage.setItem(STORAGE_SLIDING_BANNERS_KEY, JSON.stringify(catalogState.slidingBanners));
+    }
   } catch (e) {
     console.warn('Failed to save catalog to localStorage:', e);
   }
+
+  // Asynchronously sync albums, artists, tracks, and image metadata to IndexedDB
+  if (typeof window !== 'undefined') {
+    offlineCacheService.syncCatalog(
+      MusicService.getAlbums(),
+      MusicService.getArtists(),
+      catalogState.tracks
+    ).catch(() => {});
+  }
+
   notifyListeners();
+}
+
+// Background startup: register Service Worker and prime IndexedDB
+if (typeof window !== 'undefined') {
+  offlineCacheService.registerServiceWorker().catch(() => {});
+
+  // If offline or localStorage is empty, restore from IndexedDB
+  if (catalogState.tracks.length === 0 || !navigator.onLine) {
+    offlineCacheService.getCachedTracks().then((cachedTracks) => {
+      if (cachedTracks && cachedTracks.length > 0 && catalogState.tracks.length === 0) {
+        catalogState.tracks = cachedTracks;
+        notifyListeners();
+      }
+    }).catch(() => {});
+  }
+
+  // Pre-cache catalog into IndexedDB on initial launch
+  setTimeout(() => {
+    offlineCacheService.syncCatalog(
+      MusicService.getAlbums(),
+      MusicService.getArtists(),
+      catalogState.tracks
+    ).catch(() => {});
+  }, 1200);
 }
 
 // Set up real-time Firebase Firestore synchronization
@@ -109,8 +186,6 @@ export function initFirestoreSync() {
           catalogState.tracks = remoteTracks;
           saveStateLocally();
         } else if (catalogState.tracks.length > 0) {
-          // If Firestore is empty but the admin had uploaded tracks locally,
-          // automatically upload them to Firestore so they go live immediately for everyone!
           MusicService.syncAllLocalToFirestore();
         }
       },
@@ -131,7 +206,6 @@ export function initFirestoreSync() {
             saveStateLocally();
           }
         } else if (catalogState.banner && catalogState.banner.bannerUrl) {
-          // Seed default banner to Firestore if document does not exist yet
           const inst = getFirebaseFirestore();
           if (inst) {
             setDoc(doc(inst.db, 'habajaba_settings', 'banner'), catalogState.banner).catch(() => {});
@@ -143,7 +217,7 @@ export function initFirestoreSync() {
       }
     );
 
-    // 3. Real-time listener for Branding document (custom logo, etc.)
+    // 3. Real-time listener for Branding document (custom logo, YouTube, etc.)
     const brandingDoc = doc(db, 'habajaba_settings', 'branding');
     unsubscribeBranding = onSnapshot(
       brandingDoc,
@@ -158,6 +232,47 @@ export function initFirestoreSync() {
       },
       (error) => {
         console.warn('Firestore branding listener error:', error);
+      }
+    );
+
+    // 4. Real-time listener for 4 Sliding Banners document
+    const slidingBannersDoc = doc(db, 'habajaba_settings', 'sliding_banners');
+    unsubscribeSlidingBanners = onSnapshot(
+      slidingBannersDoc,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data() as { banners?: BannerSlide[] };
+          if (data && Array.isArray(data.banners) && data.banners.length > 0) {
+            catalogState.slidingBanners = data.banners;
+            saveStateLocally();
+          }
+        }
+      },
+      (error) => {
+        console.warn('Firestore sliding banners listener error:', error);
+      }
+    );
+
+    // 5. Real-time listener for Artists collection
+    const artistsCol = collection(db, 'habajaba_artists');
+    unsubscribeArtists = onSnapshot(
+      artistsCol,
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteArtists: Artist[] = [];
+          snapshot.forEach((dSnap) => {
+            const data = dSnap.data() as Artist;
+            remoteArtists.push({
+              ...data,
+              id: dSnap.id || data.id,
+            });
+          });
+          catalogState.artists = remoteArtists;
+          saveStateLocally();
+        }
+      },
+      (error) => {
+        console.warn('Firestore artists listener error:', error);
       }
     );
 
@@ -194,7 +309,6 @@ export function initRealtimeDbSync() {
           saveStateLocally();
         }
       } else if (catalogState.tracks.length > 0) {
-        // Auto-seed to RTDB if empty
         const songsObj: Record<string, Track> = {};
         catalogState.tracks.forEach((t) => {
           songsObj[t.id] = t;
@@ -220,6 +334,32 @@ export function initRealtimeDbSync() {
       if (val) {
         catalogState.branding = val;
         saveStateLocally();
+      }
+    });
+
+    // 4. Real-time listener for Sliding Banners in RTDB
+    const slidingRef = ref(rtdb, 'habajaba_settings/sliding_banners');
+    onValue(slidingRef, (snapshot) => {
+      const val = snapshot.val();
+      if (val && Array.isArray(val.banners) && val.banners.length > 0) {
+        catalogState.slidingBanners = val.banners;
+        saveStateLocally();
+      }
+    });
+
+    // 5. Real-time listener for Artists in RTDB
+    const artistsRef = ref(rtdb, 'habajaba_artists');
+    onValue(artistsRef, (snapshot) => {
+      const val = snapshot.val();
+      if (val && typeof val === 'object') {
+        const remoteArtists: Artist[] = Object.keys(val).map((k) => ({
+          ...val[k],
+          id: k,
+        }));
+        if (remoteArtists.length > 0) {
+          catalogState.artists = remoteArtists;
+          saveStateLocally();
+        }
       }
     });
 
@@ -251,6 +391,8 @@ export const MusicService = {
     if (unsubscribeSongs) unsubscribeSongs();
     if (unsubscribeBanner) unsubscribeBanner();
     if (unsubscribeBranding) unsubscribeBranding();
+    if (unsubscribeSlidingBanners) unsubscribeSlidingBanners();
+    if (unsubscribeArtists) unsubscribeArtists();
     isFirestoreInitialized = false;
     isRtdbInitialized = false;
     const fsOk = initFirestoreSync();
@@ -260,6 +402,51 @@ export const MusicService = {
 
   getHeroBanner(): HeroBannerConfig {
     return catalogState.banner;
+  },
+
+  getSlidingBanners(): BannerSlide[] {
+    if (catalogState.slidingBanners && catalogState.slidingBanners.length > 0) {
+      return catalogState.slidingBanners;
+    }
+    return defaultSlidingBanners;
+  },
+
+  async saveSlidingBanners(banners: BannerSlide[]) {
+    catalogState.slidingBanners = banners;
+    saveStateLocally();
+
+    const firestoreInstance = getFirebaseFirestore();
+    if (firestoreInstance) {
+      try {
+        await setDoc(doc(firestoreInstance.db, 'habajaba_settings', 'sliding_banners'), { banners });
+      } catch (e) {
+        console.warn('Failed to sync sliding banners to Firestore:', e);
+      }
+    }
+
+    const rtdbInstance = getFirebaseRealtimeDb();
+    if (rtdbInstance) {
+      try {
+        const bannersRef = ref(rtdbInstance.rtdb, 'habajaba_settings/sliding_banners');
+        await rtdbSet(bannersRef, { banners });
+      } catch (e) {
+        console.warn('Failed to sync sliding banners to RTDB:', e);
+      }
+    }
+  },
+
+  async updateSlidingBanner(index: number, updated: Partial<BannerSlide>) {
+    const current = [...this.getSlidingBanners()];
+    if (current[index]) {
+      current[index] = { ...current[index], ...updated };
+    } else {
+      current[index] = {
+        id: `slide-${index + 1}`,
+        imageUrl: updated.imageUrl || '/banner-default.svg',
+        ...updated,
+      };
+    }
+    await this.saveSlidingBanners(current);
   },
 
   async saveHeroBanner(banner: HeroBannerConfig) {
@@ -282,6 +469,69 @@ export const MusicService = {
         await rtdbSet(bannerRef, banner);
       } catch (e) {
         console.warn('Failed to sync banner to Realtime Database:', e);
+      }
+    }
+  },
+
+  async saveArtist(artist: Artist) {
+    const existingIndex = catalogState.artists.findIndex(
+      (a) => a.id === artist.id || a.name.toLowerCase() === artist.name.toLowerCase()
+    );
+    if (existingIndex >= 0) {
+      const oldArtist = catalogState.artists[existingIndex];
+      catalogState.artists[existingIndex] = { ...oldArtist, ...artist };
+      if (oldArtist.name !== artist.name) {
+        catalogState.tracks = catalogState.tracks.map((t) =>
+          t.artist.toLowerCase() === oldArtist.name.toLowerCase()
+            ? { ...t, artist: artist.name }
+            : t
+        );
+      }
+    } else {
+      catalogState.artists.push(artist);
+    }
+    saveStateLocally();
+
+    const firestoreInstance = getFirebaseFirestore();
+    if (firestoreInstance) {
+      try {
+        await setDoc(doc(firestoreInstance.db, 'habajaba_artists', artist.id || `artist-${Date.now()}`), artist);
+      } catch (e) {
+        console.warn('Failed to sync artist to Firestore:', e);
+      }
+    }
+
+    const rtdbInstance = getFirebaseRealtimeDb();
+    if (rtdbInstance) {
+      try {
+        const artistRef = ref(rtdbInstance.rtdb, `habajaba_artists/${artist.id || Date.now()}`);
+        await rtdbSet(artistRef, artist);
+      } catch (e) {
+        console.warn('Failed to sync artist to RTDB:', e);
+      }
+    }
+  },
+
+  async deleteArtist(id: string) {
+    catalogState.artists = catalogState.artists.filter((a) => a.id !== id);
+    saveStateLocally();
+
+    const firestoreInstance = getFirebaseFirestore();
+    if (firestoreInstance) {
+      try {
+        await deleteDoc(doc(firestoreInstance.db, 'habajaba_artists', id));
+      } catch (e) {
+        console.warn('Failed to delete artist from Firestore:', e);
+      }
+    }
+
+    const rtdbInstance = getFirebaseRealtimeDb();
+    if (rtdbInstance) {
+      try {
+        const artistRef = ref(rtdbInstance.rtdb, `habajaba_artists/${id}`);
+        await rtdbRemove(artistRef);
+      } catch (e) {
+        console.warn('Failed to delete artist from RTDB:', e);
       }
     }
   },

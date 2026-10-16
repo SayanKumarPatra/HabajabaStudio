@@ -21,6 +21,9 @@ import {
   Cloud,
   Palette,
   HelpCircle,
+  Sliders,
+  Users,
+  Database,
 } from 'lucide-react';
 import { HeroBannerConfig, Track } from '../types/music';
 import { MusicService } from '../services/musicService';
@@ -30,7 +33,11 @@ import { CoverImage } from '../components/CoverImage';
 import { MediaManagementSection } from '../components/MediaManagementSection';
 import { BrandingAdminSection } from '../components/BrandingAdminSection';
 import { FirebaseAdminSection } from '../components/FirebaseAdminSection';
+import { SlidingBannersAdminSection } from '../components/SlidingBannersAdminSection';
+import { ArtistsAdminSection } from '../components/ArtistsAdminSection';
+import { OfflineAdminSection } from '../components/OfflineAdminSection';
 import { optimizeImageFile } from '../utils/imageOptimizer';
+import { uploadImageToCloud } from '../services/cloudStorageService';
 
 interface AdminPageProps {
   onOpenDropboxGuide?: () => void;
@@ -39,7 +46,7 @@ interface AdminPageProps {
 export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
   const { playTrack, isPlaying, currentTrack, togglePlay } = useAudio();
 
-  const [adminTab, setAdminTab] = useState<'media' | 'songs' | 'branding' | 'firebase'>('media');
+  const [adminTab, setAdminTab] = useState<'banners' | 'artists' | 'media' | 'songs' | 'branding' | 'firebase' | 'offline'>('banners');
 
   const [tracks, setTracks] = useState<Track[]>(() =>
     MusicService.getAllTracks('newest', true)
@@ -57,6 +64,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
   const [genre, setGenre] = useState('Acoustic Live');
   const [coverUrl, setCoverUrl] = useState('/banner-default.svg');
   const [isCoverUploading, setIsCoverUploading] = useState(false);
+  const [coverUploadStatus, setCoverUploadStatus] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState('');
   const [duration, setDuration] = useState('');
   const [featured, setFeatured] = useState(false);
@@ -72,10 +80,21 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
     }
 
     setIsCoverUploading(true);
+    setCoverUploadStatus(null);
     try {
-      // Compress and optimize to 16:9 HD resolution (960x540 max, ~50KB)
-      const optimized = await optimizeImageFile(file, 960, 540, 0.84, 'image/jpeg');
-      setCoverUrl(optimized);
+      // Upload directly to Firebase Cloud Storage with optimized fallback
+      const uploadResult = await uploadImageToCloud(file, 'banners', {
+        maxWidth: 1280,
+        maxHeight: 720,
+        quality: 0.88,
+        format: 'image/jpeg',
+      });
+      setCoverUrl(uploadResult.url);
+      setCoverUploadStatus(
+        uploadResult.isCloudStorage
+          ? 'Firebase Cloud Storage-এ সফলভাবে সংরক্ষিত হয়েছে'
+          : 'অপ্টিমাইজড ব্যানার ইমেজ সফলভাবে লোড হয়েছে'
+      );
     } catch (err) {
       console.error('Failed to process cover image:', err);
       alert('ব্যানার ইমেজ প্রসেস করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
@@ -365,15 +384,27 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
       {/* Admin Tab Switcher */}
       <div className="flex flex-wrap items-center gap-2 border-b border-[#EAEAEA] pb-3">
         <button
-          onClick={() => setAdminTab('media')}
+          onClick={() => setAdminTab('banners')}
           className={`min-h-[40px] px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
-            adminTab === 'media'
+            adminTab === 'banners'
               ? 'bg-[#ED1025] text-white shadow-xs'
               : 'bg-neutral-100 text-[#171717] hover:bg-neutral-200'
           }`}
         >
-          <ImageIcon className="w-4 h-4" />
-          <span>মিডিয়া ও ব্যানার হাব (Media &amp; Banner Hub)</span>
+          <Sliders className="w-4 h-4" />
+          <span>৪টি স্লাইডিং ব্যানার (4 Sliding Banners)</span>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('artists')}
+          className={`min-h-[40px] px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            adminTab === 'artists'
+              ? 'bg-[#ED1025] text-white shadow-xs'
+              : 'bg-neutral-100 text-[#171717] hover:bg-neutral-200'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>শিল্পী ও প্রোফাইল (Artists &amp; Bio)</span>
         </button>
 
         <button
@@ -389,6 +420,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
         </button>
 
         <button
+          onClick={() => setAdminTab('media')}
+          className={`min-h-[40px] px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            adminTab === 'media'
+              ? 'bg-[#ED1025] text-white shadow-xs'
+              : 'bg-neutral-100 text-[#171717] hover:bg-neutral-200'
+          }`}
+        >
+          <ImageIcon className="w-4 h-4" />
+          <span>মিডিয়া হাব (Media Hub)</span>
+        </button>
+
+        <button
           onClick={() => setAdminTab('branding')}
           className={`min-h-[40px] px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
             adminTab === 'branding'
@@ -397,7 +440,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
           }`}
         >
           <Palette className="w-4 h-4" />
-          <span>লোগো ও ব্র্যান্ডিং (Logo &amp; Branding)</span>
+          <span>লোগো ও ব্র্যান্ডিং (Logo &amp; YouTube)</span>
         </button>
 
         <button
@@ -411,7 +454,28 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
           <Cloud className="w-4 h-4" />
           <span>ফায়ারবেস ক্লাউড লাইভ (Firebase Live Server)</span>
         </button>
+
+        <button
+          onClick={() => setAdminTab('offline')}
+          className={`min-h-[40px] px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            adminTab === 'offline'
+              ? 'bg-[#ED1025] text-white shadow-xs'
+              : 'bg-neutral-100 text-[#171717] hover:bg-neutral-200'
+          }`}
+        >
+          <Database className="w-4 h-4" />
+          <span>অফলাইন ক্যাশ ও PWA (Offline &amp; IndexedDB)</span>
+        </button>
       </div>
+
+      {/* Tab 0: 4 Sliding Banners Manager */}
+      {adminTab === 'banners' && <SlidingBannersAdminSection />}
+
+      {/* Tab: Artists Profile & Bio Manager (Admin Only) */}
+      {adminTab === 'artists' && <ArtistsAdminSection />}
+
+      {/* Tab: Offline IndexedDB & Service Worker Cache Manager */}
+      {adminTab === 'offline' && <OfflineAdminSection />}
 
       {/* Tab 1: Media & Assets Management Hub */}
       {adminTab === 'media' && (
@@ -735,7 +799,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
                   </div>
                   <div className="text-xs text-[#6B7280] space-y-1">
                     <p className="font-bold text-[#171717]">
-                      {coverUrl && coverUrl.startsWith('data:') ? '✅ ডিভাইস ফাইল সফলভাবে যুক্ত হয়েছে' : '১৬:৯ ইউটিউব প্রিভিউ'}
+                      {coverUploadStatus
+                        ? `✅ ${coverUploadStatus}`
+                        : coverUrl && coverUrl.startsWith('data:')
+                        ? '✅ ডিভাইস ফাইল সফলভাবে যুক্ত হয়েছে'
+                        : '১৬:৯ ইউটিউব প্রিভিউ'}
                     </p>
                     <p className="text-[11px] leading-relaxed">
                       মোবাইলে এবং প্লেলিস্টে গানটি ১৬:৯ অনুপাতে ডিসপ্লে হবে। গান সেভ করলে এটি স্বয়ংক্রিয়ভাবে ক্লাউডে আপলোড হয়ে যাবে।

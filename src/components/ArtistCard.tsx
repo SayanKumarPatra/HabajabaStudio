@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mic2 } from 'lucide-react';
 import { Artist } from '../types/music';
+import { offlineCacheService } from '../services/offlineCacheService';
 
 interface ArtistCardProps {
   artist: Artist;
@@ -9,6 +10,7 @@ interface ArtistCardProps {
 
 export const ArtistCard: React.FC<ArtistCardProps> = ({ artist, onSelect }) => {
   const [hasError, setHasError] = useState(false);
+  const [cachedUrl, setCachedUrl] = useState<string | null>(null);
 
   const getInitials = (name: string) => {
     return name
@@ -19,6 +21,45 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist, onSelect }) => {
       .toUpperCase();
   };
 
+  useEffect(() => {
+    let isMounted = true;
+    if (artist.avatarUrl && artist.avatarUrl.startsWith('http')) {
+      offlineCacheService.getCachedImage(artist.avatarUrl).then((cached) => {
+        if (isMounted && cached) {
+          setCachedUrl(cached);
+        } else if (isMounted && navigator.onLine) {
+          // Pre-cache artist avatar in background
+          offlineCacheService.getOrCacheImage(artist.avatarUrl).then((newCached) => {
+            if (isMounted && newCached) {
+              setCachedUrl(newCached);
+            }
+          });
+        }
+      });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [artist.avatarUrl]);
+
+  const activeSrc = cachedUrl || artist.avatarUrl;
+
+  const handleImageError = () => {
+    if (cachedUrl) return;
+    if (artist.avatarUrl) {
+      offlineCacheService.getCachedImage(artist.avatarUrl).then((cached) => {
+        if (cached) {
+          setCachedUrl(cached);
+          setHasError(false);
+        } else {
+          setHasError(true);
+        }
+      });
+    } else {
+      setHasError(true);
+    }
+  };
+
   return (
     <div
       onClick={() => onSelect(artist)}
@@ -26,13 +67,13 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist, onSelect }) => {
     >
       {/* Circle Avatar */}
       <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-neutral-100 border-2 border-white shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all mb-3">
-        {!hasError && artist.avatarUrl ? (
+        {!hasError && activeSrc ? (
           <img
-            src={artist.avatarUrl}
+            src={activeSrc}
             alt={artist.name}
             loading="lazy"
             referrerPolicy="no-referrer"
-            onError={() => setHasError(true)}
+            onError={handleImageError}
             className="w-full h-full object-cover"
           />
         ) : (

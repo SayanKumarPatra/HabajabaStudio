@@ -93,13 +93,13 @@ export const MiniPlayer: React.FC = () => {
         </div>
       )}
 
-      {/* Main player controls container */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 md:h-18 flex items-center justify-between gap-2 sm:gap-4">
-        {/* Left: Thumbnail & Song Metadata (flex-1 for balanced centering) */}
-        <div className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3">
+      {/* Main player controls container - Centered on Mobile using CSS Grid & Flexbox */}
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 h-16 md:h-18 grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 sm:gap-4">
+        {/* Left: Thumbnail & Song Metadata (Col 1: aligned to start) */}
+        <div className="min-w-0 flex items-center gap-2 sm:gap-3 justify-start overflow-hidden">
           <button
             onClick={() => setIsExpanded(true)}
-            className="relative shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-lg overflow-hidden group focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#ED1025]"
+            className="relative shrink-0 w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg overflow-hidden group focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#ED1025]"
             title="Expand player"
           >
             <CoverImage
@@ -116,13 +116,13 @@ export const MiniPlayer: React.FC = () => {
 
           <div
             onClick={() => setIsExpanded(true)}
-            className="cursor-pointer min-w-0 truncate"
+            className="cursor-pointer min-w-0 truncate pr-1"
             title="Click to view player"
           >
             <h4 className="text-xs md:text-sm font-semibold text-[#171717] truncate leading-tight hover:text-[#ED1025] transition-colors">
               {currentTrack.title}
             </h4>
-            <p className="text-[10.5px] md:text-xs text-[#6B7280] truncate mt-0.5">
+            <p className="text-[10px] md:text-xs text-[#6B7280] truncate mt-0.5">
               {currentTrack.artist}
             </p>
           </div>
@@ -144,9 +144,9 @@ export const MiniPlayer: React.FC = () => {
           </button>
         </div>
 
-        {/* Center: Playback Controls & Timers - Dead Centered */}
-        <div className="shrink-0 flex flex-col items-center justify-center gap-0.5 sm:gap-1 px-1">
-          <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
+        {/* Center: Playback Controls & Timers - Dead Centered in Screen */}
+        <div className="justify-self-center shrink-0 flex flex-col items-center justify-center gap-0.5 sm:gap-1 px-1">
+          <div className="flex items-center justify-center gap-1 sm:gap-2 md:gap-3">
             <button
               onClick={playPrevious}
               className="min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center text-[#171717] hover:text-[#ED1025] rounded-full transition-colors active:scale-95"
@@ -183,15 +183,15 @@ export const MiniPlayer: React.FC = () => {
           </div>
 
           {/* Time indicator */}
-          <div className="hidden md:flex items-center gap-1 text-[11px] font-mono tabular-nums text-[#6B7280]">
+          <div className="hidden md:flex items-center justify-center gap-1 text-[11px] font-mono tabular-nums text-[#6B7280]">
             <span>{formatTime(currentTime)}</span>
             <span>/</span>
             <span>{formatTime(duration)}</span>
           </div>
         </div>
 
-        {/* Right: Volume & Expand Action (flex-1 for balanced centering) */}
-        <div className="flex-1 min-w-0 flex items-center gap-2 justify-end">
+        {/* Right: Volume & Expand Action (Col 3: aligned to end) */}
+        <div className="min-w-0 flex items-center gap-1 sm:gap-2 justify-end">
           {/* Desktop Volume control */}
           <div className="hidden lg:flex items-center gap-2">
             <button
@@ -221,7 +221,7 @@ export const MiniPlayer: React.FC = () => {
           {/* Expand Full Player Button */}
           <button
             onClick={() => setIsExpanded(true)}
-            className="min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:px-3 flex items-center justify-center gap-1.5 text-xs font-medium text-[#171717] hover:bg-neutral-100 rounded-lg transition-colors"
+            className="min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:px-3 flex items-center justify-center gap-1.5 text-xs font-medium text-[#171717] hover:bg-neutral-100 rounded-lg transition-colors shrink-0"
             title="Expand full player"
             aria-label="Expand player"
           >

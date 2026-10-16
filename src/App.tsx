@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AudioProvider, useAudio } from './context/AudioContext';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { Album, NavigationTab } from './types/music';
+import { Shield } from 'lucide-react';
 import { MusicService } from './services/musicService';
 import { AppHeader } from './components/AppHeader';
 import { BottomNavigation } from './components/BottomNavigation';
@@ -16,6 +17,7 @@ import { PlaylistsPage } from './pages/PlaylistsPage';
 import { FavoritesPage } from './pages/FavoritesPage';
 import { AlbumDetailsPage } from './pages/AlbumDetailsPage';
 import { AdminPage } from './pages/AdminPage';
+import { OfflineIndicator } from './components/OfflineIndicator';
 
 function AppContent() {
   const { currentTrack } = useAudio();
@@ -25,27 +27,106 @@ function AppContent() {
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
   const [isDropboxGuideOpen, setIsDropboxGuideOpen] = useState(false);
 
+  // Navigation history stack for mobile back button ergonomics
+  const navHistoryRef = React.useRef<NavigationTab[]>(['home']);
+  const isNavigatingRef = React.useRef<boolean>(false);
+
+  // Initialize browser history entry safely so hitting back button returns to previous screen instead of exiting app
+  useEffect(() => {
+    try {
+      if (!window.history.state || !window.history.state.habajaba) {
+        window.history.replaceState({ habajaba: true, tab: 'home' }, '', window.location.hash || '#home');
+      }
+    } catch {
+      // Ignore iframe restrictions
+    }
+
+    const handlePopState = () => {
+      try {
+        // 1. If viewing an artist details page, back goes to artists list
+        if (selectedArtistName) {
+          setSelectedArtistName(null);
+          return;
+        }
+
+        // 2. If viewing an album details page, back goes to home or previous tab
+        if (selectedAlbum) {
+          setSelectedAlbum(null);
+          return;
+        }
+
+        // 3. If a modal is open, close it
+        if (isDropboxGuideOpen) {
+          setIsDropboxGuideOpen(false);
+          return;
+        }
+
+        // 4. Return to previous tab if user navigated across tabs
+        if (navHistoryRef.current.length > 1) {
+          navHistoryRef.current.pop(); // Remove current tab
+          const prevTab = navHistoryRef.current[navHistoryRef.current.length - 1] || 'home';
+          isNavigatingRef.current = true;
+          setCurrentTab(prevTab);
+          setTimeout(() => {
+            isNavigatingRef.current = false;
+          }, 100);
+        }
+      } catch (err) {
+        console.warn('Popstate handled safely:', err);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [selectedArtistName, selectedAlbum, isDropboxGuideOpen]);
+
   // Sync hash routing for shareable URLs and page refresh
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      if (hash.startsWith('album-')) {
-        const albumId = hash;
-        const found = MusicService.getAlbumById(albumId);
-        if (found) {
-          setSelectedAlbum(found);
-          setCurrentTab('album-details');
+      try {
+        const hash = window.location.hash.replace('#', '');
+
+        if (!hash || hash === 'home') {
+          setSelectedAlbum(null);
+          setSelectedArtistName(null);
+          setSelectedPlaylistId(null);
+          setCurrentTab('home');
           return;
         }
-      }
-      if (hash.startsWith('artist-')) {
-        const artistName = decodeURIComponent(hash.replace('artist-', ''));
-        setSelectedArtistName(artistName);
-        setCurrentTab('artists');
-        return;
-      }
-      if (['home', 'songs', 'artists', 'search', 'playlists', 'favorites', 'admin'].includes(hash)) {
-        setCurrentTab(hash as NavigationTab);
+
+        if (hash.startsWith('album-')) {
+          const albumId = hash;
+          const found = MusicService.getAlbumById(albumId);
+          if (found) {
+            setSelectedAlbum(found);
+            setCurrentTab('album-details');
+            return;
+          }
+        }
+
+        if (hash.startsWith('artist-')) {
+          const artistName = decodeURIComponent(hash.replace('artist-', ''));
+          setSelectedArtistName(artistName);
+          setCurrentTab('artists');
+          return;
+        }
+
+        if (hash === 'artists') {
+          setSelectedArtistName(null);
+          setCurrentTab('artists');
+          return;
+        }
+
+        if (['home', 'songs', 'artists', 'search', 'playlists', 'favorites', 'admin'].includes(hash)) {
+          setSelectedAlbum(null);
+          if (hash !== 'artists') setSelectedArtistName(null);
+          if (hash !== 'playlists') setSelectedPlaylistId(null);
+          setCurrentTab(hash as NavigationTab);
+        }
+      } catch (err) {
+        console.warn('Hashchange handled safely:', err);
       }
     };
 
@@ -68,6 +149,7 @@ function AppContent() {
   }, []);
 
   const handleNavigate = (tab: NavigationTab) => {
+    // 1. Unconditionally update tab state first so the UI changes immediately
     setCurrentTab(tab);
     if (tab !== 'album-details') {
       setSelectedAlbum(null);
@@ -78,26 +160,58 @@ function AppContent() {
     if (tab !== 'playlists') {
       setSelectedPlaylistId(null);
     }
-    window.location.hash = tab;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // 2. Track internal history for mobile back navigation
+    if (tab !== currentTab && !isNavigatingRef.current) {
+      navHistoryRef.current.push(tab);
+    }
+
+    // 3. Safely sync browser history & hash without crashing in iframe
+    try {
+      window.history.pushState({ habajaba: true, tab }, '', `#${tab}`);
+    } catch {
+      try {
+        window.location.hash = tab;
+      } catch {}
+    }
+
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {}
   };
 
   const handleSelectAlbum = (album: Album) => {
     setSelectedAlbum(album);
     setCurrentTab('album-details');
-    window.location.hash = album.id;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    try {
+      window.history.pushState({ habajaba: true, albumId: album.id }, '', `#${album.id}`);
+    } catch {
+      try {
+        window.location.hash = album.id;
+      } catch {}
+    }
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {}
   };
 
   const handleSelectArtist = (artistName: string | null) => {
     setSelectedArtistName(artistName);
     setCurrentTab('artists');
-    if (artistName) {
-      window.location.hash = `artist-${encodeURIComponent(artistName)}`;
-    } else {
-      window.location.hash = 'artists';
+    try {
+      if (artistName) {
+        window.history.pushState({ habajaba: true, artist: artistName }, '', `#artist-${encodeURIComponent(artistName)}`);
+      } else {
+        window.history.pushState({ habajaba: true, tab: 'artists' }, '', '#artists');
+      }
+    } catch {
+      try {
+        window.location.hash = artistName ? `artist-${encodeURIComponent(artistName)}` : 'artists';
+      } catch {}
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {}
   };
 
   const handleSelectPlaylist = (playlistId: string | null) => {
@@ -118,6 +232,9 @@ function AppContent() {
         currentTab={currentTab}
         onNavigate={handleNavigate}
       />
+
+      {/* Network & Offline Cache Status Indicator */}
+      <OfflineIndicator />
 
       {/* Main Content Area */}
       <main className={`flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 pt-2.5 sm:pt-5 ${contentBottomPadding}`}>
@@ -221,19 +338,20 @@ function AppContent() {
             </div>
           </div>
 
-          <div className="pt-3 border-t border-neutral-200/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-[#9CA3AF]">
-            <div className="flex items-center gap-1 font-bengali">
+          <div className="pt-3 border-t border-neutral-200/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#6B7280]">
+            <div className="flex items-center gap-1">
               <span
                 onClick={() => handleNavigate('admin')}
-                className="cursor-default select-none"
+                className="cursor-pointer select-none hover:text-[#ED1025] transition-colors p-1 -m-1 font-bold text-[#4B5563]"
                 title=""
+                aria-label="Copyright"
               >
                 ©
               </span>
-              <span>{new Date().getFullYear()} Habajaba Studio LIVE. সর্বস্বত্ব সংরক্ষিত (All rights reserved).</span>
+              <span>{new Date().getFullYear()} Habajaba Studio LIVE. All rights reserved.</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-[#9CA3AF]">
               <span>Digital Acoustic Master</span>
               <span className="text-neutral-300">·</span>
               <span>High-Fidelity Bengali Audio</span>
