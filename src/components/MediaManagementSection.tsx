@@ -22,6 +22,7 @@ import {
 import { HeroBannerConfig, Track } from '../types/music';
 import { MusicService } from '../services/musicService';
 import { analyzeAudioUrl, getDirectAudioUrl, testAudioStreamability } from '../utils/dropbox';
+import { optimizeImageFile } from '../utils/imageOptimizer';
 
 interface MediaManagementSectionProps {
   tracks: Track[];
@@ -213,28 +214,29 @@ export const MediaManagementSection: React.FC<MediaManagementSectionProps> = ({
   };
 
   // --- Album Cover Handlers ---
-  const handleCoverFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      if (result) {
-        setCoverInputUrl(result);
+    try {
+      const optimized = await optimizeImageFile(file, 1280, 720, 0.85, 'image/jpeg');
+      setCoverInputUrl(optimized);
 
-        const newAsset: SavedMediaAsset = {
-          id: `cover-${Date.now()}`,
-          name: file.name.replace(/\.[^/.]+$/, ''),
-          url: result,
-          type: 'cover',
-          aspectRatio: coverAspectRatio,
-          uploadedAt: new Date().toISOString().split('T')[0],
-        };
-        saveMediaAssets([newAsset, ...mediaAssets]);
-      }
-    };
-    reader.readAsDataURL(file);
+      const newAsset: SavedMediaAsset = {
+        id: `cover-${Date.now()}`,
+        name: file.name.replace(/\.[^/.]+$/, ''),
+        url: optimized,
+        type: 'cover',
+        aspectRatio: coverAspectRatio,
+        uploadedAt: new Date().toISOString().split('T')[0],
+      };
+      saveMediaAssets([newAsset, ...mediaAssets]);
+    } catch (err) {
+      console.error('Failed to optimize uploaded cover:', err);
+      alert('ইমেজ ফাইল প্রসেস করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+    } finally {
+      if (e.target) e.target.value = '';
+    }
   };
 
   const handleAssignCoverToTrack = () => {

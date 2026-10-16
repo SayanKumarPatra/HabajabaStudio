@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { MusicService } from '../services/musicService';
 import { BrandingConfig } from '../types/music';
+import { optimizeImageFile } from '../utils/imageOptimizer';
 
 export const BrandingAdminSection: React.FC = () => {
   const [branding, setBranding] = useState<BrandingConfig>(() => MusicService.getBranding());
@@ -23,8 +24,8 @@ export const BrandingAdminSection: React.FC = () => {
     });
   }, []);
 
-  // Handle local image file upload
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle local image file upload with optimization
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -34,25 +35,32 @@ export const BrandingAdminSection: React.FC = () => {
     }
 
     setIsProcessing(true);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      setBranding((prev) => ({
-        ...prev,
-        logoUrl: result,
-      }));
+    try {
+      // Optimize image for high-definition rendering while keeping file size under ~30KB
+      const optimizedDataUrl = await optimizeImageFile(file, 480, 160, 0.9, 'image/png');
+      const updatedConfig = {
+        ...branding,
+        logoUrl: optimizedDataUrl,
+      };
+      setBranding(updatedConfig);
+      // Auto-persist immediately to Realtime Database & local storage
+      await MusicService.saveBranding(updatedConfig);
+      setSavedAlert(true);
+      setTimeout(() => setSavedAlert(false), 3500);
+    } catch (err) {
+      console.error('Logo upload error:', err);
+      alert('ইমেজ প্রসেস করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+    } finally {
       setIsProcessing(false);
-    };
-    reader.onerror = () => {
-      alert('ইমেজ লোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
-      setIsProcessing(false);
-    };
-    reader.readAsDataURL(file);
+      if (e.target) e.target.value = '';
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsProcessing(true);
     await MusicService.saveBranding(branding);
+    setIsProcessing(false);
     setSavedAlert(true);
     setTimeout(() => setSavedAlert(false), 3000);
   };

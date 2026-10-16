@@ -274,6 +274,16 @@ export const MusicService = {
         console.warn('Failed to sync banner to Firestore:', e);
       }
     }
+
+    const rtdbInstance = getFirebaseRealtimeDb();
+    if (rtdbInstance) {
+      try {
+        const bannerRef = ref(rtdbInstance.rtdb, 'habajaba_settings/banner');
+        await rtdbSet(bannerRef, banner);
+      } catch (e) {
+        console.warn('Failed to sync banner to Realtime Database:', e);
+      }
+    }
   },
 
   getBranding(): BrandingConfig {
@@ -290,6 +300,16 @@ export const MusicService = {
         await setDoc(doc(firestoreInstance.db, 'habajaba_settings', 'branding'), branding);
       } catch (e) {
         console.warn('Failed to sync branding to Firestore:', e);
+      }
+    }
+
+    const rtdbInstance = getFirebaseRealtimeDb();
+    if (rtdbInstance) {
+      try {
+        const brandingRef = ref(rtdbInstance.rtdb, 'habajaba_settings/branding');
+        await rtdbSet(brandingRef, branding);
+      } catch (e) {
+        console.warn('Failed to sync branding to Realtime Database:', e);
       }
     }
   },

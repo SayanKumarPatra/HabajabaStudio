@@ -30,6 +30,7 @@ import { CoverImage } from '../components/CoverImage';
 import { MediaManagementSection } from '../components/MediaManagementSection';
 import { BrandingAdminSection } from '../components/BrandingAdminSection';
 import { FirebaseAdminSection } from '../components/FirebaseAdminSection';
+import { optimizeImageFile } from '../utils/imageOptimizer';
 
 interface AdminPageProps {
   onOpenDropboxGuide?: () => void;
@@ -55,10 +56,34 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
   const [album, setAlbum] = useState('');
   const [genre, setGenre] = useState('Acoustic Live');
   const [coverUrl, setCoverUrl] = useState('/banner-default.svg');
+  const [isCoverUploading, setIsCoverUploading] = useState(false);
   const [audioUrl, setAudioUrl] = useState('');
   const [duration, setDuration] = useState('');
   const [featured, setFeatured] = useState(false);
   const [published, setPublished] = useState(true);
+
+  const handleCoverFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('অনুগ্রহ করে শুধুমাত্র ইমেজ ফাইল (PNG, JPG, WebP) নির্বাচন করুন।');
+      return;
+    }
+
+    setIsCoverUploading(true);
+    try {
+      // Compress and optimize to 16:9 HD resolution (960x540 max, ~50KB)
+      const optimized = await optimizeImageFile(file, 960, 540, 0.84, 'image/jpeg');
+      setCoverUrl(optimized);
+    } catch (err) {
+      console.error('Failed to process cover image:', err);
+      alert('ব্যানার ইমেজ প্রসেস করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+    } finally {
+      setIsCoverUploading(false);
+      if (e.target) e.target.value = '';
+    }
+  };
 
   // Audio testing in form
   const [isTestingAudio, setIsTestingAudio] = useState(false);
@@ -651,30 +676,53 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
                 </div>
               </div>
 
-              {/* 16:9 Banner URL */}
-              <div>
-                <label className="font-bold text-[#171717] block mb-1">
-                  16:9 ইউটিউব রেশিও ব্যানার লিঙ্ক (YouTube 16:9 Banner / Cover URL)
+              {/* 16:9 YouTube Ratio Banner / Cover Upload */}
+              <div className="space-y-2.5">
+                <label className="font-bold text-[#171717] block">
+                  16:9 ইউটিউব ব্যানার ও কভার (YouTube 16:9 Banner / Cover) *
                 </label>
-                <div className="flex gap-2">
+                
+                {/* Direct file upload button */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverFileUpload}
+                    className="hidden"
+                    id="song-cover-file-upload"
+                  />
+                  <label
+                    htmlFor="song-cover-file-upload"
+                    className="cursor-pointer min-h-[42px] px-4 py-2 bg-[#ED1025] hover:bg-[#D90D20] text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-xs transition-colors shrink-0"
+                  >
+                    <Upload className="w-4 h-4" />
+                    <span>{isCoverUploading ? 'ব্যানার প্রসেস হচ্ছে...' : 'ডিভাইস থেকে ফাইল আপলোড করুন (Upload Banner)'}</span>
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => setCoverUrl('/banner-default.svg')}
+                    className="px-3 py-2 bg-neutral-100 hover:bg-neutral-200 rounded-xl text-[11px] font-semibold text-[#171717] whitespace-nowrap transition-colors"
+                  >
+                    Use Default Banner
+                  </button>
+                </div>
+
+                {/* Direct link input as secondary option */}
+                <div className="pt-1">
+                  <div className="text-[11px] text-[#6B7280] mb-1">অথবা সরাসরি ইমেজ লিঙ্ক (Optional Image URL):</div>
                   <input
                     type="text"
                     value={coverUrl}
                     onChange={(e) => setCoverUrl(e.target.value)}
                     placeholder="https://... or /banner-default.svg"
-                    className="flex-1 px-3 py-2.5 rounded-xl border border-[#EAEAEA] focus:border-[#ED1025] focus:outline-hidden"
+                    className="w-full px-3 py-2 rounded-xl border border-[#EAEAEA] text-xs font-mono focus:border-[#ED1025] focus:outline-hidden"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setCoverUrl('/banner-default.svg')}
-                    className="px-3 py-2 bg-neutral-100 hover:bg-neutral-200 rounded-xl text-[11px] font-semibold whitespace-nowrap"
-                  >
-                    Use Logo Banner
-                  </button>
                 </div>
+
                 {/* 16:9 thumbnail preview */}
-                <div className="mt-2 flex items-center gap-3">
-                  <div className="w-32 aspect-video rounded-lg overflow-hidden border border-[#EAEAEA] bg-neutral-100 shrink-0">
+                <div className="p-3 bg-neutral-50 rounded-2xl border border-[#EAEAEA] flex items-center gap-3">
+                  <div className="w-36 aspect-video rounded-xl overflow-hidden border border-[#EAEAEA] bg-neutral-200 shrink-0 shadow-xs relative">
                     <img
                       src={coverUrl || '/banner-default.svg'}
                       alt="Thumbnail preview"
@@ -685,9 +733,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <span className="text-[11px] text-[#6B7280]">
-                    ইউটিউব অনুপাত (16:9 Format) বজায় থাকবে। মোবাইলে এটি সুন্দরভাবে ফিট হবে।
-                  </span>
+                  <div className="text-xs text-[#6B7280] space-y-1">
+                    <p className="font-bold text-[#171717]">
+                      {coverUrl && coverUrl.startsWith('data:') ? '✅ ডিভাইস ফাইল সফলভাবে যুক্ত হয়েছে' : '১৬:৯ ইউটিউব প্রিভিউ'}
+                    </p>
+                    <p className="text-[11px] leading-relaxed">
+                      মোবাইলে এবং প্লেলিস্টে গানটি ১৬:৯ অনুপাতে ডিসপ্লে হবে। গান সেভ করলে এটি স্বয়ংক্রিয়ভাবে ক্লাউডে আপলোড হয়ে যাবে।
+                    </p>
+                  </div>
                 </div>
               </div>
 

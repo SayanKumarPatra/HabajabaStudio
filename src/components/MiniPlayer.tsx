@@ -94,9 +94,9 @@ export const MiniPlayer: React.FC = () => {
       )}
 
       {/* Main player controls container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 md:h-18 flex items-center justify-between gap-3">
-        {/* Left: Thumbnail & Song Metadata */}
-        <div className="flex items-center gap-3 min-w-0 max-w-[45%] md:max-w-[30%]">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 md:h-18 flex items-center justify-between gap-2 sm:gap-4">
+        {/* Left: Thumbnail & Song Metadata (flex-1 for balanced centering) */}
+        <div className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => setIsExpanded(true)}
             className="relative shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-lg overflow-hidden group focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#ED1025]"
@@ -122,7 +122,7 @@ export const MiniPlayer: React.FC = () => {
             <h4 className="text-xs md:text-sm font-semibold text-[#171717] truncate leading-tight hover:text-[#ED1025] transition-colors">
               {currentTrack.title}
             </h4>
-            <p className="text-[11px] md:text-xs text-[#6B7280] truncate mt-0.5">
+            <p className="text-[10.5px] md:text-xs text-[#6B7280] truncate mt-0.5">
               {currentTrack.artist}
             </p>
           </div>
@@ -144,12 +144,12 @@ export const MiniPlayer: React.FC = () => {
           </button>
         </div>
 
-        {/* Center: Playback Controls & Timers */}
-        <div className="flex flex-col items-center justify-center gap-1">
-          <div className="flex items-center gap-1 md:gap-3">
+        {/* Center: Playback Controls & Timers - Dead Centered */}
+        <div className="shrink-0 flex flex-col items-center justify-center gap-0.5 sm:gap-1 px-1">
+          <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
             <button
               onClick={playPrevious}
-              className="min-h-[44px] min-w-[44px] flex items-center justify-center text-[#171717] hover:text-[#ED1025] rounded-full transition-colors"
+              className="min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center text-[#171717] hover:text-[#ED1025] rounded-full transition-colors active:scale-95"
               title="Previous song"
               aria-label="Previous"
             >
@@ -159,7 +159,7 @@ export const MiniPlayer: React.FC = () => {
             <button
               onClick={togglePlay}
               disabled={isLoading}
-              className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white flex items-center justify-center shadow-md shadow-[#ED1025]/30 active:scale-95 transition-all"
+              className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white flex items-center justify-center shadow-md shadow-[#ED1025]/30 active:scale-95 transition-all shrink-0"
               title={isPlaying ? 'Pause' : 'Play'}
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
@@ -174,7 +174,7 @@ export const MiniPlayer: React.FC = () => {
 
             <button
               onClick={playNext}
-              className="min-h-[44px] min-w-[44px] flex items-center justify-center text-[#171717] hover:text-[#ED1025] rounded-full transition-colors"
+              className="min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center text-[#171717] hover:text-[#ED1025] rounded-full transition-colors active:scale-95"
               title="Next song"
               aria-label="Next"
             >
@@ -190,8 +190,8 @@ export const MiniPlayer: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Volume & Expand Action */}
-        <div className="flex items-center gap-2 justify-end min-w-[120px]">
+        {/* Right: Volume & Expand Action (flex-1 for balanced centering) */}
+        <div className="flex-1 min-w-0 flex items-center gap-2 justify-end">
           {/* Desktop Volume control */}
           <div className="hidden lg:flex items-center gap-2">
             <button
@@ -221,7 +221,7 @@ export const MiniPlayer: React.FC = () => {
           {/* Expand Full Player Button */}
           <button
             onClick={() => setIsExpanded(true)}
-            className="min-h-[44px] px-3 flex items-center gap-1.5 text-xs font-medium text-[#171717] hover:bg-neutral-100 rounded-lg transition-colors"
+            className="min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:px-3 flex items-center justify-center gap-1.5 text-xs font-medium text-[#171717] hover:bg-neutral-100 rounded-lg transition-colors"
             title="Expand full player"
             aria-label="Expand player"
           >
