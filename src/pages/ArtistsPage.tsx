@@ -227,9 +227,9 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
         </div>
       </div>
 
-      {/* Grid of Artists */}
+      {/* Grid of Artists (Snug & Compact on Mobile: 3 to 4 items side-by-side, no wasted empty space) */}
       {filteredArtists.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
           {filteredArtists.map((artist) => (
             <ArtistCard
               key={artist.id}

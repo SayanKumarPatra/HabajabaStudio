@@ -63,10 +63,10 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist, onSelect }) => {
   return (
     <div
       onClick={() => onSelect(artist)}
-      className="group flex flex-col items-center text-center p-3 rounded-2xl cursor-pointer hover:bg-neutral-50 border border-transparent hover:border-[#EAEAEA] transition-all select-none"
+      className="group flex flex-col items-center text-center p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl cursor-pointer hover:bg-neutral-50/80 border border-transparent hover:border-[#EAEAEA] transition-all select-none active:scale-95"
     >
       {/* Circle Avatar */}
-      <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-neutral-100 border-2 border-white shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all mb-3">
+      <div className="relative w-16 h-16 sm:w-22 sm:h-22 md:w-26 md:h-26 rounded-full overflow-hidden bg-neutral-100 border-2 border-white shadow-xs group-hover:shadow-md group-hover:scale-105 transition-all mb-1.5 sm:mb-2 shrink-0">
         {!hasError && activeSrc ? (
           <img
             src={activeSrc}
@@ -78,8 +78,8 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist, onSelect }) => {
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-tr from-neutral-900 to-neutral-700 flex flex-col items-center justify-center text-white">
-            <Mic2 className="w-6 h-6 text-[#ED1025] mb-1" />
-            <span className="text-xs font-bold tracking-wider">
+            <Mic2 className="w-4 h-4 sm:w-6 sm:h-6 text-[#ED1025] mb-0.5" />
+            <span className="text-[10px] sm:text-xs font-bold tracking-wider">
               {getInitials(artist.name)}
             </span>
           </div>
@@ -87,14 +87,14 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist, onSelect }) => {
       </div>
 
       {/* Name & Details */}
-      <h4 className="text-sm font-bold text-[#171717] group-hover:text-[#ED1025] transition-colors truncate max-w-full">
+      <h4 className="text-xs sm:text-sm font-bold text-[#171717] group-hover:text-[#ED1025] transition-colors truncate max-w-full leading-tight">
         {artist.name}
       </h4>
-      <p className="text-xs text-[#6B7280] line-clamp-1 mt-0.5">
+      <p className="text-[10px] sm:text-xs text-[#6B7280] line-clamp-1 mt-0.5 font-medium">
         {artist.role}
       </p>
       {artist.trackCount !== undefined && artist.trackCount > 0 && (
-        <span className="text-[11px] font-mono tabular-nums text-[#ED1025] font-medium mt-1">
+        <span className="text-[9px] sm:text-[11px] font-mono tabular-nums text-[#ED1025] font-semibold mt-0.5">
           {artist.trackCount} {artist.trackCount === 1 ? 'Track' : 'Tracks'}
         </span>
       )}

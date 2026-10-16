@@ -18,6 +18,7 @@ import { SongRow } from '../components/SongRow';
 import { CoverImage } from '../components/CoverImage';
 import { SlidingBannerCarousel } from '../components/SlidingBannerCarousel';
 import { YouTubePromoSection } from '../components/YouTubePromoSection';
+import { CommunityFeedbackSection } from '../components/CommunityFeedbackSection';
 
 interface HomePageProps {
   onNavigate: (tab: NavigationTab) => void;
@@ -63,6 +64,9 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {/* 2. Official YouTube Channel Promotion Section */}
       <YouTubePromoSection branding={branding} />
+
+      {/* 2.5 Real-Time Listener Feedback & Comments */}
+      <CommunityFeedbackSection />
 
       {/* 2. Compact Category Shortcuts (Mobile 4-Column Layout, Zero Vertical Spill) */}
       <section className="grid grid-cols-4 gap-2 sm:gap-3">

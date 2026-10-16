@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   X,
   Play,
@@ -11,19 +11,14 @@ import {
   Heart,
   Volume2,
   VolumeX,
-  ListMusic,
-  Info,
   Radio,
   Loader2,
-  Disc3,
-  FileText,
-  Sparkles,
-  Music2,
   Clock,
+  Info,
 } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
 import { useFavorites } from '../context/FavoritesContext';
-import { CoverImage } from './CoverImage';
+import { CassetteTape } from './CassetteTape';
 
 export const ExpandedPlayer: React.FC = () => {
   const {
@@ -43,9 +38,6 @@ export const ExpandedPlayer: React.FC = () => {
     setVolume,
     isMuted,
     toggleMute,
-    queue,
-    queueIndex,
-    playTrack,
     isExpanded,
     setIsExpanded,
     isLoading,
@@ -53,9 +45,8 @@ export const ExpandedPlayer: React.FC = () => {
   } = useAudio();
 
   const { isFavorite, toggleFavorite } = useFavorites();
-  const [activeTab, setActiveTab] = useState<'visuals' | 'review' | 'queue'>('visuals');
 
-  // Push history state when expanded so device/mobile back button closes player instead of exiting website
+  // Handle popstate so browser/mobile back button gracefully closes the player drawer
   useEffect(() => {
     if (!isExpanded) return;
 
@@ -88,72 +79,59 @@ export const ExpandedPlayer: React.FC = () => {
     seek(val);
   };
 
-  // 14 dynamic equalizer bars height distribution for visual appeal
-  const waveHeights = [40, 75, 55, 95, 60, 100, 70, 85, 45, 90, 65, 80, 50, 75];
+  // 20 Vibrant RGB Neon colors for dynamic dancing music beats
+  const rgbBeats = [
+    { color: 'from-[#FF0055] to-[#FF5577]', shadow: 'rgba(255,0,85,0.7)', baseH: 22 },
+    { color: 'from-[#FF3366] to-[#FF7799]', shadow: 'rgba(255,51,102,0.7)', baseH: 14 },
+    { color: 'from-[#EC4899] to-[#F472B6]', shadow: 'rgba(236,72,153,0.7)', baseH: 28 },
+    { color: 'from-[#D946EF] to-[#E879F9]', shadow: 'rgba(217,70,239,0.7)', baseH: 18 },
+    { color: 'from-[#A855F7] to-[#C084FC]', shadow: 'rgba(168,85,247,0.7)', baseH: 32 },
+    { color: 'from-[#8B5CF6] to-[#A78BFA]', shadow: 'rgba(139,92,246,0.7)', baseH: 24 },
+    { color: 'from-[#6366F1] to-[#818CF8]', shadow: 'rgba(99,102,241,0.7)', baseH: 16 },
+    { color: 'from-[#3B82F6] to-[#60A5FA]', shadow: 'rgba(59,130,246,0.7)', baseH: 30 },
+    { color: 'from-[#06B6D4] to-[#22D3EE]', shadow: 'rgba(6,182,212,0.7)', baseH: 26 },
+    { color: 'from-[#14B8A6] to-[#2DD4BF]', shadow: 'rgba(20,184,166,0.7)', baseH: 19 },
+    { color: 'from-[#10B981] to-[#34D399]', shadow: 'rgba(16,185,129,0.7)', baseH: 34 },
+    { color: 'from-[#84CC16] to-[#A3E635]', shadow: 'rgba(132,204,22,0.7)', baseH: 20 },
+    { color: 'from-[#EAB308] to-[#FACC15]', shadow: 'rgba(234,179,8,0.7)', baseH: 27 },
+    { color: 'from-[#F59E0B] to-[#FBBF24]', shadow: 'rgba(245,158,11,0.7)', baseH: 15 },
+    { color: 'from-[#F97316] to-[#FB923C]', shadow: 'rgba(249,115,22,0.7)', baseH: 31 },
+    { color: 'from-[#EF4444] to-[#F87171]', shadow: 'rgba(239,68,68,0.7)', baseH: 23 },
+    { color: 'from-[#EC4899] to-[#F43F5E]', shadow: 'rgba(236,72,153,0.7)', baseH: 17 },
+    { color: 'from-[#A855F7] to-[#D946EF]', shadow: 'rgba(168,85,247,0.7)', baseH: 29 },
+    { color: 'from-[#06B6D4] to-[#3B82F6]', shadow: 'rgba(6,182,212,0.7)', baseH: 21 },
+    { color: 'from-[#FF0055] to-[#F59E0B]', shadow: 'rgba(255,0,85,0.7)', baseH: 25 },
+  ];
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#0A0A0A]/85 backdrop-blur-2xl flex flex-col items-center justify-between p-3.5 sm:p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200 overflow-y-auto select-none"
+      className="fixed inset-0 z-50 bg-[#0B0B0E]/95 backdrop-blur-2xl flex flex-col items-center justify-between p-3 sm:p-5 md:p-6 animate-in fade-in zoom-in-95 duration-200 overflow-y-auto select-none"
       role="dialog"
       aria-modal="true"
-      aria-label="Expanded Music Player & Review"
+      aria-label="Habajaba Live Cassette Player"
     >
       {/* Background Animated Dynamic Ambient Glow that responds to music */}
       <div
-        className={`absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] sm:w-[480px] h-[320px] sm:h-[480px] rounded-full pointer-events-none transition-all duration-1000 ${
+        className={`absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[500px] h-[340px] sm:h-[500px] rounded-full pointer-events-none transition-all duration-1000 ${
           isPlaying
-            ? 'bg-radial from-[#ED1025]/35 via-amber-500/20 to-transparent blur-3xl scale-110 opacity-90 animate-pulse'
-            : 'bg-radial from-[#ED1025]/15 via-transparent to-transparent blur-3xl scale-90 opacity-40'
+            ? 'bg-radial from-[#ED1025]/30 via-purple-600/15 to-transparent blur-3xl scale-110 opacity-90 animate-pulse'
+            : 'bg-radial from-[#ED1025]/10 via-transparent to-transparent blur-3xl scale-90 opacity-30'
         }`}
       />
 
-      {/* Header bar: Studio Pill, Tab Switcher & Close Button */}
+      {/* Clean Minimal Header (Top Review/q4 Section Clutter Removed per instruction) */}
       <div className="relative z-10 w-full max-w-md mx-auto flex items-center justify-between text-white/90 pb-2 border-b border-white/10">
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-[#ED1025] animate-ping" />
           <Radio className="w-4 h-4 text-[#ED1025]" />
-          <span className="text-[11px] sm:text-xs uppercase tracking-widest font-black text-white/80 font-mono">
-            HABAJABA LIVE
+          <span className="text-[11px] sm:text-xs uppercase tracking-widest font-black text-white/90 font-mono">
+            HABAJABA CASSETTE DECK
           </span>
-        </div>
-
-        {/* View Switcher: Visuals / Review / Queue */}
-        <div className="flex items-center p-0.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[10px] sm:text-xs font-semibold">
-          <button
-            onClick={() => setActiveTab('visuals')}
-            className={`px-2.5 py-1 rounded-full transition-all cursor-pointer ${
-              activeTab === 'visuals'
-                ? 'bg-[#ED1025] text-white shadow-xs font-bold'
-                : 'text-white/70 hover:text-white'
-            }`}
-          >
-            অডিও
-          </button>
-          <button
-            onClick={() => setActiveTab('review')}
-            className={`px-2.5 py-1 rounded-full transition-all cursor-pointer ${
-              activeTab === 'review'
-                ? 'bg-[#ED1025] text-white shadow-xs font-bold'
-                : 'text-white/70 hover:text-white'
-            }`}
-          >
-            মিউজিক রিভিউ
-          </button>
-          <button
-            onClick={() => setActiveTab('queue')}
-            className={`px-2.5 py-1 rounded-full transition-all cursor-pointer ${
-              activeTab === 'queue'
-                ? 'bg-[#ED1025] text-white shadow-xs font-bold'
-                : 'text-white/70 hover:text-white'
-            }`}
-          >
-            কিউ ({queue.length})
-          </button>
         </div>
 
         <button
           onClick={() => setIsExpanded(false)}
-          className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+          className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
           title="Close player"
           aria-label="Close"
         >
@@ -161,207 +139,75 @@ export const ExpandedPlayer: React.FC = () => {
         </button>
       </div>
 
-      {/* Main Center Content Body based on Active Tab */}
-      <div className="relative z-10 w-full max-w-md mx-auto my-auto py-2 flex flex-col items-center justify-center flex-1">
-        {/* TAB 1: Visuals & Live Acoustic Audio Experience */}
-        {activeTab === 'visuals' && (
-          <div className="w-full flex flex-col items-center justify-center text-center space-y-3 sm:space-y-4">
-            {/* Album Artwork with Glowing Vinyl Edge */}
-            <div className="relative group">
-              {/* Outer Radiant Glow */}
-              <div
-                className={`absolute -inset-3 rounded-3xl bg-gradient-to-tr from-[#ED1025] via-amber-400 to-[#ED1025] opacity-40 blur-xl transition-all duration-700 ${
-                  isPlaying ? 'scale-105 opacity-60' : 'scale-95 opacity-20'
-                }`}
-              />
+      {/* Main Center Content: Vintage Double-Spool Cassette & Song Metadata */}
+      <div className="relative z-10 w-full max-w-md mx-auto my-auto py-2 flex flex-col items-center justify-center space-y-3 sm:space-y-4">
+        {/* Retro Double-Spool Rotating Cassette Tape */}
+        <CassetteTape track={currentTrack} isPlaying={isPlaying} />
 
-              <div className="relative w-56 h-56 sm:w-68 sm:h-68 mx-auto rounded-3xl overflow-hidden shadow-2xl shadow-black/80 border-2 border-white/20 transition-transform flex items-center justify-center bg-neutral-900">
-                <CoverImage
-                  src={currentTrack.coverUrl}
-                  alt={currentTrack.title}
-                  title={currentTrack.title}
-                  artist={currentTrack.artist}
-                  className="w-full h-full object-cover"
-                />
-
-                {/* Disc badge overlay */}
-                <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[9px] font-mono text-white/90 flex items-center gap-1">
-                  <Disc3
-                    className={`w-3 h-3 text-[#ED1025] ${isPlaying ? 'animate-spin' : ''}`}
-                    style={{ animationDuration: '4s' }}
-                  />
-                  <span>STUDIO MASTER</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Song Metadata */}
-            <div className="w-full text-center flex flex-col items-center justify-center px-2">
-              <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight line-clamp-1 w-full text-shadow">
-                {currentTrack.title}
-              </h2>
-              <p className="text-xs sm:text-sm text-white/80 mt-0.5 line-clamp-1 font-semibold text-[#ED1025] w-full">
-                {currentTrack.artist}
-              </p>
-              {currentTrack.album && (
-                <div className="flex items-center justify-center gap-2 text-[11px] text-white/50 mt-1">
-                  <span>{currentTrack.album}</span>
-                  {currentTrack.genre && (
-                    <>
-                      <span aria-hidden="true">·</span>
-                      <span className="text-amber-400/90 font-medium">{currentTrack.genre}</span>
-                    </>
-                  )}
-                </div>
+        {/* Song & Artist Title */}
+        <div className="w-full text-center flex flex-col items-center justify-center px-2">
+          <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight line-clamp-1 w-full drop-shadow-md">
+            {currentTrack.title}
+          </h2>
+          <p className="text-xs sm:text-sm font-bold text-[#ED1025] mt-0.5 line-clamp-1 w-full">
+            {currentTrack.artist}
+          </p>
+          {currentTrack.album && (
+            <div className="flex items-center justify-center gap-2 text-[11px] text-white/60 mt-1 font-medium">
+              <span>{currentTrack.album}</span>
+              {currentTrack.genre && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span className="text-amber-400 font-semibold">{currentTrack.genre}</span>
+                </>
               )}
             </div>
+          )}
+        </div>
 
-            {/* Dynamic Soundwave Equalizer Bars that bounce with playback */}
-            <div className="flex items-center justify-center gap-1 sm:gap-1.5 h-7 px-3 py-1 rounded-full bg-white/5 backdrop-blur-xs border border-white/10">
-              {waveHeights.map((h, i) => (
+        {/* Dancing RGB Neon Music Beats Visualizer (বিভিন্ন আরজিবি কালারের মিউজিক বিডস) */}
+        <div className="w-full flex flex-col items-center gap-1.5 pt-1">
+          <div className="flex items-end justify-center gap-1 sm:gap-1.5 h-10 px-3 py-1 rounded-2xl bg-black/50 backdrop-blur-md border border-white/10 shadow-inner w-full">
+            {rgbBeats.map((beat, i) => {
+              // Calculate animated dancing height based on playback state and index
+              const multiplier = isPlaying
+                ? 0.4 + Math.sin(currentTime * 4 + i * 0.8) * 0.35 + (i % 2 === 0 ? 0.25 : 0.1)
+                : 0.15;
+              const calcHeight = isPlaying
+                ? Math.max(6, Math.min(36, beat.baseH * multiplier * 1.5))
+                : 4;
+
+              return (
                 <div
                   key={i}
-                  className={`w-1 sm:w-1.5 rounded-full transition-all duration-300 ${
-                    isPlaying
-                      ? 'bg-gradient-to-t from-[#ED1025] via-amber-400 to-white'
-                      : 'bg-white/25 h-1.5'
-                  }`}
+                  className={`w-1 sm:w-1.5 rounded-full bg-gradient-to-t ${beat.color} transition-all`}
                   style={{
-                    height: isPlaying ? `${Math.max(6, Math.min(26, (h * (0.4 + (i % 3) * 0.3))))}px` : '4px',
-                    transition: 'height 250ms ease-in-out',
+                    height: `${calcHeight}px`,
+                    transition: isPlaying ? 'height 120ms ease-in-out' : 'height 400ms ease',
+                    boxShadow: isPlaying ? `0 0 8px ${beat.shadow}` : 'none',
                   }}
                 />
-              ))}
-            </div>
+              );
+            })}
           </div>
-        )}
+          <span className="text-[9px] font-mono tracking-widest uppercase text-white/40">
+            {isPlaying ? 'DYNAMIC RGB EQUALIZER ACTIVE' : 'AUDIO PAUSED'}
+          </span>
+        </div>
 
-        {/* TAB 2: Music Review & Story Tab ("মিউজিক রিভিউ") */}
-        {activeTab === 'review' && (
-          <div className="w-full h-80 sm:h-96 bg-neutral-900/90 backdrop-blur-xl rounded-2xl border border-white/15 p-4 sm:p-5 flex flex-col overflow-y-auto space-y-3.5 text-left text-white animate-in fade-in">
-            <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#ED1025]" />
-                <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-white">
-                  মিউজিক রিভিউ ও প্রোডাকশন ডিটেইলস
-                </span>
-              </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#ED1025]/20 text-[#ED1025] font-bold">
-                Acoustic Master
-              </span>
-            </div>
-
-            {/* Song Title & Artist Summary */}
-            <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-1">
-              <h3 className="text-sm sm:text-base font-bold text-white">{currentTrack.title}</h3>
-              <p className="text-xs text-amber-400 font-semibold">{currentTrack.artist}</p>
-              {currentTrack.album && (
-                <p className="text-[11px] text-white/60">অ্যালবাম: {currentTrack.album}</p>
-              )}
-            </div>
-
-            {/* Description / Story / Review */}
-            <div className="space-y-1.5">
-              <h4 className="text-xs font-bold text-[#ED1025] flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5" />
-                <span>স্টুডিও অডিও রিভিউ ও বিবরণ (Master Review)</span>
-              </h4>
-              <p className="text-xs text-white/80 leading-relaxed font-bengali bg-black/40 p-3 rounded-xl border border-white/5">
-                {currentTrack.description ||
-                  'হ্যাবাজ্যাবা স্টুডিও লাইভ (Habajaba Studio LIVE)-এর অরিজিনাল অ্যাকোস্টিক সেশনে রেকর্ডকৃত হাই-ফিডেলিটি বাংলা গান। ড্রপবক্স ডিরেক্ট ডিজিটাল স্ট্রিমিং ও স্টুডিও মাস্টার কোয়ালিটি দ্বারা সমৃদ্ধ।'}
-              </p>
-            </div>
-
-            {/* Lyrics if available */}
-            {currentTrack.lyrics && (
-              <div className="space-y-1.5">
-                <h4 className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                  <Music2 className="w-3.5 h-3.5" />
-                  <span>গানের কথা (Lyrics)</span>
-                </h4>
-                <div className="text-xs text-white/80 whitespace-pre-line font-bengali bg-black/40 p-3 rounded-xl border border-white/5 leading-relaxed">
-                  {currentTrack.lyrics}
-                </div>
-              </div>
-            )}
-
-            {/* Technical Audio Specs */}
-            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-white/70 pt-1">
-              <div className="p-2 rounded-lg bg-white/5 border border-white/10">
-                <span className="text-white/40 block">DURATION</span>
-                <span className="text-white font-bold">{formatTime(duration)}</span>
-              </div>
-              <div className="p-2 rounded-lg bg-white/5 border border-white/10">
-                <span className="text-white/40 block">AUDIO STREAM</span>
-                <span className="text-emerald-400 font-bold">24-Bit Acoustic Master</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: Queue List Tab */}
-        {activeTab === 'queue' && (
-          <div className="w-full h-80 sm:h-96 bg-neutral-900/90 backdrop-blur-xl rounded-2xl border border-white/15 p-4 flex flex-col animate-in fade-in">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <span className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
-                <ListMusic className="w-4 h-4 text-[#ED1025]" />
-                প্লেলিস্ট কিউ ({queue.length} Tracks)
-              </span>
-              <button
-                onClick={() => setActiveTab('visuals')}
-                className="text-xs text-white/60 hover:text-white"
-              >
-                আর্টওয়ার্কে ফিরুন
-              </button>
-            </div>
-
-            <div className="overflow-y-auto flex-1 mt-2 space-y-1.5 pr-1">
-              {queue.map((track, idx) => {
-                const isCurrent = idx === queueIndex;
-                return (
-                  <button
-                    key={`${track.id}-${idx}`}
-                    onClick={() => playTrack(track, queue)}
-                    className={`w-full text-left p-2.5 rounded-xl flex items-center gap-3 transition-colors cursor-pointer ${
-                      isCurrent
-                        ? 'bg-[#ED1025]/25 border border-[#ED1025]/40 text-white font-semibold'
-                        : 'text-white/80 hover:bg-white/5'
-                    }`}
-                  >
-                    <span className="text-xs font-mono tabular-nums text-white/40 w-4">
-                      {idx + 1}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs truncate">{track.title}</p>
-                      <p className="text-[10px] text-white/50 truncate">{track.artist}</p>
-                    </div>
-                    {isCurrent && (
-                      <span className="text-[10px] uppercase font-bold text-[#ED1025] flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#ED1025] animate-ping" />
-                        Playing
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Error notification */}
+        {/* Error notification if playback failed */}
         {error && (
-          <div className="mt-2 p-2.5 rounded-xl bg-red-950/80 border border-red-800 text-xs text-red-200 flex items-center gap-2 w-full">
+          <div className="p-2.5 rounded-xl bg-red-950/80 border border-red-800 text-xs text-red-200 flex items-center gap-2 w-full">
             <Info className="w-4 h-4 shrink-0 text-[#ED1025]" />
             <span>{error}</span>
           </div>
         )}
       </div>
 
-      {/* Eye-Catching Running Minutes & Progress Controls Panel */}
-      <div className="relative z-10 w-full max-w-md mx-auto space-y-3 pt-2 flex flex-col items-center justify-center">
-        {/* Running Minutes Pill Display ("যে মিনিটটা চলছে যেন সুন্দর দেখায় মানুষের চোখে লাগে") */}
-        <div className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 text-white shadow-inner">
-          {/* Running Clock with Pulsing Indicator */}
+      {/* Running Minutes & Player Progress Controls Panel */}
+      <div className="relative z-10 w-full max-w-md mx-auto space-y-3 pt-1 flex flex-col items-center justify-center">
+        {/* Running Minutes Pill Display */}
+        <div className="w-full flex items-center justify-between px-3 py-1.5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 text-white shadow-inner">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 text-[#ED1025]">
               <Clock className="w-3.5 h-3.5 animate-pulse" />
@@ -378,13 +224,12 @@ export const ExpandedPlayer: React.FC = () => {
             </div>
           </div>
 
-          {/* Completion Badge */}
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#ED1025]/20 text-[#ED1025] border border-[#ED1025]/30 font-bold">
               {Math.round(progressPercent)}%
             </span>
             <span className="text-[10px] font-mono text-white/50 hidden xs:inline">
-              -{formatTime(remainingSecs)} বাকি
+              -{formatTime(remainingSecs)}
             </span>
           </div>
         </div>
@@ -408,9 +253,9 @@ export const ExpandedPlayer: React.FC = () => {
           </div>
         </div>
 
-        {/* Transport & Secondary Controls - Dead Centered using 5-col Grid */}
+        {/* Transport Controls (Centered 5-col Grid) */}
         <div className="w-full grid grid-cols-5 items-center justify-items-center px-1">
-          {/* Shuffle Button (Col 1) */}
+          {/* Shuffle Button */}
           <button
             onClick={toggleShuffle}
             className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-colors cursor-pointer ${
@@ -422,7 +267,7 @@ export const ExpandedPlayer: React.FC = () => {
             <Shuffle className="w-5 h-5" />
           </button>
 
-          {/* Previous Track (Col 2) */}
+          {/* Previous Track */}
           <button
             onClick={playPrevious}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center text-white hover:text-[#ED1025] transition-colors cursor-pointer"
@@ -432,7 +277,7 @@ export const ExpandedPlayer: React.FC = () => {
             <SkipBack className="w-6 h-6 fill-current" />
           </button>
 
-          {/* Primary Play / Pause Button (Col 3 - Dead Center) */}
+          {/* Primary Play / Pause Button */}
           <button
             onClick={togglePlay}
             disabled={isLoading}
@@ -449,7 +294,7 @@ export const ExpandedPlayer: React.FC = () => {
             )}
           </button>
 
-          {/* Next Track (Col 4) */}
+          {/* Next Track */}
           <button
             onClick={playNext}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center text-white hover:text-[#ED1025] transition-colors cursor-pointer"
@@ -459,7 +304,7 @@ export const ExpandedPlayer: React.FC = () => {
             <SkipForward className="w-6 h-6 fill-current" />
           </button>
 
-          {/* Repeat Button (Col 5) */}
+          {/* Repeat Button */}
           <button
             onClick={cycleRepeat}
             className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-colors cursor-pointer ${
@@ -476,34 +321,35 @@ export const ExpandedPlayer: React.FC = () => {
           </button>
         </div>
 
-        {/* Lower Utility Bar: Favorite, Volume, Queue Toggle - Centered 3-col Grid */}
-        <div className="w-full grid grid-cols-3 items-center justify-items-center pt-2 px-1 text-white/70 border-t border-white/10">
-          {/* Favorite (Col 1) */}
+        {/* Lower Utility Bar: Favorite Heart & Volume */}
+        <div className="w-full flex items-center justify-between pt-2 px-3 text-white/70 border-t border-white/10 text-xs">
+          {/* Favorite Toggle */}
           <button
             onClick={() => toggleFavorite(currentTrack.id)}
-            className={`min-h-[40px] flex items-center justify-center gap-1.5 text-xs font-medium transition-colors cursor-pointer ${
-              isFavorite(currentTrack.id) ? 'text-[#ED1025]' : 'hover:text-white'
+            className={`flex items-center gap-1.5 transition-colors cursor-pointer ${
+              isFavorite(currentTrack.id) ? 'text-[#ED1025]' : 'text-white/60 hover:text-white'
             }`}
             aria-label="Toggle Favorite"
           >
             <Heart
-              className={`w-4 h-4 sm:w-5 sm:h-5 ${isFavorite(currentTrack.id) ? 'fill-current' : ''}`}
+              className={`w-5 h-5 ${
+                isFavorite(currentTrack.id) ? 'fill-current text-[#ED1025]' : ''
+              }`}
             />
-            <span className="hidden xs:inline sm:inline">
-              {isFavorite(currentTrack.id) ? 'পছন্দের গান' : 'পছন্দ'}
+            <span className="font-medium text-[11px]">
+              {isFavorite(currentTrack.id) ? 'Favorited' : 'Add to Favorites'}
             </span>
           </button>
 
-          {/* Volume slider (Col 2 - Dead Center) */}
-          <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+          {/* Volume Control */}
+          <div className="flex items-center gap-2">
             <button
               onClick={toggleMute}
-              className="text-white/70 hover:text-white p-1 cursor-pointer"
+              className="text-white/60 hover:text-white transition-colors cursor-pointer"
               title={isMuted ? 'Unmute' : 'Mute'}
-              aria-label="Mute toggle"
             >
               {isMuted || volume === 0 ? (
-                <VolumeX className="w-4 h-4 text-[#ED1025]" />
+                <VolumeX className="w-4 h-4 text-red-400" />
               ) : (
                 <Volume2 className="w-4 h-4" />
               )}
@@ -514,23 +360,15 @@ export const ExpandedPlayer: React.FC = () => {
               max="1"
               step="0.05"
               value={isMuted ? 0 : volume}
-              onChange={(e) => setVolume(parseFloat(e.target.value))}
-              className="w-14 sm:w-20 h-1 bg-white/20 accent-[#ED1025] rounded-lg cursor-pointer"
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                setVolume(val);
+                if (isMuted && val > 0) toggleMute();
+              }}
+              className="w-18 sm:w-24 h-1.5 bg-white/20 accent-[#ED1025] rounded-lg cursor-pointer"
               aria-label="Volume slider"
             />
           </div>
-
-          {/* Review / Details Toggle (Col 3) */}
-          <button
-            onClick={() => setActiveTab(activeTab === 'review' ? 'visuals' : 'review')}
-            className={`min-h-[40px] flex items-center justify-center gap-1.5 text-xs font-medium transition-colors cursor-pointer ${
-              activeTab === 'review' ? 'text-[#ED1025]' : 'hover:text-white'
-            }`}
-            aria-label="View Review"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span className="hidden xs:inline sm:inline">রিভিউ</span>
-          </button>
         </div>
       </div>
     </div>

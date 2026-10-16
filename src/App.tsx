@@ -226,7 +226,14 @@ function AppContent() {
     : 'pb-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:pb-8';
 
   return (
-    <div className="min-h-[100dvh] bg-white flex flex-col text-[#171717] overflow-x-hidden">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-[#FAFAF9] via-[#FFF8F8] to-[#FBF5F7] flex flex-col text-[#171717] overflow-x-hidden relative">
+      {/* Subtle Floating Ambient Light Orbs (Non-white gentle motion) */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
+        <div className="absolute -top-20 -left-20 w-80 sm:w-[500px] h-80 sm:h-[500px] bg-red-500/10 rounded-full blur-[90px] animate-ambient-1" />
+        <div className="absolute top-1/3 -right-20 w-72 sm:w-[460px] h-72 sm:h-[460px] bg-amber-400/10 rounded-full blur-[100px] animate-ambient-2" />
+        <div className="absolute -bottom-20 left-1/4 w-80 sm:w-[480px] h-80 sm:h-[480px] bg-rose-400/10 rounded-full blur-[110px] animate-ambient-1" />
+      </div>
+
       {/* Top Application Header */}
       <AppHeader
         currentTab={currentTab}

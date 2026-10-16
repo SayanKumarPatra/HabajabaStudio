@@ -18,7 +18,7 @@
   }
 
   body {
-    background-color: #FFFFFF;
+    background-color: #FAFAFA;
     color: #171717;
     min-height: 100dvh;
     overflow-x: hidden;
@@ -46,4 +46,39 @@
 
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Gentle ambient background floating light animation */
+@keyframes ambientGlow {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+    opacity: 0.45;
+  }
+  33% {
+    transform: translate(40px, -25px) scale(1.08);
+    opacity: 0.65;
+  }
+  66% {
+    transform: translate(-30px, 30px) scale(0.96);
+    opacity: 0.5;
+  }
+}
+
+@keyframes ambientGlowAlt {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate(-45px, 35px) scale(1.12);
+    opacity: 0.55;
+  }
+}
+
+.animate-ambient-1 {
+  animation: ambientGlow 20s ease-in-out infinite;
+}
+
+.animate-ambient-2 {
+  animation: ambientGlowAlt 26s ease-in-out infinite;
 }
