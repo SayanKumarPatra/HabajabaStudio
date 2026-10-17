@@ -55,6 +55,8 @@ export const CoverImage: React.FC<CoverImageProps> = ({
 
   // Cache-first inspection for offline rendering
   useEffect(() => {
+    setCachedDataUrl(null);
+    setHasError(false);
     let isMounted = true;
     if (src && src.startsWith('http')) {
       offlineCacheService.getCachedImage(src).then((cached) => {

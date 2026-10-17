@@ -4,7 +4,7 @@ export interface Track {
   artist: string;
   album: string;
   coverUrl: string; // 16:9 YouTube format banner or cover image
-  audioUrl: string; // Dropbox direct link or audio stream
+  audioUrl: string; // Dropbox direct link or YouTube URL or direct audio stream
   duration: string;
   language: string;
   releaseDate: string;
@@ -13,6 +13,8 @@ export interface Track {
   published: boolean;
   description?: string;
   lyrics?: string;
+  youtubeId?: string;
+  sourceType?: 'dropbox' | 'youtube' | 'direct';
 }
 
 export interface BannerSlide {

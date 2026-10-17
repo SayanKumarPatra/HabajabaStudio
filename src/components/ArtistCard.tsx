@@ -22,6 +22,8 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist, onSelect }) => {
   };
 
   useEffect(() => {
+    setCachedUrl(null);
+    setHasError(false);
     let isMounted = true;
     if (artist.avatarUrl && artist.avatarUrl.startsWith('http')) {
       offlineCacheService.getCachedImage(artist.avatarUrl).then((cached) => {

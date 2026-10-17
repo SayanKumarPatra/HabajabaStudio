@@ -23,15 +23,17 @@ export async function uploadImageToCloud(
   }
 ): Promise<UploadResult> {
   const isLogo = folder === 'branding' || file.type === 'image/png' || file.type === 'image/svg+xml';
+  const isBanner = folder === 'banners';
+  const isArtist = folder === 'artists';
   const format = options?.format || (isLogo ? 'image/png' : 'image/jpeg');
-  const maxWidth = options?.maxWidth || (isLogo ? 600 : 1280);
-  const maxHeight = options?.maxHeight || (isLogo ? 240 : 720);
-  const quality = options?.quality || (isLogo ? 0.95 : 0.85);
+  const maxWidth = options?.maxWidth || (isLogo ? 600 : isBanner ? 960 : isArtist ? 512 : 1280);
+  const maxHeight = options?.maxHeight || (isLogo ? 240 : isBanner ? 540 : isArtist ? 512 : 720);
+  const quality = options?.quality || (isLogo ? 0.95 : isBanner ? 0.68 : isArtist ? 0.72 : 0.80);
 
-  // 1. Optimize image first (instant downscaling)
+  // 1. Optimize image first (instant downscaling to lightweight size)
   const optimizedDataUrl = await optimizeImageFile(file, maxWidth, maxHeight, quality, format);
 
-  // 2. Try Firebase Storage with a strict 3-second timeout to prevent lag
+  // 2. Try Firebase Storage with 5-second timeout
   const storageInstance = getFirebaseStorage();
   if (storageInstance) {
     try {
@@ -52,9 +54,9 @@ export async function uploadImageToCloud(
         return await getDownloadURL(fileRef);
       };
 
-      // Race upload with a 3-second timeout so user never waits indefinitely
+      // Race upload with a 5-second timeout
       const timeoutPromise = new Promise<null>((resolve) =>
-        setTimeout(() => resolve(null), 3000)
+        setTimeout(() => resolve(null), 5000)
       );
 
       const downloadUrl = await Promise.race([performStorageUpload(), timeoutPromise]);

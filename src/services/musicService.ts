@@ -1,5 +1,5 @@
-import { collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch } from 'firebase/firestore';
-import { ref, onValue, set as rtdbSet, remove as rtdbRemove } from 'firebase/database';
+import { collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch, getDoc, getDocs } from 'firebase/firestore';
+import { ref, onValue, set as rtdbSet, remove as rtdbRemove, get as rtdbGet } from 'firebase/database';
 import rawMusicData from '../data/music.json';
 import { Album, Artist, BannerSlide, BrandingConfig, HeroBannerConfig, Playlist, Track } from '../types/music';
 import { getFirebaseFirestore, getFirebaseRealtimeDb, getActiveFirebaseConfig } from './firebaseConfig';
@@ -157,6 +157,25 @@ if (typeof window !== 'undefined') {
   }, 1200);
 }
 
+function mergeRemoteArtists(remotes: Artist[]) {
+  if (!remotes || remotes.length === 0) return;
+  const map = new Map<string, Artist>();
+  catalogState.artists.forEach((a) => {
+    if (a && a.name && a.name.trim()) {
+      map.set(a.name.trim().toLowerCase(), a);
+    }
+  });
+  remotes.forEach((r) => {
+    if (r && r.name && r.name.trim()) {
+      const key = r.name.trim().toLowerCase();
+      const existing = map.get(key);
+      map.set(key, existing ? { ...existing, ...r, id: existing.id || r.id } : r);
+    }
+  });
+  catalogState.artists = Array.from(map.values());
+  saveStateLocally();
+}
+
 // Set up real-time Firebase Firestore synchronization
 export function initFirestoreSync() {
   const firestoreInstance = getFirebaseFirestore();
@@ -237,6 +256,18 @@ export function initFirestoreSync() {
 
     // 4. Real-time listener for 4 Sliding Banners document
     const slidingBannersDoc = doc(db, 'habajaba_settings', 'sliding_banners');
+    getDoc(slidingBannersDoc)
+      .then((docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data() as { banners?: BannerSlide[] };
+          if (data && Array.isArray(data.banners) && data.banners.length > 0) {
+            catalogState.slidingBanners = data.banners;
+            saveStateLocally();
+          }
+        }
+      })
+      .catch(() => {});
+
     unsubscribeSlidingBanners = onSnapshot(
       slidingBannersDoc,
       (docSnap) => {
@@ -255,6 +286,24 @@ export function initFirestoreSync() {
 
     // 5. Real-time listener for Artists collection
     const artistsCol = collection(db, 'habajaba_artists');
+    getDocs(artistsCol)
+      .then((snapshot) => {
+        if (!snapshot.empty) {
+          const remoteArtists: Artist[] = [];
+          snapshot.forEach((dSnap) => {
+            const data = dSnap.data() as Artist;
+            remoteArtists.push({
+              ...data,
+              id: dSnap.id || data.id,
+            });
+          });
+          if (remoteArtists.length > 0) {
+            mergeRemoteArtists(remoteArtists);
+          }
+        }
+      })
+      .catch(() => {});
+
     unsubscribeArtists = onSnapshot(
       artistsCol,
       (snapshot) => {
@@ -267,8 +316,9 @@ export function initFirestoreSync() {
               id: dSnap.id || data.id,
             });
           });
-          catalogState.artists = remoteArtists;
-          saveStateLocally();
+          if (remoteArtists.length > 0) {
+            mergeRemoteArtists(remoteArtists);
+          }
         }
       },
       (error) => {
@@ -339,17 +389,22 @@ export function initRealtimeDbSync() {
 
     // 4. Real-time listener for Sliding Banners in RTDB
     const slidingRef = ref(rtdb, 'habajaba_settings/sliding_banners');
-    onValue(slidingRef, (snapshot) => {
+    const handleSlidingSnapshot = (snapshot: any) => {
       const val = snapshot.val();
-      if (val && Array.isArray(val.banners) && val.banners.length > 0) {
-        catalogState.slidingBanners = val.banners;
-        saveStateLocally();
+      if (val) {
+        const list = Array.isArray(val) ? val : Array.isArray(val.banners) ? val.banners : null;
+        if (list && list.length > 0) {
+          catalogState.slidingBanners = list;
+          saveStateLocally();
+        }
       }
-    });
+    };
+    rtdbGet(slidingRef).then(handleSlidingSnapshot).catch(() => {});
+    onValue(slidingRef, handleSlidingSnapshot);
 
     // 5. Real-time listener for Artists in RTDB
     const artistsRef = ref(rtdb, 'habajaba_artists');
-    onValue(artistsRef, (snapshot) => {
+    const handleArtistsSnapshot = (snapshot: any) => {
       const val = snapshot.val();
       if (val && typeof val === 'object') {
         const remoteArtists: Artist[] = Object.keys(val).map((k) => ({
@@ -357,11 +412,12 @@ export function initRealtimeDbSync() {
           id: k,
         }));
         if (remoteArtists.length > 0) {
-          catalogState.artists = remoteArtists;
-          saveStateLocally();
+          mergeRemoteArtists(remoteArtists);
         }
       }
-    });
+    };
+    rtdbGet(artistsRef).then(handleArtistsSnapshot).catch(() => {});
+    onValue(artistsRef, handleArtistsSnapshot);
 
     isRtdbInitialized = true;
     return true;
@@ -473,29 +529,45 @@ export const MusicService = {
     }
   },
 
-  async saveArtist(artist: Artist) {
+  async saveArtist(artist: Artist): Promise<{ success: boolean; artist: Artist }> {
+    const trimmedName = (artist.name || '').trim();
     const existingIndex = catalogState.artists.findIndex(
-      (a) => a.id === artist.id || a.name.toLowerCase() === artist.name.toLowerCase()
+      (a) => (artist.id && a.id === artist.id) || (trimmedName && a.name.trim().toLowerCase() === trimmedName.toLowerCase())
     );
+
+    let finalArtist: Artist;
     if (existingIndex >= 0) {
       const oldArtist = catalogState.artists[existingIndex];
-      catalogState.artists[existingIndex] = { ...oldArtist, ...artist };
-      if (oldArtist.name !== artist.name) {
+      finalArtist = {
+        ...oldArtist,
+        ...artist,
+        id: oldArtist.id || artist.id || `artist-${Date.now()}`,
+      };
+      catalogState.artists[existingIndex] = finalArtist;
+      if (oldArtist.name.trim().toLowerCase() !== finalArtist.name.trim().toLowerCase()) {
         catalogState.tracks = catalogState.tracks.map((t) =>
-          t.artist.toLowerCase() === oldArtist.name.toLowerCase()
-            ? { ...t, artist: artist.name }
+          t.artist.trim().toLowerCase() === oldArtist.name.trim().toLowerCase()
+            ? { ...t, artist: finalArtist.name }
             : t
         );
       }
     } else {
-      catalogState.artists.push(artist);
+      finalArtist = {
+        ...artist,
+        id: artist.id || `artist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      };
+      catalogState.artists.push(finalArtist);
     }
     saveStateLocally();
 
+    const safeDocId = (finalArtist.id || `artist-${Date.now()}`).replace(/[.#$\[\]/]/g, '_');
+
+    let syncedRemote = false;
     const firestoreInstance = getFirebaseFirestore();
     if (firestoreInstance) {
       try {
-        await setDoc(doc(firestoreInstance.db, 'habajaba_artists', artist.id || `artist-${Date.now()}`), artist);
+        await setDoc(doc(firestoreInstance.db, 'habajaba_artists', safeDocId), finalArtist);
+        syncedRemote = true;
       } catch (e) {
         console.warn('Failed to sync artist to Firestore:', e);
       }
@@ -504,12 +576,15 @@ export const MusicService = {
     const rtdbInstance = getFirebaseRealtimeDb();
     if (rtdbInstance) {
       try {
-        const artistRef = ref(rtdbInstance.rtdb, `habajaba_artists/${artist.id || Date.now()}`);
-        await rtdbSet(artistRef, artist);
+        const artistRef = ref(rtdbInstance.rtdb, `habajaba_artists/${safeDocId}`);
+        await rtdbSet(artistRef, finalArtist);
+        syncedRemote = true;
       } catch (e) {
         console.warn('Failed to sync artist to RTDB:', e);
       }
     }
+
+    return { success: syncedRemote || true, artist: finalArtist };
   },
 
   async deleteArtist(id: string) {
@@ -607,15 +682,20 @@ export const MusicService = {
 
   async addTrack(track: Track) {
     catalogState.tracks = [track, ...catalogState.tracks];
-    // If track has an artist not in the artists list, add artist
-    if (track.artist && !catalogState.artists.some((a) => a.name.toLowerCase() === track.artist.toLowerCase())) {
-      catalogState.artists.push({
-        id: `artist-${Date.now()}`,
-        name: track.artist,
+    // If track has an artist not in the artists list, add and persist artist
+    const trimmedArtistName = (track.artist || '').trim();
+    if (
+      trimmedArtistName &&
+      !catalogState.artists.some((a) => a.name.toLowerCase().trim() === trimmedArtistName.toLowerCase())
+    ) {
+      const newArtist: Artist = {
+        id: `artist-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        name: trimmedArtistName,
         avatarUrl: track.coverUrl || '/logo.svg',
         role: 'Bengali Artist',
         bio: `Artist recorded with Habajaba Studio LIVE.`,
-      });
+      };
+      this.saveArtist(newArtist).catch(() => {});
     }
     saveStateLocally();
 
@@ -742,16 +822,20 @@ export const MusicService = {
 
   getArtists(): Artist[] {
     const artistMap = new Map<string, Artist>();
-    catalogState.artists.forEach((a) => artistMap.set(a.name.toLowerCase(), a));
+    catalogState.artists.forEach((a) => {
+      if (a && a.name && a.name.trim()) {
+        artistMap.set(a.name.trim().toLowerCase(), a);
+      }
+    });
 
     catalogState.tracks
       .filter((t) => t.published && t.artist && t.artist.trim().length > 0)
       .forEach((t) => {
-        const key = t.artist.toLowerCase();
+        const key = t.artist.trim().toLowerCase();
         if (!artistMap.has(key)) {
           artistMap.set(key, {
             id: `artist-${key.replace(/\s+/g, '-')}`,
-            name: t.artist,
+            name: t.artist.trim(),
             avatarUrl: t.coverUrl || '/logo.svg',
             role: 'Bengali Artist',
             bio: `Artist recorded with Habajaba Studio LIVE.`,
@@ -760,11 +844,12 @@ export const MusicService = {
       });
 
     return Array.from(artistMap.values()).map((artist) => {
+      const aName = artist.name.trim().toLowerCase();
       const count = catalogState.tracks.filter(
         (t) =>
           t.published &&
-          (t.artist.toLowerCase().includes(artist.name.toLowerCase()) ||
-            artist.name.toLowerCase().includes(t.artist.toLowerCase()))
+          t.artist &&
+          t.artist.trim().toLowerCase() === aName
       ).length;
       return {
         ...artist,
@@ -873,9 +958,23 @@ export const MusicService = {
         const bannerRef = ref(rtdbInstance.rtdb, 'habajaba_settings/banner');
         await rtdbSet(bannerRef, catalogState.banner);
 
+        if (catalogState.slidingBanners && catalogState.slidingBanners.length > 0) {
+          const slidingRef = ref(rtdbInstance.rtdb, 'habajaba_settings/sliding_banners');
+          await rtdbSet(slidingRef, { banners: catalogState.slidingBanners });
+        }
+
         if (catalogState.branding) {
           const brandingRef = ref(rtdbInstance.rtdb, 'habajaba_settings/branding');
           await rtdbSet(brandingRef, catalogState.branding);
+        }
+
+        if (catalogState.artists && catalogState.artists.length > 0) {
+          const artistsRef = ref(rtdbInstance.rtdb, 'habajaba_artists');
+          const artistsObj: Record<string, Artist> = {};
+          catalogState.artists.forEach((a) => {
+            artistsObj[a.id] = a;
+          });
+          await rtdbSet(artistsRef, artistsObj);
         }
         anySuccess = true;
         syncedCount = catalogState.tracks.length;
@@ -893,6 +992,11 @@ export const MusicService = {
         const bannerRef = doc(db, 'habajaba_settings', 'banner');
         batch.set(bannerRef, catalogState.banner);
 
+        if (catalogState.slidingBanners && catalogState.slidingBanners.length > 0) {
+          const slidingDoc = doc(db, 'habajaba_settings', 'sliding_banners');
+          batch.set(slidingDoc, { banners: catalogState.slidingBanners });
+        }
+
         if (catalogState.branding) {
           const brandingRef = doc(db, 'habajaba_settings', 'branding');
           batch.set(brandingRef, catalogState.branding);
@@ -901,6 +1005,11 @@ export const MusicService = {
         for (const track of catalogState.tracks) {
           const trackRef = doc(db, 'habajaba_songs', track.id);
           batch.set(trackRef, track);
+        }
+
+        for (const artist of catalogState.artists) {
+          const artistRef = doc(db, 'habajaba_artists', artist.id);
+          batch.set(artistRef, artist);
         }
 
         await batch.commit();

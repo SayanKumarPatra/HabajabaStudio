@@ -227,7 +227,7 @@ export const ArtistEditModal: React.FC<ArtistEditModalProps> = ({
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                 <label className="min-h-[36px] px-3.5 py-1.5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all">
                   <Camera className="w-3.5 h-3.5" />
-                  <span>{isUploading ? 'আপলোড হচ্ছে...' : 'নতুন ছবি বাছুন'}</span>
+                  <span>{isUploading ? 'আপলোড হচ্ছে...' : 'ডিভাইস থেকে ছবি বাছুন'}</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -246,6 +246,21 @@ export const ArtistEditModal: React.FC<ArtistEditModalProps> = ({
                   </button>
                 )}
               </div>
+
+              <input
+                type="url"
+                value={formData.avatarUrl || ''}
+                onChange={(e) => {
+                  let u = e.target.value.trim();
+                  if (u.includes('dropbox.com')) {
+                    u = u.replace('www.dropbox.com', 'dl.dropboxusercontent.com').replace(/[?&]dl=0/, '?dl=1');
+                  }
+                  setFormData((prev) => ({ ...prev, avatarUrl: u }));
+                }}
+                placeholder="অথবা সরাসরি ছবির লিঙ্ক পেস্ট করুন (Dropbox/Direct URL)"
+                className="w-full px-3 py-1.5 rounded-lg border border-white/15 bg-black/60 text-white text-xs font-mono focus:border-[#ED1025] focus:outline-hidden"
+              />
+
               {uploadStatus && (
                 <p className="text-[11px] text-[#ED1025] font-medium flex items-center gap-1 justify-center sm:justify-start">
                   <Sparkles className="w-3 h-3" />

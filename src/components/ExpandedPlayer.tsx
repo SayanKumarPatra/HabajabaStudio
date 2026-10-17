@@ -15,6 +15,7 @@ import {
   Loader2,
   Clock,
   Info,
+  Youtube,
 } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
 import { useFavorites } from '../context/FavoritesContext';
@@ -42,6 +43,7 @@ export const ExpandedPlayer: React.FC = () => {
     setIsExpanded,
     isLoading,
     error,
+    isYouTubeTrack,
   } = useAudio();
 
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -137,6 +139,15 @@ export const ExpandedPlayer: React.FC = () => {
                   <span className="text-amber-400 font-semibold">{currentTrack.genre}</span>
                 </>
               )}
+            </div>
+          )}
+
+          {isYouTubeTrack && (
+            <div className="mt-1.5 flex items-center justify-center">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-red-600/20 text-red-300 border border-red-500/30">
+                <Youtube className="w-3 h-3 text-[#ED1025]" />
+                <span>YouTube Audio Stream</span>
+              </span>
             </div>
           )}
         </div>

@@ -1,5 +1,5 @@
-import { collection, doc, setDoc, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
-import { ref, onValue, set as rtdbSet } from 'firebase/database';
+import { collection, doc, setDoc, onSnapshot, getDocs, limit, query, orderBy } from 'firebase/firestore';
+import { ref, onValue, set as rtdbSet, get as rtdbGet } from 'firebase/database';
 import { getFirebaseFirestore, getFirebaseRealtimeDb } from './firebaseConfig';
 
 export interface ListenerComment {
@@ -18,6 +18,8 @@ class FeedbackService {
   private listeners = new Set<(comments: ListenerComment[]) => void>();
   private isFirebaseConnected = false;
   private broadcastChannel: BroadcastChannel | null = null;
+  private unsubscribeFirestore: (() => void) | null = null;
+  private unsubscribeRtdb: (() => void) | null = null;
 
   constructor() {
     this.loadInitialComments();
@@ -31,15 +33,14 @@ class FeedbackService {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          // Strictly exclude any legacy mock data
           this.comments = parsed.filter(
             (c) =>
+              c &&
+              c.id &&
               c.id !== 'comm-1' &&
               c.id !== 'comm-2' &&
               c.id !== 'comm-3' &&
-              !c.authorName?.includes('সৌমেন') &&
-              !c.authorName?.includes('তানিশা') &&
-              !c.authorName?.includes('অনির্বাণ')
+              !c.authorName?.includes('সৌমেন')
           );
           return;
         }
@@ -47,7 +48,6 @@ class FeedbackService {
     } catch (e) {
       console.warn('Failed to parse local comments:', e);
     }
-    // Strictly zero mock comments — only genuine user submissions!
     this.comments = [];
   }
 
@@ -57,12 +57,11 @@ class FeedbackService {
         this.broadcastChannel = new BroadcastChannel('habajaba_feedback_channel');
         this.broadcastChannel.onmessage = (event) => {
           if (event.data && Array.isArray(event.data)) {
-            this.comments = event.data;
-            this.notify();
+            this.mergeComments(event.data);
           }
         };
-      } catch (e) {
-        // Fallback to storage event
+      } catch {
+        // Fallback
       }
     }
 
@@ -70,45 +69,139 @@ class FeedbackService {
       window.addEventListener('storage', (e) => {
         if (e.key === STORAGE_COMMENTS_KEY && e.newValue) {
           try {
-            this.comments = JSON.parse(e.newValue);
-            this.notify();
+            const list = JSON.parse(e.newValue);
+            if (Array.isArray(list)) {
+              this.mergeComments(list);
+            }
           } catch {}
         }
       });
     }
   }
 
-  private initFirebaseSync() {
-    const firestore = getFirebaseFirestore();
-    if (firestore) {
+  private mergeComments(newItems: ListenerComment[]) {
+    const map = new Map<string, ListenerComment>();
+    // First existing
+    this.comments.forEach((c) => {
+      if (c && c.id) map.set(c.id, c);
+    });
+    // Overlay new
+    newItems.forEach((c) => {
+      if (c && c.id) {
+        const existing = map.get(c.id);
+        map.set(c.id, { ...existing, ...c });
+      }
+    });
+
+    const combined = Array.from(map.values())
+      .filter(
+        (c) =>
+          c.id !== 'comm-1' &&
+          c.id !== 'comm-2' &&
+          c.id !== 'comm-3' &&
+          !c.authorName?.includes('সৌমেন')
+      )
+      .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    this.comments = combined;
+    this.saveLocal();
+  }
+
+  public initFirebaseSync() {
+    if (this.unsubscribeFirestore) {
+      this.unsubscribeFirestore();
+      this.unsubscribeFirestore = null;
+    }
+    if (this.unsubscribeRtdb) {
+      this.unsubscribeRtdb();
+      this.unsubscribeRtdb = null;
+    }
+
+    // 1. Firebase Realtime Database Listener (Primary live database for Habajaba Studio)
+    const rtdbInstance = getFirebaseRealtimeDb();
+    if (rtdbInstance) {
       try {
-        const q = query(
-          collection(firestore.db, 'habajaba_feedback'),
-          orderBy('timestamp', 'desc'),
-          limit(50)
+        const feedbackRef = ref(rtdbInstance.rtdb, 'habajaba_feedback');
+
+        // Immediate one-time fetch
+        rtdbGet(feedbackRef)
+          .then((snapshot) => {
+            if (snapshot.exists()) {
+              const val = snapshot.val();
+              if (val && typeof val === 'object') {
+                const list: ListenerComment[] = Object.keys(val).map((k) => ({
+                  ...val[k],
+                  id: k,
+                }));
+                this.mergeComments(list);
+                this.isFirebaseConnected = true;
+              }
+            }
+          })
+          .catch((err) => {
+            console.warn('Initial RTDB feedback get notice:', err);
+          });
+
+        // Real-time live listener
+        this.unsubscribeRtdb = onValue(
+          feedbackRef,
+          (snapshot) => {
+            const val = snapshot.val();
+            if (val && typeof val === 'object') {
+              const list: ListenerComment[] = Object.keys(val).map((k) => ({
+                ...val[k],
+                id: k,
+              }));
+              this.mergeComments(list);
+              this.isFirebaseConnected = true;
+            }
+          },
+          (err) => {
+            console.warn('RTDB feedback listener error:', err);
+          }
         );
-        onSnapshot(
-          q,
+      } catch (e) {
+        console.warn('RTDB feedback listener registration error:', e);
+      }
+    }
+
+    // 2. Firebase Firestore Listener (Dual sync for redundancy)
+    const firestoreInstance = getFirebaseFirestore();
+    if (firestoreInstance) {
+      try {
+        const feedbackCol = collection(firestoreInstance.db, 'habajaba_feedback');
+
+        // Immediate fetch
+        getDocs(query(feedbackCol, limit(50)))
+          .then((snapshot) => {
+            if (!snapshot.empty) {
+              const remote: ListenerComment[] = [];
+              snapshot.forEach((dSnap) => {
+                const data = dSnap.data() as ListenerComment;
+                remote.push({ ...data, id: dSnap.id || data.id });
+              });
+              this.mergeComments(remote);
+              this.isFirebaseConnected = true;
+            }
+          })
+          .catch((err) => {
+            console.warn('Initial Firestore feedback get notice:', err);
+          });
+
+        // Real-time live listener
+        this.unsubscribeFirestore = onSnapshot(
+          feedbackCol,
           (snapshot) => {
             if (!snapshot.empty) {
               const remote: ListenerComment[] = [];
               snapshot.forEach((docSnap) => {
                 const data = docSnap.data() as ListenerComment;
-                // Exclude any mock items
-                if (
-                  data.id !== 'comm-1' &&
-                  data.id !== 'comm-2' &&
-                  data.id !== 'comm-3' &&
-                  !data.authorName?.includes('সৌমেন')
-                ) {
-                  remote.push({
-                    ...data,
-                    id: docSnap.id || data.id,
-                  });
-                }
+                remote.push({
+                  ...data,
+                  id: docSnap.id || data.id,
+                });
               });
-              this.comments = remote;
-              this.saveLocal();
+              this.mergeComments(remote);
               this.isFirebaseConnected = true;
             }
           },
@@ -116,35 +209,8 @@ class FeedbackService {
             console.warn('Firestore feedback listener notice:', err);
           }
         );
-        return;
       } catch (e) {
-        console.warn('Feedback sync setup error:', e);
-      }
-    }
-
-    const rtdb = getFirebaseRealtimeDb();
-    if (rtdb) {
-      try {
-        const feedbackRef = ref(rtdb.rtdb, 'habajaba_feedback');
-        onValue(feedbackRef, (snapshot) => {
-          const val = snapshot.val();
-          if (val && typeof val === 'object') {
-            const list: ListenerComment[] = Object.values(val);
-            const filtered = list.filter(
-              (c) =>
-                c.id !== 'comm-1' &&
-                c.id !== 'comm-2' &&
-                c.id !== 'comm-3' &&
-                !c.authorName?.includes('সৌমেন')
-            );
-            filtered.sort((a, b) => b.timestamp - a.timestamp);
-            this.comments = filtered;
-            this.saveLocal();
-            this.isFirebaseConnected = true;
-          }
-        });
-      } catch (e) {
-        console.warn('RTDB feedback listener error:', e);
+        console.warn('Feedback Firestore sync setup error:', e);
       }
     }
   }
@@ -184,7 +250,7 @@ class FeedbackService {
     const trimmedMessage = message.trim();
 
     const newComment: ListenerComment = {
-      id: `real-comm-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: `real-comm-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       authorName: trimmedAuthor,
       message: trimmedMessage,
       timestamp: Date.now(),
@@ -193,26 +259,26 @@ class FeedbackService {
     };
 
     // Prepend immediately for instant zero-latency UI response
-    this.comments = [newComment, ...this.comments];
-    this.saveLocal();
+    this.mergeComments([newComment]);
 
-    // Sync to Cloud if Firebase is present
-    const firestore = getFirebaseFirestore();
-    if (firestore) {
+    // 1. Sync to Firebase Realtime Database
+    const rtdbInstance = getFirebaseRealtimeDb();
+    if (rtdbInstance) {
       try {
-        await setDoc(doc(firestore.db, 'habajaba_feedback', newComment.id), newComment);
-      } catch (e) {
-        console.warn('Failed to write comment to Firestore:', e);
-      }
-    }
-
-    const rtdb = getFirebaseRealtimeDb();
-    if (rtdb) {
-      try {
-        const commentRef = ref(rtdb.rtdb, `habajaba_feedback/${newComment.id}`);
+        const commentRef = ref(rtdbInstance.rtdb, `habajaba_feedback/${newComment.id}`);
         await rtdbSet(commentRef, newComment);
       } catch (e) {
         console.warn('Failed to write comment to RTDB:', e);
+      }
+    }
+
+    // 2. Sync to Firebase Firestore
+    const firestoreInstance = getFirebaseFirestore();
+    if (firestoreInstance) {
+      try {
+        await setDoc(doc(firestoreInstance.db, 'habajaba_feedback', newComment.id), newComment);
+      } catch (e) {
+        console.warn('Failed to write comment to Firestore:', e);
       }
     }
 
@@ -224,19 +290,30 @@ class FeedbackService {
     if (!target) return;
 
     target.likes = (target.likes || 0) + 1;
-    this.comments = [...this.comments];
     this.saveLocal();
 
-    const firestore = getFirebaseFirestore();
-    if (firestore) {
+    const rtdbInstance = getFirebaseRealtimeDb();
+    if (rtdbInstance) {
+      try {
+        const likeRef = ref(rtdbInstance.rtdb, `habajaba_feedback/${commentId}/likes`);
+        await rtdbSet(likeRef, target.likes);
+      } catch {}
+    }
+
+    const firestoreInstance = getFirebaseFirestore();
+    if (firestoreInstance) {
       try {
         await setDoc(
-          doc(firestore.db, 'habajaba_feedback', commentId),
+          doc(firestoreInstance.db, 'habajaba_feedback', commentId),
           { likes: target.likes },
           { merge: true }
         );
       } catch {}
     }
+  }
+
+  public isConnected(): boolean {
+    return this.isFirebaseConnected;
   }
 }
 
