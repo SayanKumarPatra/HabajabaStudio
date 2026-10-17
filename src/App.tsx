@@ -19,6 +19,7 @@ import { AlbumDetailsPage } from './pages/AlbumDetailsPage';
 import { AdminPage } from './pages/AdminPage';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { ScrollingNoticeTicker } from './components/ScrollingNoticeTicker';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function AppContent() {
   const { currentTrack } = useAudio();
@@ -248,8 +249,8 @@ function AppContent() {
       {/* Network & Offline Cache Status Indicator */}
       <OfflineIndicator />
 
-      {/* Main Content Area */}
-      <main className={`flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 pt-2.5 sm:pt-5 relative z-10 ${contentBottomPadding}`}>
+      {/* Main Content Area - Full width edge-to-edge for admin, max-w-7xl for user pages */}
+      <main className={`flex-1 ${currentTab === 'admin' ? 'w-full max-w-none px-2.5 sm:px-6 lg:px-8' : 'max-w-7xl w-full mx-auto px-3 sm:px-6'} pt-2.5 sm:pt-5 relative z-10 ${contentBottomPadding}`}>
 
         {currentTab === 'home' && (
           <HomePage
@@ -397,10 +398,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <FavoritesProvider>
-      <AudioProvider>
-        <AppContent />
-      </AudioProvider>
-    </FavoritesProvider>
+    <ErrorBoundary fallbackTitle="অ্যাপ্লিকেশনে সাময়িক সমস্যা হয়েছে" fallbackMessage="পৃষ্ঠাটি রিলোড করুন।">
+      <FavoritesProvider>
+        <AudioProvider>
+          <AppContent />
+        </AudioProvider>
+      </FavoritesProvider>
+    </ErrorBoundary>
   );
 }

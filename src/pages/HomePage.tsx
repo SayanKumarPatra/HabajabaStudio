@@ -19,6 +19,7 @@ import { CoverImage } from '../components/CoverImage';
 import { SlidingBannerCarousel } from '../components/SlidingBannerCarousel';
 import { YouTubePromoSection } from '../components/YouTubePromoSection';
 import { CommunityFeedbackSection } from '../components/CommunityFeedbackSection';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 interface HomePageProps {
   onNavigate: (tab: NavigationTab) => void;
@@ -66,7 +67,9 @@ export const HomePage: React.FC<HomePageProps> = ({
       <YouTubePromoSection branding={branding} />
 
       {/* 2.5 Real-Time Listener Feedback & Comments */}
-      <CommunityFeedbackSection />
+      <ErrorBoundary fallbackTitle="লাইভ মন্তব্য লোড করতে সমস্যা হয়েছে">
+        <CommunityFeedbackSection />
+      </ErrorBoundary>
 
       {/* 2. Compact Category Shortcuts (Glassmorphism 4-Column Layout) */}
       <section className="grid grid-cols-4 gap-2 sm:gap-3">

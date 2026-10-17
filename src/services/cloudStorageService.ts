@@ -54,9 +54,9 @@ export async function uploadImageToCloud(
         return await getDownloadURL(fileRef);
       };
 
-      // Race upload with a 5-second timeout
+      // Race upload with a fast 700ms timeout so the user never experiences lag
       const timeoutPromise = new Promise<null>((resolve) =>
-        setTimeout(() => resolve(null), 5000)
+        setTimeout(() => resolve(null), 700)
       );
 
       const downloadUrl = await Promise.race([performStorageUpload(), timeoutPromise]);

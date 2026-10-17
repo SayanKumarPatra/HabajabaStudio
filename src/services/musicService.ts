@@ -204,7 +204,8 @@ export function initFirestoreSync() {
           // Update tracks in state with live Firestore data
           catalogState.tracks = remoteTracks;
           saveStateLocally();
-        } else if (catalogState.tracks.length > 0) {
+        } else if (catalogState.tracks.length > 0 && !localStorage.getItem('habajaba_initial_seed_done')) {
+          localStorage.setItem('habajaba_initial_seed_done', 'true');
           MusicService.syncAllLocalToFirestore();
         }
       },
@@ -358,7 +359,8 @@ export function initRealtimeDbSync() {
           catalogState.tracks = remoteTracks;
           saveStateLocally();
         }
-      } else if (catalogState.tracks.length > 0) {
+      } else if (val === null && !localStorage.getItem('habajaba_initial_seed_done') && catalogState.tracks.length > 0) {
+        localStorage.setItem('habajaba_initial_seed_done', 'true');
         const songsObj: Record<string, Track> = {};
         catalogState.tracks.forEach((t) => {
           songsObj[t.id] = t;
@@ -590,24 +592,31 @@ export const MusicService = {
   async deleteArtist(id: string) {
     catalogState.artists = catalogState.artists.filter((a) => a.id !== id);
     saveStateLocally();
+    notifyListeners();
+
+    // Purge from IndexedDB
+    offlineCacheService.deleteArtist(id).catch(() => {});
 
     const firestoreInstance = getFirebaseFirestore();
-    if (firestoreInstance) {
-      try {
-        await deleteDoc(doc(firestoreInstance.db, 'habajaba_artists', id));
-      } catch (e) {
-        console.warn('Failed to delete artist from Firestore:', e);
-      }
-    }
-
     const rtdbInstance = getFirebaseRealtimeDb();
+    const deleteTasks: Promise<any>[] = [];
+
+    if (firestoreInstance) {
+      deleteTasks.push(
+        deleteDoc(doc(firestoreInstance.db, 'habajaba_artists', id)).catch((e) =>
+          console.warn('Failed to delete artist from Firestore:', e)
+        )
+      );
+    }
     if (rtdbInstance) {
-      try {
-        const artistRef = ref(rtdbInstance.rtdb, `habajaba_artists/${id}`);
-        await rtdbRemove(artistRef);
-      } catch (e) {
-        console.warn('Failed to delete artist from RTDB:', e);
-      }
+      deleteTasks.push(
+        rtdbRemove(ref(rtdbInstance.rtdb, `habajaba_artists/${id}`)).catch((e) =>
+          console.warn('Failed to delete artist from RTDB:', e)
+        )
+      );
+    }
+    if (deleteTasks.length > 0) {
+      Promise.allSettled(deleteTasks);
     }
   },
 
@@ -698,48 +707,57 @@ export const MusicService = {
       this.saveArtist(newArtist).catch(() => {});
     }
     saveStateLocally();
+    notifyListeners();
 
+    // Parallel background sync without blocking UI
     const firestoreInstance = getFirebaseFirestore();
-    if (firestoreInstance) {
-      try {
-        await setDoc(doc(firestoreInstance.db, 'habajaba_songs', track.id), track);
-      } catch (e) {
-        console.warn('Failed to write track to Firestore:', e);
-      }
-    }
-
     const rtdbInstance = getFirebaseRealtimeDb();
+    const syncTasks: Promise<any>[] = [];
+
+    if (firestoreInstance) {
+      syncTasks.push(
+        setDoc(doc(firestoreInstance.db, 'habajaba_songs', track.id), track).catch((e) =>
+          console.warn('Failed to write track to Firestore:', e)
+        )
+      );
+    }
     if (rtdbInstance) {
-      try {
-        const trackRef = ref(rtdbInstance.rtdb, `habajaba_songs/${track.id}`);
-        await rtdbSet(trackRef, track);
-      } catch (e) {
-        console.warn('Failed to write track to Realtime Database:', e);
-      }
+      syncTasks.push(
+        rtdbSet(ref(rtdbInstance.rtdb, `habajaba_songs/${track.id}`), track).catch((e) =>
+          console.warn('Failed to write track to Realtime Database:', e)
+        )
+      );
+    }
+    if (syncTasks.length > 0) {
+      Promise.allSettled(syncTasks);
     }
   },
 
   async updateTrack(updated: Track) {
     catalogState.tracks = catalogState.tracks.map((t) => (t.id === updated.id ? updated : t));
     saveStateLocally();
+    notifyListeners();
 
     const firestoreInstance = getFirebaseFirestore();
-    if (firestoreInstance) {
-      try {
-        await setDoc(doc(firestoreInstance.db, 'habajaba_songs', updated.id), updated);
-      } catch (e) {
-        console.warn('Failed to update track in Firestore:', e);
-      }
-    }
-
     const rtdbInstance = getFirebaseRealtimeDb();
+    const syncTasks: Promise<any>[] = [];
+
+    if (firestoreInstance) {
+      syncTasks.push(
+        setDoc(doc(firestoreInstance.db, 'habajaba_songs', updated.id), updated).catch((e) =>
+          console.warn('Failed to update track in Firestore:', e)
+        )
+      );
+    }
     if (rtdbInstance) {
-      try {
-        const trackRef = ref(rtdbInstance.rtdb, `habajaba_songs/${updated.id}`);
-        await rtdbSet(trackRef, updated);
-      } catch (e) {
-        console.warn('Failed to update track in Realtime Database:', e);
-      }
+      syncTasks.push(
+        rtdbSet(ref(rtdbInstance.rtdb, `habajaba_songs/${updated.id}`), updated).catch((e) =>
+          console.warn('Failed to update track in Realtime Database:', e)
+        )
+      );
+    }
+    if (syncTasks.length > 0) {
+      Promise.allSettled(syncTasks);
     }
   },
 
@@ -749,24 +767,31 @@ export const MusicService = {
       catalogState.banner.featuredTrackId = '';
     }
     saveStateLocally();
+    notifyListeners();
+
+    // Purge from IndexedDB
+    offlineCacheService.deleteTrack(id).catch(() => {});
 
     const firestoreInstance = getFirebaseFirestore();
-    if (firestoreInstance) {
-      try {
-        await deleteDoc(doc(firestoreInstance.db, 'habajaba_songs', id));
-      } catch (e) {
-        console.warn('Failed to delete track from Firestore:', e);
-      }
-    }
-
     const rtdbInstance = getFirebaseRealtimeDb();
+    const deleteTasks: Promise<any>[] = [];
+
+    if (firestoreInstance) {
+      deleteTasks.push(
+        deleteDoc(doc(firestoreInstance.db, 'habajaba_songs', id)).catch((e) =>
+          console.warn('Failed to delete track from Firestore:', e)
+        )
+      );
+    }
     if (rtdbInstance) {
-      try {
-        const trackRef = ref(rtdbInstance.rtdb, `habajaba_songs/${id}`);
-        await rtdbRemove(trackRef);
-      } catch (e) {
-        console.warn('Failed to delete track from Realtime Database:', e);
-      }
+      deleteTasks.push(
+        rtdbRemove(ref(rtdbInstance.rtdb, `habajaba_songs/${id}`)).catch((e) =>
+          console.warn('Failed to delete track from Realtime Database:', e)
+        )
+      );
+    }
+    if (deleteTasks.length > 0) {
+      Promise.allSettled(deleteTasks);
     }
   },
 

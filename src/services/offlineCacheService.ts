@@ -22,6 +22,7 @@ export interface OfflineCacheStats {
 class OfflineCacheService {
   private dbPromise: Promise<IDBDatabase> | null = null;
   private isPrecacheInProgress = false;
+  private syncDebounceTimer: any = null;
 
   /**
    * Initializes or opens the IndexedDB database instance
@@ -80,7 +81,7 @@ class OfflineCacheService {
   }
 
   /**
-   * Cache full album metadata into IndexedDB
+   * Cache full album metadata into IndexedDB (clears old obsolete records)
    */
   public async saveAlbums(albums: Album[]): Promise<void> {
     try {
@@ -88,8 +89,13 @@ class OfflineCacheService {
       const tx = db.transaction(['albums', 'metadata'], 'readwrite');
       const store = tx.objectStore('albums');
 
+      // Clear obsolete albums so deleted ones are permanently purged
+      store.clear();
+
       for (const album of albums) {
-        store.put(album);
+        if (album && album.id) {
+          store.put(album);
+        }
       }
 
       const metaStore = tx.objectStore('metadata');
@@ -129,7 +135,7 @@ class OfflineCacheService {
   }
 
   /**
-   * Cache artists metadata into IndexedDB
+   * Cache artists metadata into IndexedDB (clears old obsolete records)
    */
   public async saveArtists(artists: Artist[]): Promise<void> {
     try {
@@ -137,8 +143,13 @@ class OfflineCacheService {
       const tx = db.transaction(['artists', 'metadata'], 'readwrite');
       const store = tx.objectStore('artists');
 
+      // Clear obsolete artists so deleted ones are permanently purged
+      store.clear();
+
       for (const artist of artists) {
-        store.put(artist);
+        if (artist && artist.id) {
+          store.put(artist);
+        }
       }
 
       const metaStore = tx.objectStore('metadata');
@@ -154,6 +165,19 @@ class OfflineCacheService {
       });
     } catch (e) {
       console.warn('[OfflineDB] Error saving artists to IndexedDB:', e);
+    }
+  }
+
+  /**
+   * Explicitly delete an artist from IndexedDB
+   */
+  public async deleteArtist(id: string): Promise<void> {
+    try {
+      const db = await this.getDB();
+      const tx = db.transaction('artists', 'readwrite');
+      tx.objectStore('artists').delete(id);
+    } catch (e) {
+      console.warn('[OfflineDB] Failed to delete artist from cache:', e);
     }
   }
 
@@ -178,7 +202,7 @@ class OfflineCacheService {
   }
 
   /**
-   * Cache tracks metadata into IndexedDB
+   * Cache tracks metadata into IndexedDB (clears old obsolete records)
    */
   public async saveTracks(tracks: Track[]): Promise<void> {
     try {
@@ -186,8 +210,13 @@ class OfflineCacheService {
       const tx = db.transaction(['tracks', 'metadata'], 'readwrite');
       const store = tx.objectStore('tracks');
 
+      // Clear obsolete tracks so deleted tracks are permanently removed
+      store.clear();
+
       for (const track of tracks) {
-        store.put(track);
+        if (track && track.id) {
+          store.put(track);
+        }
       }
 
       const metaStore = tx.objectStore('metadata');
@@ -203,6 +232,19 @@ class OfflineCacheService {
       });
     } catch (e) {
       console.warn('[OfflineDB] Error saving tracks to IndexedDB:', e);
+    }
+  }
+
+  /**
+   * Explicitly delete a track from IndexedDB
+   */
+  public async deleteTrack(id: string): Promise<void> {
+    try {
+      const db = await this.getDB();
+      const tx = db.transaction('tracks', 'readwrite');
+      tx.objectStore('tracks').delete(id);
+    } catch (e) {
+      console.warn('[OfflineDB] Failed to delete track from cache:', e);
     }
   }
 
@@ -227,15 +269,11 @@ class OfflineCacheService {
   }
 
   /**
-   * Cache-First Image fetch and store:
-   * 1. Checks if the image is already stored as base64 DataURL in IndexedDB.
-   * 2. If present, returns the cached DataURL.
-   * 3. If missing and online, downloads the image, converts to DataURL, and stores it in IndexedDB.
+   * Cache-First Image fetch and store
    */
   public async getOrCacheImage(url: string): Promise<string | null> {
-    if (!url || typeof url !== 'string' || url.trim().length === 0) {
-      return null;
-    }
+    if (!url || typeof url !== 'string') return null;
+    if (url.startsWith('data:')) return url; // Already inline
 
     try {
       const db = await this.getDB();
@@ -253,7 +291,7 @@ class OfflineCacheService {
         return existing.dataUrl;
       }
 
-      // 2. If offline, we can only return what we found (or null)
+      // 2. If offline, return null
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         return null;
       }
@@ -280,7 +318,6 @@ class OfflineCacheService {
 
       return dataUrl;
     } catch (e) {
-      // Failed to cache image (e.g. CORS or offline)
       return null;
     }
   }
@@ -320,23 +357,31 @@ class OfflineCacheService {
   }
 
   /**
-   * Sync complete catalog metadata and pre-cache album covers & artist photos
+   * Sync complete catalog metadata without blocking UI (debounced)
    */
   public async syncCatalog(albums: Album[], artists: Artist[], tracks: Track[]): Promise<void> {
-    await Promise.all([
-      this.saveAlbums(albums),
-      this.saveArtists(artists),
-      this.saveTracks(tracks),
-    ]);
+    // Save metadata fast to IndexedDB
+    try {
+      await Promise.all([
+        this.saveAlbums(albums),
+        this.saveArtists(artists),
+        this.saveTracks(tracks),
+      ]);
+    } catch (e) {
+      console.warn('[OfflineDB] Fast catalog sync notice:', e);
+    }
 
-    // Background pre-cache images without blocking execution
-    this.precacheAllMedia(albums, artists, tracks).catch((e) => {
-      console.warn('[OfflineDB] Background pre-cache warning:', e);
-    });
+    // Debounce image pre-caching so it never burdens saving or UI
+    if (this.syncDebounceTimer) {
+      clearTimeout(this.syncDebounceTimer);
+    }
+    this.syncDebounceTimer = setTimeout(() => {
+      this.precacheAllMedia(albums, artists, tracks).catch(() => {});
+    }, 4000);
   }
 
   /**
-   * Background pre-caches all album covers and artist avatars so they remain viewable offline
+   * Background pre-caches all album covers and artist avatars in idle time
    */
   public async precacheAllMedia(
     albums: Album[],
@@ -348,83 +393,75 @@ class OfflineCacheService {
     }
     this.isPrecacheInProgress = true;
 
-    const urlsToCache = new Set<string>();
+    try {
+      const urlsToCache = new Set<string>();
 
-    // 1. Collect Artist avatars
-    artists.forEach((artist) => {
-      if (artist.avatarUrl && artist.avatarUrl.startsWith('http')) {
-        urlsToCache.add(artist.avatarUrl);
-      }
-    });
+      artists.forEach((artist) => {
+        if (artist.avatarUrl && artist.avatarUrl.startsWith('http') && !artist.avatarUrl.startsWith('data:')) {
+          urlsToCache.add(artist.avatarUrl);
+        }
+      });
 
-    // 2. Collect Album covers
-    albums.forEach((album) => {
-      if (album.coverUrl && album.coverUrl.startsWith('http')) {
-        urlsToCache.add(album.coverUrl);
-      }
-    });
+      albums.forEach((album) => {
+        if (album.coverUrl && album.coverUrl.startsWith('http') && !album.coverUrl.startsWith('data:')) {
+          urlsToCache.add(album.coverUrl);
+        }
+      });
 
-    // 3. Collect Track covers
-    tracks.forEach((track) => {
-      if (track.coverUrl && track.coverUrl.startsWith('http')) {
-        urlsToCache.add(track.coverUrl);
-      }
-    });
+      tracks.forEach((track) => {
+        if (track.coverUrl && track.coverUrl.startsWith('http') && !track.coverUrl.startsWith('data:')) {
+          urlsToCache.add(track.coverUrl);
+        }
+      });
 
-    let success = 0;
-    let failed = 0;
+      let success = 0;
+      let failed = 0;
 
-    for (const url of Array.from(urlsToCache)) {
-      try {
-        const cached = await this.getOrCacheImage(url);
-        if (cached) {
-          success++;
-        } else {
+      // Process in small batches of 2 with delays to prevent CPU/network hogging
+      const urlList = Array.from(urlsToCache);
+      for (const url of urlList) {
+        try {
+          const res = await this.getOrCacheImage(url);
+          if (res) success++;
+          else failed++;
+        } catch {
           failed++;
         }
-      } catch {
-        failed++;
+        // Small pause
+        await new Promise((r) => setTimeout(r, 60));
       }
-    }
 
-    this.isPrecacheInProgress = false;
-    return { success, failed };
+      return { success, failed };
+    } finally {
+      this.isPrecacheInProgress = false;
+    }
   }
 
   /**
-   * Inspect current offline storage counts
+   * Get storage statistics (alias for backward compatibility)
    */
   public async getStats(): Promise<OfflineCacheStats> {
+    return this.getCacheStats();
+  }
+
+  /**
+   * Get storage statistics
+   */
+  public async getCacheStats(): Promise<OfflineCacheStats> {
     try {
       const db = await this.getDB();
 
-      const getCount = (storeName: string): Promise<number> => {
-        return new Promise((resolve) => {
-          const tx = db.transaction(storeName, 'readonly');
-          const store = tx.objectStore(storeName);
-          const req = store.count();
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => resolve(0);
-        });
-      };
-
-      const [albumCount, artistCount, trackCount, imageCount] = await Promise.all([
-        getCount('albums'),
-        getCount('artists'),
-        getCount('tracks'),
-        getCount('images'),
+      const [albumCount, artistCount, trackCount, imageCount, meta] = await Promise.all([
+        this.countStore(db, 'albums'),
+        this.countStore(db, 'artists'),
+        this.countStore(db, 'tracks'),
+        this.countStore(db, 'images'),
+        this.getMeta(db, 'last_tracks_sync'),
       ]);
 
-      const lastUpdated = await new Promise<string | null>((resolve) => {
-        const tx = db.transaction('metadata', 'readonly');
-        const store = tx.objectStore('metadata');
-        const req = store.get('last_albums_sync');
-        req.onsuccess = () => {
-          const val = req.result;
-          resolve(val?.timestamp ? new Date(val.timestamp).toLocaleTimeString() : null);
-        };
-        req.onerror = () => resolve(null);
-      });
+      const lastUpdated = meta?.timestamp
+        ? new Date(meta.timestamp).toLocaleTimeString()
+        : null;
 
       return {
         albumCount,
@@ -444,23 +481,58 @@ class OfflineCacheService {
     }
   }
 
-  /**
-   * Register the Service Worker in supported browsers
-   */
-  public async registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
-      return null;
-    }
+  private countStore(db: IDBDatabase, storeName: string): Promise<number> {
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction(storeName, 'readonly');
+        const req = tx.objectStore(storeName).count();
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(0);
+      } catch {
+        resolve(0);
+      }
+    });
+  }
 
+  private getMeta(db: IDBDatabase, key: string): Promise<any> {
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction('metadata', 'readonly');
+        const req = tx.objectStore('metadata').get(key);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+      } catch {
+        resolve(null);
+      }
+    });
+  }
+
+  /**
+   * Clear all cached data
+   */
+  public async clearAllCache(): Promise<void> {
     try {
-      const registration = await navigator.serviceWorker.register('/sw.js', {
-        scope: '/',
-      });
-      console.log('[SW] Service Worker registered with scope:', registration.scope);
-      return registration;
-    } catch (error) {
-      console.warn('[SW] Service Worker registration failed:', error);
-      return null;
+      const db = await this.getDB();
+      const stores = ['albums', 'artists', 'tracks', 'images', 'metadata'];
+      const tx = db.transaction(stores, 'readwrite');
+      stores.forEach((s) => tx.objectStore(s).clear());
+    } catch (e) {
+      console.warn('Failed to clear cache:', e);
+    }
+  }
+
+  /**
+   * Register service worker
+   */
+  public async registerServiceWorker(): Promise<boolean> {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+      return false;
+    }
+    try {
+      await navigator.serviceWorker.register('/sw.js');
+      return true;
+    } catch {
+      return false;
     }
   }
 }

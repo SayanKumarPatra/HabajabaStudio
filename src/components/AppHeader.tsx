@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Heart } from 'lucide-react';
+import { Search, Heart, ShieldCheck } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 import { NavigationTab } from '../types/music';
 import { useFavorites } from '../context/FavoritesContext';
@@ -101,6 +101,22 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             }`}
           >
             <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+          </button>
+
+          {/* Official Login Trigger directly after Favorites & Search */}
+          <button
+            type="button"
+            onClick={() => onNavigate('admin')}
+            title="অফিসিয়াল লগইন (এডমিন প্যানেল)"
+            aria-label="অফিসিয়াল লগইন"
+            className={`min-h-[34px] sm:min-h-[38px] px-2.5 sm:px-3 flex items-center gap-1.5 rounded-full text-xs font-bold transition-all cursor-pointer active:scale-95 ${
+              currentTab === 'admin'
+                ? 'bg-white text-[#ED1025] shadow-xs font-extrabold'
+                : 'bg-black/35 hover:bg-white/20 text-white border border-white/25 shadow-xs'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#ED1025] fill-white shrink-0" />
+            <span className="font-bengali text-xs tracking-tight">অফিসিয়াল লগইন</span>
           </button>
         </div>
       </div>
