@@ -5,9 +5,12 @@ import {
   Check,
   RefreshCw,
   Sliders,
-  Cloud,
   Link as LinkIcon,
   Save,
+  Plus,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import { BannerSlide } from '../types/music';
 import { MusicService, defaultSlidingBanners } from '../services/musicService';
@@ -40,9 +43,8 @@ export const SlidingBannersAdminSection: React.FC = () => {
       const instantPreviewUrl = URL.createObjectURL(file);
       const preliminary = [...banners];
       preliminary[index] = {
-        id: `slide-${index + 1}`,
+        ...preliminary[index],
         imageUrl: instantPreviewUrl,
-        title: `Banner ${index + 1}`,
       };
       setBanners(preliminary);
 
@@ -56,9 +58,8 @@ export const SlidingBannersAdminSection: React.FC = () => {
 
       const updated = [...banners];
       updated[index] = {
-        id: `slide-${index + 1}`,
+        ...updated[index],
         imageUrl: result.url,
-        title: `Banner ${index + 1}`,
       };
 
       setBanners(updated);
@@ -79,7 +80,6 @@ export const SlidingBannersAdminSection: React.FC = () => {
   };
 
   const handleUrlChange = (index: number, url: string) => {
-    // If Dropbox link, automatically convert to direct content URL
     let formatted = url.trim();
     if (formatted.includes('dropbox.com')) {
       formatted = getDirectAudioUrl(formatted);
@@ -87,11 +87,75 @@ export const SlidingBannersAdminSection: React.FC = () => {
 
     const updated = [...banners];
     updated[index] = {
-      id: `slide-${index + 1}`,
+      ...updated[index],
       imageUrl: formatted || '/banner-default.svg',
-      title: `Banner ${index + 1}`,
     };
     setBanners(updated);
+  };
+
+  const handleTitleChange = (index: number, title: string) => {
+    const updated = [...banners];
+    updated[index] = {
+      ...updated[index],
+      title,
+    };
+    setBanners(updated);
+  };
+
+  const handleSubtitleChange = (index: number, subtitle: string) => {
+    const updated = [...banners];
+    updated[index] = {
+      ...updated[index],
+      subtitle,
+    };
+    setBanners(updated);
+  };
+
+  const handleAddNewBanner = async () => {
+    const newSlide: BannerSlide = {
+      id: `slide-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      imageUrl: '/banner-default.svg',
+      title: `Banner ${banners.length + 1}`,
+      subtitle: 'Habajaba Studio LIVE',
+    };
+    const updated = [...banners, newSlide];
+    setBanners(updated);
+    await MusicService.saveSlidingBanners(updated);
+    setSavedAlert({
+      show: true,
+      message: `নতুন ব্যানার #${updated.length} যোগ করা হয়েছে! ছবি ও তথ্য দিন।`,
+      type: 'success',
+    });
+    setTimeout(() => setSavedAlert({ show: false, message: '', type: 'success' }), 3000);
+  };
+
+  const handleDeleteBanner = async (index: number) => {
+    if (banners.length <= 1) {
+      alert('কমপক্ষে ১টি ব্যানার থাকা আবশ্যক!');
+      return;
+    }
+    const updated = banners.filter((_, idx) => idx !== index);
+    setBanners(updated);
+    await MusicService.saveSlidingBanners(updated);
+    setSavedAlert({
+      show: true,
+      message: `ব্যানার #${index + 1} সফলভাবে মুছে ফেলা হয়েছে!`,
+      type: 'info',
+    });
+    setTimeout(() => setSavedAlert({ show: false, message: '', type: 'info' }), 3000);
+  };
+
+  const handleMoveBanner = async (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= banners.length) return;
+
+    const updated = [...banners];
+    const temp = updated[index];
+    updated[index] = updated[targetIndex];
+    updated[targetIndex] = temp;
+
+    setBanners(updated);
+    await MusicService.saveSlidingBanners(updated);
   };
 
   const handleSaveAll = async () => {
@@ -100,7 +164,7 @@ export const SlidingBannersAdminSection: React.FC = () => {
       await MusicService.saveSlidingBanners(banners);
       setSavedAlert({
         show: true,
-        message: '৪টি ব্যানার সফলভাবে ক্লাউড ও লাইভ সার্ভারে সংরক্ষণ করা হয়েছে!',
+        message: `সকল ${banners.length} টি ব্যানার সফলভাবে ক্লাউড ও লাইভ সার্ভারে সংরক্ষণ করা হয়েছে!`,
         type: 'success',
       });
       setTimeout(() => setSavedAlert({ show: false, message: '', type: 'success' }), 3500);
@@ -113,7 +177,7 @@ export const SlidingBannersAdminSection: React.FC = () => {
   };
 
   const handleResetToDefaults = async () => {
-    if (confirm('৪টি ব্যানার ডিফল্টে ফিরিয়ে নিতে চান?')) {
+    if (confirm('ব্যানারগুলো কি ডিফল্ট ৪টিতে ফিরিয়ে নিতে চান?')) {
       setBanners(defaultSlidingBanners);
       await MusicService.saveSlidingBanners(defaultSlidingBanners);
       setSavedAlert({
@@ -125,11 +189,9 @@ export const SlidingBannersAdminSection: React.FC = () => {
     }
   };
 
-  const slots = [0, 1, 2, 3];
-
   return (
-    <div className="bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 p-5 shadow-xl space-y-5 text-white">
-      {/* Clean Header */}
+    <div className="bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 shadow-xl space-y-5 text-white">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl bg-[#ED1025]/20 text-[#ED1025] flex items-center justify-center shrink-0">
@@ -137,35 +199,44 @@ export const SlidingBannersAdminSection: React.FC = () => {
           </div>
           <div>
             <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <span>হোমপেজ ৪টি স্লাইডিং ব্যানার (16:9 Widescreen)</span>
+              <span>হোমপেজ স্লাইডিং ব্যানার (মোট {banners.length} টি)</span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 লাইভ সিঙ্ক
               </span>
             </h3>
             <p className="text-xs text-neutral-400 font-bengali">
-              ছবি আপলোড করুন বা লিংক পেস্ট করুন। হোমপেজে স্বয়ংক্রিয়ভাবে স্লাইড করবে।
+              ইচ্ছেমত যত খুশি ব্যানার যোগ করুন, সাজান এবং হোমপেজে স্ক্রোল বা স্লাইড আকারে প্রদর্শন করুন।
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleAddNewBanner}
+            className="px-3.5 py-1.5 rounded-xl bg-[#ED1025] hover:bg-[#D90D20] text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#ED1025]/30 cursor-pointer transition-all active:scale-95"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>নতুন ব্যানার যোগ করুন</span>
+          </button>
+
           <button
             type="button"
             onClick={handleResetToDefaults}
             className="px-3 py-1.5 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-xs font-semibold text-neutral-300 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>ডিফল্ট ব্যানার</span>
+            <span>ডিফল্ট</span>
           </button>
 
           <button
             type="button"
             onClick={handleSaveAll}
             disabled={isSavingAll}
-            className="px-4 py-1.5 rounded-xl bg-[#ED1025] hover:bg-[#D90D20] text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#ED1025]/30 cursor-pointer disabled:opacity-50 transition-all active:scale-95"
+            className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-md cursor-pointer disabled:opacity-50 transition-all active:scale-95"
           >
             <Save className="w-3.5 h-3.5" />
-            <span>{isSavingAll ? 'সেভ হচ্ছে...' : 'লাইভ সার্ভারে সেভ করুন'}</span>
+            <span>{isSavingAll ? 'সেভ হচ্ছে...' : 'সব সেভ করুন'}</span>
           </button>
         </div>
       </div>
@@ -177,34 +248,61 @@ export const SlidingBannersAdminSection: React.FC = () => {
         </div>
       )}
 
-      {/* Grid of 4 Banner Slots — Clean, Minimal, Functional */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {slots.map((slotIndex) => {
-          const currentSlide = banners[slotIndex];
+      {/* Dynamic Grid of Banners */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {banners.map((slide, slotIndex) => {
           const isSlotUploading = uploadingIndex === slotIndex;
 
           return (
             <div
-              key={slotIndex}
-              className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-3 flex flex-col justify-between hover:border-white/20 transition-all"
+              key={slide.id || slotIndex}
+              className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-3 flex flex-col justify-between hover:border-white/20 transition-all group"
             >
-              {/* Header */}
+              {/* Header with Ordering and Delete controls */}
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-md bg-[#ED1025] text-white text-[11px] font-mono flex items-center justify-center font-bold">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-md bg-[#ED1025] text-white text-xs font-mono flex items-center justify-center font-bold">
                     {slotIndex + 1}
                   </span>
-                  <span>ব্যানার স্লট #{slotIndex + 1}</span>
-                </span>
-                <span className="text-[10px] font-mono text-neutral-400">১৬:৯ অনুপাত</span>
+                  <span className="text-xs font-bold text-white">ব্যানার #{slotIndex + 1}</span>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={slotIndex === 0}
+                    onClick={() => handleMoveBanner(slotIndex, 'up')}
+                    className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-30 text-white flex items-center justify-center transition-colors cursor-pointer"
+                    title="Move up"
+                  >
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={slotIndex === banners.length - 1}
+                    onClick={() => handleMoveBanner(slotIndex, 'down')}
+                    className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-30 text-white flex items-center justify-center transition-colors cursor-pointer"
+                    title="Move down"
+                  >
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteBanner(slotIndex)}
+                    className="w-7 h-7 rounded-lg bg-red-600/15 hover:bg-red-600 text-red-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                    title="Delete banner"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
 
               {/* 16:9 Image Preview */}
               <div className="relative aspect-[16/9] w-full rounded-xl overflow-hidden bg-neutral-900 border border-white/10 flex items-center justify-center shadow-inner">
-                {currentSlide?.imageUrl ? (
+                {slide.imageUrl ? (
                   <img
-                    src={currentSlide.imageUrl}
-                    alt={`Banner ${slotIndex + 1}`}
+                    src={slide.imageUrl}
+                    alt={slide.title || `Banner ${slotIndex + 1}`}
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/banner-default.svg';
@@ -226,15 +324,32 @@ export const SlidingBannersAdminSection: React.FC = () => {
                 )}
               </div>
 
-              {/* Controls: Direct URL Input & Upload Button */}
+              {/* Controls: Title, Subtitle, URL & File Upload */}
               <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={slide.title || ''}
+                    onChange={(e) => handleTitleChange(slotIndex, e.target.value)}
+                    placeholder="ব্যানার টাইটেল"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-white/15 bg-black/60 text-white text-xs focus:border-[#ED1025] focus:outline-hidden"
+                  />
+                  <input
+                    type="text"
+                    value={slide.subtitle || ''}
+                    onChange={(e) => handleSubtitleChange(slotIndex, e.target.value)}
+                    placeholder="সাব-টাইটেল"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-white/15 bg-black/60 text-white text-xs focus:border-[#ED1025] focus:outline-hidden"
+                  />
+                </div>
+
                 <div className="relative">
                   <LinkIcon className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="url"
-                    value={currentSlide?.imageUrl || ''}
+                    value={slide.imageUrl || ''}
                     onChange={(e) => handleUrlChange(slotIndex, e.target.value)}
-                    placeholder="ইমেজ লিঙ্ক পেস্ট করুন (Dropbox/Direct URL)"
+                    placeholder="ইমেজ লিঙ্ক (Dropbox / Direct URL)"
                     className="w-full pl-8 pr-2.5 py-1.5 rounded-lg border border-white/15 bg-black/60 text-white text-xs font-mono focus:border-[#ED1025] focus:outline-hidden"
                   />
                 </div>
@@ -260,6 +375,18 @@ export const SlidingBannersAdminSection: React.FC = () => {
             </div>
           );
         })}
+      </div>
+
+      {/* Bottom Add Banner Shortcut */}
+      <div className="pt-2 text-center">
+        <button
+          type="button"
+          onClick={handleAddNewBanner}
+          className="px-5 py-2.5 rounded-xl border border-dashed border-white/20 hover:border-[#ED1025] hover:bg-[#ED1025]/10 text-neutral-300 hover:text-white text-xs font-bold inline-flex items-center gap-2 cursor-pointer transition-all"
+        >
+          <Plus className="w-4 h-4 text-[#ED1025]" />
+          <span>আরেকটি ব্যানার যোগ করুন (+ Add Another Banner)</span>
+        </button>
       </div>
     </div>
   );

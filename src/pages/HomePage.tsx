@@ -46,8 +46,9 @@ export const HomePage: React.FC<HomePageProps> = ({
   const branding = MusicService.getBranding();
   const allSongs = MusicService.getAllTracks('newest', false);
   const featuredTracks = MusicService.getFeaturedTracks();
-  const latestReleases = MusicService.getLatestReleases(6);
+  const latestReleases = allSongs; // Allow scrolling through all published tracks
   const albums = MusicService.getAlbums();
+  const [showAllPreview, setShowAllPreview] = useState(false);
 
   return (
     <div className="space-y-4 sm:space-y-6 pb-2 sm:pb-6">
@@ -213,23 +214,23 @@ export const HomePage: React.FC<HomePageProps> = ({
             <div className="flex items-center justify-between px-1">
               <div>
                 <h3 className="text-base sm:text-lg font-bold tracking-tight text-white">
-                  All Songs Preview
+                  All Songs Preview ({allSongs.length})
                 </h3>
                 <p className="text-xs text-neutral-400 font-medium font-bengali">
-                  হবজব স্টুডিও লাইভ এর প্রকাশিত গানসমূহ
+                  হ্যাবাজ্যাবা স্টুডিও লাইভ এর প্রকাশিত সকল গান
                 </p>
               </div>
               <button
                 onClick={() => onNavigate('songs')}
-                className="text-xs font-semibold text-[#ED1025] hover:underline flex items-center gap-1 py-1 px-2"
+                className="text-xs font-semibold text-[#ED1025] hover:underline flex items-center gap-1 py-1 px-2 cursor-pointer"
               >
-                <span>View All ({allSongs.length})</span>
+                <span>সব গান দেখুন (সকল {allSongs.length})</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
             <div className="bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden shadow-xl">
-              {allSongs.slice(0, 8).map((track, idx) => (
+              {(showAllPreview ? allSongs : allSongs.slice(0, 10)).map((track, idx) => (
                 <SongRow
                   key={track.id}
                   track={track}
@@ -245,6 +246,18 @@ export const HomePage: React.FC<HomePageProps> = ({
                 />
               ))}
             </div>
+
+            {allSongs.length > 10 && !showAllPreview && (
+              <div className="text-center pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowAllPreview(true)}
+                  className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition-all cursor-pointer"
+                >
+                  আরও {allSongs.length - 10} টি গান এখানে দেখুন (Expand All)
+                </button>
+              </div>
+            )}
           </section>
 
         </>

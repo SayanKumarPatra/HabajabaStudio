@@ -28,11 +28,18 @@ import {
   ArrowLeft,
   MessageSquare,
   AlertTriangle,
+  Search,
 } from 'lucide-react';
 import { HeroBannerConfig, Track } from '../types/music';
 import { MusicService } from '../services/musicService';
 import { analyzeAudioUrl, testAudioStreamability } from '../utils/dropbox';
-import { extractYouTubeVideoId, fetchYouTubeMetadata, getYouTubeThumbnail, isYouTubeUrl } from '../utils/youtube';
+import {
+  extractYouTubeVideoId,
+  extractYouTubeStartTime,
+  fetchYouTubeMetadata,
+  getYouTubeThumbnail,
+  isYouTubeUrl,
+} from '../utils/youtube';
 import { useAudio } from '../context/AudioContext';
 import { CoverImage } from '../components/CoverImage';
 import { BrandingAdminSection } from '../components/BrandingAdminSection';
@@ -77,6 +84,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
     MusicService.getHeroBanner()
   );
 
+  // Subscribe to live catalog updates (from Firestore, RTDB, and local saves)
+  React.useEffect(() => {
+    const unsub = MusicService.subscribe(() => {
+      setTracks(MusicService.getAllTracks('newest', true));
+      setBanner(MusicService.getHeroBanner());
+    });
+    return unsub;
+  }, []);
+
   // In-Page Delete Confirmation (NO POPUP)
   const [trackToDelete, setTrackToDelete] = useState<Track | null>(null);
 
@@ -103,9 +119,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
   const [isCoverUploading, setIsCoverUploading] = useState(false);
   const [audioUrl, setAudioUrl] = useState('');
   const [youtubeVideoId, setYoutubeVideoId] = useState('');
+  const [startTime, setStartTime] = useState(''); // Timestamp offset for multi-song videos
   const [duration, setDuration] = useState('');
   const [featured, setFeatured] = useState(false);
   const [published, setPublished] = useState(true);
+
+  // Table search & filter query
+  const [songSearchQuery, setSongSearchQuery] = useState('');
 
   // Audio testing in form
   const [isTestingAudio, setIsTestingAudio] = useState(false);
@@ -163,6 +183,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
     setCoverUrl('/banner-default.svg');
     setAudioUrl('');
     setYoutubeVideoId('');
+    setStartTime('');
     setDuration('');
     setFeatured(false);
     setPublished(true);
@@ -183,6 +204,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
     setCoverUrl(t.coverUrl);
     setAudioUrl(t.audioUrl);
     setYoutubeVideoId(t.youtubeId || (isYt ? extractYouTubeVideoId(t.audioUrl) || '' : ''));
+    if (t.startTime !== undefined && t.startTime !== null) {
+      const mins = Math.floor(t.startTime / 60);
+      const secs = t.startTime % 60;
+      setStartTime(`${mins}:${secs < 10 ? '0' : ''}${secs}`);
+    } else {
+      setStartTime('');
+    }
     setDuration(t.duration);
     setFeatured(t.featured || false);
     setPublished(t.published);
@@ -204,6 +232,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
       setYoutubeVideoId(vid);
       if (!coverUrl || coverUrl === '/banner-default.svg') {
         setCoverUrl(getYouTubeThumbnail(vid, 'hq'));
+      }
+      const detectedTime = extractYouTubeStartTime(url);
+      if (detectedTime !== null && !startTime) {
+        const mins = Math.floor(detectedTime / 60);
+        const secs = detectedTime % 60;
+        setStartTime(`${mins}:${secs < 10 ? '0' : ''}${secs}`);
       }
       const meta = await fetchYouTubeMetadata(vid);
       if (meta && meta.title && !title) {
@@ -308,8 +342,25 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
       ? (youtubeVideoId || extractYouTubeVideoId(audioUrl) || undefined)
       : undefined;
 
+    let parsedStartTime: number | undefined = undefined;
+    if (startTime.trim()) {
+      if (startTime.includes(':')) {
+        const parts = startTime.split(':').map((x) => parseInt(x, 10));
+        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+          parsedStartTime = parts[0] * 60 + parts[1];
+        } else if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+          parsedStartTime = parts[0] * 3600 + parts[1] * 60 + parts[2];
+        }
+      } else {
+        const val = parseInt(startTime, 10);
+        if (!isNaN(val)) parsedStartTime = val;
+      }
+    }
+
+    const generatedId = editingTrackId || `habajaba-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+
     const trackData: Track = {
-      id: editingTrackId || `habajaba-${Date.now()}`,
+      id: generatedId,
       title: title.trim(),
       artist: artist.trim() || 'Habajaba Studio LIVE',
       album: album.trim(),
@@ -322,6 +373,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
       featured: featured,
       published: published,
       youtubeId: ytId,
+      startTime: parsedStartTime,
       sourceType: ytId ? 'youtube' : 'dropbox',
     };
 
@@ -331,12 +383,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
     // Optimistic local update
     if (editingTrackId) {
       setTracks((prev) => prev.map((t) => (t.id === trackData.id ? trackData : t)));
-      MusicService.updateTrack(trackData).catch(() => {});
-      showToast(`"${trackData.title}" সফলভাবে আপডেট করা হয়েছে! ⚡`, 'success');
+      await MusicService.updateTrack(trackData).catch(() => {});
+      showToast(`"${trackData.title}" সফলভাবে আপডেট ও সংরক্ষিত হয়েছে! ⚡`, 'success');
     } else {
-      setTracks((prev) => [trackData, ...prev]);
-      MusicService.addTrack(trackData).catch(() => {});
-      showToast(`"${trackData.title}" নতুন গান যোগ ও সংরক্ষিত হয়েছে! ⚡`, 'success');
+      setTracks((prev) => [trackData, ...prev.filter((t) => t.id !== trackData.id)]);
+      await MusicService.addTrack(trackData).catch(() => {});
+      showToast(`"${trackData.title}" নতুন গান যোগ ও চিরস্থায়ীভাবে সেভ হয়েছে! ⚡`, 'success');
     }
 
     refreshCatalog();
@@ -710,20 +762,42 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
                 </div>
               </div>
 
-              {/* Duration & Options */}
-              <div className="p-4 bg-white/[0.03] rounded-xl border border-white/10 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <label className="font-bold text-neutral-300 font-bengali">সময়কাল:</label>
+              {/* Duration & Start Time for Multi-song Videos */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="font-bold text-neutral-300 block mb-1.5 font-bengali">
+                    সময়কাল (Duration)
+                  </label>
                   <input
                     type="text"
                     value={duration}
                     onChange={(e) => setDuration(e.target.value)}
                     placeholder="03:45"
-                    className="w-24 px-3 py-1.5 rounded-lg border border-white/15 bg-black/60 text-white text-center font-mono focus:border-[#ED1025] focus:outline-hidden"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-white/15 bg-black/60 text-white font-mono text-xs focus:border-[#ED1025] focus:outline-hidden"
                   />
                 </div>
 
-                <div className="flex items-center gap-5">
+                <div>
+                  <label className="font-bold text-neutral-300 block mb-1.5 font-bengali">
+                    শুরুর সময় / Start Time (ঐচ্ছিক)
+                  </label>
+                  <input
+                    type="text"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    placeholder="যেমন 01:30 বা 90s (মাল্টি-সং ভিডিওর জন্য)"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-white/15 bg-black/60 text-white font-mono text-xs focus:border-[#ED1025] focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
+              {/* Publish & Featured Options */}
+              <div className="p-4 bg-white/[0.03] rounded-xl border border-white/10 flex items-center justify-between gap-4">
+                <p className="text-[11px] text-neutral-400 font-bengali">
+                  💡 একটি বড় ভিডিও থেকে একাধিক গান আলাদা করতে শুরুর সময় (Start Time) দিন।
+                </p>
+
+                <div className="flex items-center gap-5 shrink-0">
                   <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-semibold text-neutral-200">
                     <input
                       type="checkbox"
@@ -1090,7 +1164,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
           }`}
         >
           <Sliders className="w-3.5 h-3.5" />
-          <span>৪টি স্লাইডিং ব্যানার</span>
+          <span>স্লাইডিং ব্যানার</span>
         </button>
 
         <button
@@ -1161,26 +1235,40 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
             <div>
               <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                 <Music className="w-5 h-5 text-[#ED1025]" />
-                <span>গান তালিকা ({tracks.length} টি গান)</span>
+                <span>গান তালিকা (মোট {tracks.length} টি গান চিরস্থায়ীভাবে সংরক্ষিত)</span>
               </h2>
               <p className="text-xs text-neutral-400 font-bengali">
-                গান যোগ, সম্পাদনা ও যেকোনো গান মুছে ফেলার পূর্ণ নিয়ন্ত্রণ (সম্পূর্ণ পেজ ভিউ)।
+                নতুন গান যোগ করলে পূর্ববর্তী সকল গান অটুট থাকবে। যত খুশি গান যোগ ও স্ক্রোল করে ব্রাউজ করুন।
               </p>
             </div>
 
-            <button
-              onClick={handleOpenAddForm}
-              className="px-4 py-2 rounded-xl bg-[#ED1025] hover:bg-[#D90D20] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95"
-            >
-              <Plus className="w-4 h-4" />
-              <span>নতুন গান যোগ করুন</span>
-            </button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {/* Instant Search Bar */}
+              <div className="relative flex-1 sm:w-64">
+                <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={songSearchQuery}
+                  onChange={(e) => setSongSearchQuery(e.target.value)}
+                  placeholder="গান খুঁজুন..."
+                  className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-white/15 bg-black/60 text-white text-xs focus:border-[#ED1025] focus:outline-hidden"
+                />
+              </div>
+
+              <button
+                onClick={handleOpenAddForm}
+                className="px-4 py-2 rounded-xl bg-[#ED1025] hover:bg-[#D90D20] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95 shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>নতুন গান যোগ করুন</span>
+              </button>
+            </div>
           </div>
 
           {tracks.length > 0 ? (
-            <div className="w-full overflow-x-auto rounded-xl border border-white/10">
+            <div className="w-full overflow-x-auto rounded-xl border border-white/10 max-h-[70vh] overflow-y-auto">
               <table className="w-full text-left text-xs whitespace-nowrap">
-                <thead className="bg-white/5 text-neutral-300 uppercase tracking-wider text-[11px] border-b border-white/10 font-bold">
+                <thead className="bg-white/10 backdrop-blur-md sticky top-0 z-10 text-neutral-200 uppercase tracking-wider text-[11px] border-b border-white/10 font-bold">
                   <tr>
                     <th className="py-3 px-3.5">কভার</th>
                     <th className="py-3 px-3.5">শিরোনাম ও শিল্পী</th>
@@ -1192,7 +1280,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
-                  {tracks.map((t) => {
+                  {tracks
+                    .filter((t) => {
+                      const q = songSearchQuery.trim().toLowerCase();
+                      if (!q) return true;
+                      return (
+                        t.title.toLowerCase().includes(q) ||
+                        t.artist.toLowerCase().includes(q) ||
+                        t.album.toLowerCase().includes(q) ||
+                        t.genre.toLowerCase().includes(q)
+                      );
+                    })
+                    .map((t) => {
                     const isCurrent = currentTrack?.id === t.id && isPlaying;
                     const isYt = isYouTubeUrl(t.audioUrl) || !!t.youtubeId || t.sourceType === 'youtube';
 
@@ -1234,7 +1333,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
                         </td>
 
                         <td className="py-3 px-3.5 font-mono text-neutral-300 text-xs">
-                          {t.duration || '03:30'}
+                          <div>{t.duration || '03:30'}</div>
+                          {t.startTime !== undefined && t.startTime > 0 && (
+                            <div className="text-[10px] text-amber-300 font-mono">
+                              শুরু: {Math.floor(t.startTime / 60)}:{String(t.startTime % 60).padStart(2, '0')}
+                            </div>
+                          )}
                         </td>
 
                         <td className="py-3 px-3.5">

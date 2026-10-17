@@ -6,6 +6,8 @@ import { getFirebaseFirestore, getFirebaseRealtimeDb, getActiveFirebaseConfig } 
 import { offlineCacheService } from './offlineCacheService';
 
 const STORAGE_CATALOG_KEY = 'habajaba_admin_catalog_v2';
+const STORAGE_CATALOG_BACKUP_KEY = 'habajaba_admin_catalog_backup_v2';
+const STORAGE_DELETED_TRACKS_KEY = 'habajaba_deleted_tracks_v2';
 const STORAGE_BRANDING_KEY = 'habajaba_admin_branding_v1';
 const STORAGE_SLIDING_BANNERS_KEY = 'habajaba_sliding_banners_v1';
 
@@ -68,13 +70,54 @@ const defaultState: CatalogState = {
   artists: (rawMusicData.artists as Artist[]) || [],
 };
 
+function getDeletedTrackIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(STORAGE_DELETED_TRACKS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return new Set(parsed);
+    }
+  } catch {}
+  return new Set();
+}
+
+function saveDeletedTrackIds(ids: Set<string>) {
+  try {
+    localStorage.setItem(STORAGE_DELETED_TRACKS_KEY, JSON.stringify(Array.from(ids)));
+  } catch {}
+}
+
 function loadState(): CatalogState {
   try {
     const saved = localStorage.getItem(STORAGE_CATALOG_KEY);
+    const backup = localStorage.getItem(STORAGE_CATALOG_BACKUP_KEY);
     const savedBranding = localStorage.getItem(STORAGE_BRANDING_KEY);
     const savedSlidingBanners = localStorage.getItem(STORAGE_SLIDING_BANNERS_KEY);
     const branding = savedBranding ? JSON.parse(savedBranding) : defaultState.branding;
     const slidingBanners = savedSlidingBanners ? JSON.parse(savedSlidingBanners) : defaultState.slidingBanners;
+
+    let loadedTracks: Track[] = [];
+
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed.tracks) && parsed.tracks.length > 0) {
+        loadedTracks = parsed.tracks;
+      }
+    }
+
+    // If main key has no tracks, safely restore from backup if available
+    if (loadedTracks.length === 0 && backup) {
+      try {
+        const parsedBackup = JSON.parse(backup);
+        if (Array.isArray(parsedBackup.tracks) && parsedBackup.tracks.length > 0) {
+          loadedTracks = parsedBackup.tracks;
+        }
+      } catch {}
+    }
+
+    // Filter out explicitly deleted tracks
+    const deletedIds = getDeletedTrackIds();
+    loadedTracks = loadedTracks.filter((t) => t && t.id && !deletedIds.has(t.id));
 
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -82,7 +125,7 @@ function loadState(): CatalogState {
         banner: parsed.banner || defaultState.banner,
         slidingBanners: Array.isArray(parsed.slidingBanners) && parsed.slidingBanners.length > 0 ? parsed.slidingBanners : slidingBanners,
         branding: parsed.branding || branding,
-        tracks: Array.isArray(parsed.tracks) ? parsed.tracks : [],
+        tracks: loadedTracks,
         albums: Array.isArray(parsed.albums) ? parsed.albums : [],
         playlists: Array.isArray(parsed.playlists) ? parsed.playlists : defaultState.playlists,
         artists: Array.isArray(parsed.artists) ? parsed.artists : defaultState.artists,
@@ -111,6 +154,13 @@ function notifyListeners() {
 function saveStateLocally() {
   try {
     localStorage.setItem(STORAGE_CATALOG_KEY, JSON.stringify(catalogState));
+    if (catalogState.tracks.length > 0) {
+      // Keep persistent backup snapshot so songs can never be lost
+      localStorage.setItem(STORAGE_CATALOG_BACKUP_KEY, JSON.stringify({
+        tracks: catalogState.tracks,
+        updatedAt: Date.now(),
+      }));
+    }
     if (catalogState.branding) {
       localStorage.setItem(STORAGE_BRANDING_KEY, JSON.stringify(catalogState.branding));
     }
@@ -141,8 +191,9 @@ if (typeof window !== 'undefined') {
   if (catalogState.tracks.length === 0 || !navigator.onLine) {
     offlineCacheService.getCachedTracks().then((cachedTracks) => {
       if (cachedTracks && cachedTracks.length > 0 && catalogState.tracks.length === 0) {
-        catalogState.tracks = cachedTracks;
-        notifyListeners();
+        const deletedIds = getDeletedTrackIds();
+        catalogState.tracks = cachedTracks.filter((t) => t && t.id && !deletedIds.has(t.id));
+        saveStateLocally();
       }
     }).catch(() => {});
   }
@@ -155,6 +206,86 @@ if (typeof window !== 'undefined') {
       catalogState.tracks
     ).catch(() => {});
   }, 1200);
+}
+
+// Helper to sanitize objects for Firebase Firestore and RTDB (removes undefined fields which Firestore rejects)
+export function cleanForFirebase<T extends Record<string, any>>(obj: T): T {
+  const result: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        result[key] = cleanForFirebase(value);
+      } else {
+        result[key] = value;
+      }
+    }
+  }
+  return result;
+}
+
+// Safe Intelligent Track Merging: Never drops existing local tracks when remote sync occurs
+function mergeRemoteTracks(remoteTracks: Track[]) {
+  if (!remoteTracks || remoteTracks.length === 0) return;
+  const deletedIds = getDeletedTrackIds();
+  const trackMap = new Map<string, Track>();
+
+  // 1. First add current local tracks that are not deleted
+  catalogState.tracks.forEach((t) => {
+    if (t && t.id && !deletedIds.has(t.id)) {
+      trackMap.set(t.id, t);
+    }
+  });
+
+  // 2. Add or update remote tracks (remote takes priority for matching IDs)
+  remoteTracks.forEach((r) => {
+    if (r && r.id && !deletedIds.has(r.id)) {
+      const existing = trackMap.get(r.id);
+      trackMap.set(r.id, existing ? { ...existing, ...r } : r);
+    }
+  });
+
+  catalogState.tracks = Array.from(trackMap.values());
+  saveStateLocally();
+  notifyListeners();
+
+  // 3. If local catalog has tracks not yet saved in remote database, push them to remote in background
+  const remoteIdSet = new Set(remoteTracks.map((r) => r.id));
+  const missingFromRemote = catalogState.tracks.filter((t) => !remoteIdSet.has(t.id));
+  if (missingFromRemote.length > 0) {
+    pushTracksToRemote(missingFromRemote);
+  }
+}
+
+// Background helper to ensure all tracks exist in remote database without blocking UI
+function pushTracksToRemote(tracksToPush: Track[]) {
+  if (!tracksToPush || tracksToPush.length === 0) return;
+  const firestoreInstance = getFirebaseFirestore();
+  const rtdbInstance = getFirebaseRealtimeDb();
+
+  if (firestoreInstance) {
+    try {
+      // Chunk batches in groups of 400 (Firestore max limit is 500)
+      const chunkSize = 400;
+      for (let i = 0; i < tracksToPush.length; i += chunkSize) {
+        const chunk = tracksToPush.slice(i, i + chunkSize);
+        const batch = writeBatch(firestoreInstance.db);
+        for (const t of chunk) {
+          batch.set(doc(firestoreInstance.db, 'habajaba_songs', t.id), cleanForFirebase(t));
+        }
+        batch.commit().catch((e) => console.warn('Background Firestore track sync notice:', e));
+      }
+    } catch (err) {
+      console.warn('Firestore push error:', err);
+    }
+  }
+
+  if (rtdbInstance) {
+    try {
+      for (const t of tracksToPush) {
+        rtdbSet(ref(rtdbInstance.rtdb, `habajaba_songs/${t.id}`), cleanForFirebase(t)).catch(() => {});
+      }
+    } catch {}
+  }
 }
 
 function mergeRemoteArtists(remotes: Artist[]) {
@@ -201,16 +332,15 @@ export function initFirestoreSync() {
               id: docSnap.id || data.id,
             });
           });
-          // Update tracks in state with live Firestore data
-          catalogState.tracks = remoteTracks;
-          saveStateLocally();
+          // Intelligently merge remote tracks without ever wiping out local tracks
+          mergeRemoteTracks(remoteTracks);
         } else if (catalogState.tracks.length > 0 && !localStorage.getItem('habajaba_initial_seed_done')) {
           localStorage.setItem('habajaba_initial_seed_done', 'true');
-          MusicService.syncAllLocalToFirestore();
+          pushTracksToRemote(catalogState.tracks);
         }
       },
       (error) => {
-        console.warn('Firestore tracks listener error (falling back to local cache):', error);
+        console.warn('Firestore tracks listener notice (local cache active):', error);
       }
     );
 
@@ -351,21 +481,18 @@ export function initRealtimeDbSync() {
     onValue(songsRef, (snapshot) => {
       const val = snapshot.val();
       if (val && typeof val === 'object') {
-        const remoteTracks: Track[] = Object.keys(val).map((k) => ({
-          ...val[k],
-          id: k,
-        }));
+        const remoteTracks: Track[] = Array.isArray(val)
+          ? val.filter(Boolean)
+          : Object.keys(val).map((k) => ({
+              ...val[k],
+              id: val[k]?.id || k,
+            }));
         if (remoteTracks.length > 0) {
-          catalogState.tracks = remoteTracks;
-          saveStateLocally();
+          mergeRemoteTracks(remoteTracks);
         }
       } else if (val === null && !localStorage.getItem('habajaba_initial_seed_done') && catalogState.tracks.length > 0) {
         localStorage.setItem('habajaba_initial_seed_done', 'true');
-        const songsObj: Record<string, Track> = {};
-        catalogState.tracks.forEach((t) => {
-          songsObj[t.id] = t;
-        });
-        rtdbSet(songsRef, songsObj).catch(() => {});
+        pushTracksToRemote(catalogState.tracks);
       }
     });
 
@@ -504,6 +631,41 @@ export const MusicService = {
         ...updated,
       };
     }
+    await this.saveSlidingBanners(current);
+  },
+
+  async addSlidingBanner(banner?: Partial<BannerSlide>): Promise<BannerSlide> {
+    const current = [...this.getSlidingBanners()];
+    const newSlide: BannerSlide = {
+      id: `slide-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      imageUrl: banner?.imageUrl || '/banner-default.svg',
+      title: banner?.title || `Banner ${current.length + 1}`,
+      subtitle: banner?.subtitle || 'Habajaba Studio LIVE',
+      linkUrl: banner?.linkUrl || '',
+    };
+    const updated = [...current, newSlide];
+    await this.saveSlidingBanners(updated);
+    return newSlide;
+  },
+
+  async deleteSlidingBanner(idOrIndex: string | number) {
+    let current = [...this.getSlidingBanners()];
+    if (typeof idOrIndex === 'number') {
+      current = current.filter((_, idx) => idx !== idOrIndex);
+    } else {
+      current = current.filter((b) => b.id !== idOrIndex);
+    }
+    if (current.length === 0) {
+      current = [defaultSlidingBanners[0]];
+    }
+    await this.saveSlidingBanners(current);
+  },
+
+  async reorderSlidingBanners(fromIndex: number, toIndex: number) {
+    const current = [...this.getSlidingBanners()];
+    if (fromIndex < 0 || fromIndex >= current.length || toIndex < 0 || toIndex >= current.length) return;
+    const [moved] = current.splice(fromIndex, 1);
+    current.splice(toIndex, 0, moved);
     await this.saveSlidingBanners(current);
   },
 
@@ -690,7 +852,16 @@ export const MusicService = {
   },
 
   async addTrack(track: Track) {
-    catalogState.tracks = [track, ...catalogState.tracks];
+    // If it was previously marked as deleted, remove it from deleted list
+    const deletedIds = getDeletedTrackIds();
+    if (deletedIds.has(track.id)) {
+      deletedIds.delete(track.id);
+      saveDeletedTrackIds(deletedIds);
+    }
+
+    // Deduplicate by ID and prepend new track
+    catalogState.tracks = [track, ...catalogState.tracks.filter((t) => t.id !== track.id)];
+
     // If track has an artist not in the artists list, add and persist artist
     const trimmedArtistName = (track.artist || '').trim();
     if (
@@ -706,31 +877,28 @@ export const MusicService = {
       };
       this.saveArtist(newArtist).catch(() => {});
     }
+
     saveStateLocally();
     notifyListeners();
 
-    // Parallel background sync without blocking UI
+    // Immediately persist this track to Firestore and RTDB
     const firestoreInstance = getFirebaseFirestore();
     const rtdbInstance = getFirebaseRealtimeDb();
-    const syncTasks: Promise<any>[] = [];
+    const cleanT = cleanForFirebase(track);
 
     if (firestoreInstance) {
-      syncTasks.push(
-        setDoc(doc(firestoreInstance.db, 'habajaba_songs', track.id), track).catch((e) =>
-          console.warn('Failed to write track to Firestore:', e)
-        )
+      setDoc(doc(firestoreInstance.db, 'habajaba_songs', track.id), cleanT).catch((e) =>
+        console.warn('Failed to add track to Firestore:', e)
       );
     }
     if (rtdbInstance) {
-      syncTasks.push(
-        rtdbSet(ref(rtdbInstance.rtdb, `habajaba_songs/${track.id}`), track).catch((e) =>
-          console.warn('Failed to write track to Realtime Database:', e)
-        )
+      rtdbSet(ref(rtdbInstance.rtdb, `habajaba_songs/${track.id}`), cleanT).catch((e) =>
+        console.warn('Failed to add track to Realtime Database:', e)
       );
     }
-    if (syncTasks.length > 0) {
-      Promise.allSettled(syncTasks);
-    }
+
+    // Also push entire catalog in background to ensure complete remote persistence
+    pushTracksToRemote(catalogState.tracks);
   },
 
   async updateTrack(updated: Track) {
@@ -741,17 +909,18 @@ export const MusicService = {
     const firestoreInstance = getFirebaseFirestore();
     const rtdbInstance = getFirebaseRealtimeDb();
     const syncTasks: Promise<any>[] = [];
+    const cleanUpdated = cleanForFirebase(updated);
 
     if (firestoreInstance) {
       syncTasks.push(
-        setDoc(doc(firestoreInstance.db, 'habajaba_songs', updated.id), updated).catch((e) =>
+        setDoc(doc(firestoreInstance.db, 'habajaba_songs', updated.id), cleanUpdated).catch((e) =>
           console.warn('Failed to update track in Firestore:', e)
         )
       );
     }
     if (rtdbInstance) {
       syncTasks.push(
-        rtdbSet(ref(rtdbInstance.rtdb, `habajaba_songs/${updated.id}`), updated).catch((e) =>
+        rtdbSet(ref(rtdbInstance.rtdb, `habajaba_songs/${updated.id}`), cleanUpdated).catch((e) =>
           console.warn('Failed to update track in Realtime Database:', e)
         )
       );
@@ -762,6 +931,11 @@ export const MusicService = {
   },
 
   async deleteTrack(id: string) {
+    // Record deletion so background remote listeners never re-add it
+    const deletedIds = getDeletedTrackIds();
+    deletedIds.add(id);
+    saveDeletedTrackIds(deletedIds);
+
     catalogState.tracks = catalogState.tracks.filter((t) => t.id !== id);
     if (catalogState.banner.featuredTrackId === id) {
       catalogState.banner.featuredTrackId = '';

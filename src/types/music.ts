@@ -14,6 +14,7 @@ export interface Track {
   description?: string;
   lyrics?: string;
   youtubeId?: string;
+  startTime?: number; // Optional starting timestamp in seconds for multi-track videos
   sourceType?: 'dropbox' | 'youtube' | 'direct';
 }
 

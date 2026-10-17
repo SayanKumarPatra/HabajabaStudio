@@ -57,6 +57,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const ytIntervalRef = useRef<number | null>(null);
   const isYtReadyRef = useRef<boolean>(false);
   const pendingYtVideoIdRef = useRef<string | null>(null);
+  const pendingYtStartTimeRef = useRef<number>(0);
 
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -122,9 +123,17 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               isYtReadyRef.current = true;
               event.target.setVolume(Math.round(volume * 100));
               if (pendingYtVideoIdRef.current) {
-                event.target.loadVideoById(pendingYtVideoIdRef.current);
+                if (pendingYtStartTimeRef.current > 0) {
+                  event.target.loadVideoById({
+                    videoId: pendingYtVideoIdRef.current,
+                    startSeconds: pendingYtStartTimeRef.current,
+                  });
+                } else {
+                  event.target.loadVideoById(pendingYtVideoIdRef.current);
+                }
                 event.target.playVideo();
                 pendingYtVideoIdRef.current = null;
+                pendingYtStartTimeRef.current = 0;
               }
             },
             onStateChange: (event: any) => {
@@ -338,9 +347,18 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         audioRef.current.src = '';
       }
 
+      const startSeconds = typeof track.startTime === 'number' && track.startTime > 0 ? track.startTime : 0;
+
       if (isYtReadyRef.current && ytPlayerRef.current) {
         try {
-          ytPlayerRef.current.loadVideoById(ytId);
+          if (startSeconds > 0) {
+            ytPlayerRef.current.loadVideoById({
+              videoId: ytId,
+              startSeconds: startSeconds,
+            });
+          } else {
+            ytPlayerRef.current.loadVideoById(ytId);
+          }
           ytPlayerRef.current.setVolume(Math.round(volume * 100));
           ytPlayerRef.current.playVideo();
           setIsPlaying(true);
@@ -348,9 +366,11 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } catch (e) {
           console.warn('YouTube load error:', e);
           pendingYtVideoIdRef.current = ytId;
+          pendingYtStartTimeRef.current = startSeconds;
         }
       } else {
         pendingYtVideoIdRef.current = ytId;
+        pendingYtStartTimeRef.current = startSeconds;
       }
     } else {
       // 2. HTML5 Audio Mode (Dropbox or direct MP3)

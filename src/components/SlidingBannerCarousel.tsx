@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { BannerSlide } from '../types/music';
+import { defaultSlidingBanners } from '../services/musicService';
 
 interface SlidingBannerCarouselProps {
   banners: BannerSlide[];
@@ -18,8 +19,8 @@ export const SlidingBannerCarousel: React.FC<SlidingBannerCarouselProps> = ({
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
-  // Ensure there are at least 4 slides (or pad with default)
-  const safeBanners = banners && banners.length > 0 ? banners.slice(0, 4) : [];
+  // Display all banners dynamically with no artificial limit
+  const safeBanners = banners && banners.length > 0 ? banners : defaultSlidingBanners;
 
   // Auto slide every 4.5 seconds if not hovered
   useEffect(() => {
