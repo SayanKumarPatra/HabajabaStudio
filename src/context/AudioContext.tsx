@@ -5,13 +5,6 @@ import { extractYouTubeVideoId, isYouTubeUrl } from '../utils/youtube';
 
 export type RepeatMode = 'off' | 'all' | 'one';
 
-declare global {
-  interface Window {
-    YT: any;
-    onYouTubeIframeAPIReady: () => void;
-  }
-}
-
 interface AudioContextType {
   currentTrack: Track | null;
   isPlaying: boolean;
@@ -52,35 +45,28 @@ interface AudioContextType {
 
 const AudioContext = createContext<AudioContextType | null>(null);
 
-// 2-second inaudible 44.1kHz PCM silent WAV data URI to keep mobile OS background audio sessions active
+// Inaudible PCM silent WAV to hold mobile OS background audio sessions active
 const SILENT_AUDIO_URI = 'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YRAAAAAAAAAAAAAAAAAAAAAA';
 
 export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const carrierAudioRef = useRef<HTMLAudioElement | null>(null);
-  const ytPlayerRef = useRef<any>(null);
-  const ytIntervalRef = useRef<number | null>(null);
-  const isYtReadyRef = useRef<boolean>(false);
-  const pendingYtVideoIdRef = useRef<string | null>(null);
-  const pendingYtStartTimeRef = useRef<number>(0);
 
   // Background playback & lockscreen tracking refs
   const userInitiatedPauseRef = useRef<boolean>(false);
   const isPlayingRef = useRef<boolean>(false);
   const isYouTubeTrackRef = useRef<boolean>(false);
-  const isYtIframeFallbackRef = useRef<boolean>(false);
   const currentTrackRef = useRef<Track | null>(null);
   const currentTimeRef = useRef<number>(0);
   const durationRef = useRef<number>(0);
 
-  // Stable function delegate refs to avoid TDZ in early-registered effects
+  // Stable function delegate refs for MediaSession action handlers
   const onTrackEndedRef = useRef<() => void>(() => {});
   const resumeRef = useRef<() => void>(() => {});
   const pauseRef = useRef<() => void>(() => {});
   const playPreviousRef = useRef<() => void>(() => {});
   const playNextRef = useRef<() => void>(() => {});
   const seekRef = useRef<(seconds: number) => void>(() => {});
-  const playViaYouTubeIframeRef = useRef<(ytId: string, startSeconds?: number) => void>(() => {});
 
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -97,7 +83,6 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [isYouTubeTrack, setIsYouTubeTrack] = useState<boolean>(false);
   const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
-  const [isYtIframeFallback, setIsYtIframeFallback] = useState<boolean>(false);
 
   // Keep ref mirrors synchronized with state
   useEffect(() => {
@@ -108,19 +93,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     isYouTubeTrackRef.current = isYouTubeTrack;
   }, [isYouTubeTrack]);
 
-  useEffect(() => {
-    currentTrackRef.current = currentTrack;
-  }, [currentTrack]);
-
-  useEffect(() => {
-    currentTimeRef.current = currentTime;
-  }, [currentTime]);
-
-  useEffect(() => {
-    durationRef.current = duration;
-  }, [duration]);
-
-  // Starts native silent audio carrier to hold system audio focus on mobile when screen is off
+  // Background audio carrier manager to maintain OS AudioSession when screen is off
   const startBackgroundCarrier = useCallback(() => {
     const carrier = carrierAudioRef.current;
     if (carrier) {
@@ -158,182 +131,24 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
-  // Initialize YouTube IFrame API Script
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const initYT = () => {
-      if (window.YT && window.YT.Player) {
-        setupYTPlayer();
-        return;
-      }
-
-      if (!document.getElementById('habajaba-youtube-iframe-api')) {
-        const tag = document.createElement('script');
-        tag.id = 'habajaba-youtube-iframe-api';
-        tag.src = 'https://www.youtube.com/iframe_api';
-        document.head.appendChild(tag);
-      }
-
-      const prevCallback = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => {
-        if (typeof prevCallback === 'function') prevCallback();
-        setupYTPlayer();
-      };
-    };
-
-    const setupYTPlayer = () => {
-      if (ytPlayerRef.current || !window.YT || !window.YT.Player) return;
-      const hostEl = document.getElementById('habajaba-yt-iframe');
-      if (!hostEl) return;
-
-      try {
-        ytPlayerRef.current = new window.YT.Player('habajaba-yt-iframe', {
-          height: '180',
-          width: '320',
-          videoId: pendingYtVideoIdRef.current || 'dQw4w9WgXcQ',
-          playerVars: {
-            autoplay: 0,
-            controls: 0,
-            disablekb: 1,
-            fs: 0,
-            playsinline: 1,
-            rel: 0,
-            origin: window.location.origin,
-          },
-          events: {
-            onReady: (event: any) => {
-              isYtReadyRef.current = true;
-              event.target.setVolume(Math.round(volume * 100));
-              if (pendingYtVideoIdRef.current) {
-                if (pendingYtStartTimeRef.current > 0) {
-                  event.target.loadVideoById({
-                    videoId: pendingYtVideoIdRef.current,
-                    startSeconds: pendingYtStartTimeRef.current,
-                  });
-                } else {
-                  event.target.loadVideoById(pendingYtVideoIdRef.current);
-                }
-                event.target.playVideo();
-                userInitiatedPauseRef.current = false;
-                startBackgroundCarrier();
-                pendingYtVideoIdRef.current = null;
-                pendingYtStartTimeRef.current = 0;
-              }
-            },
-            onStateChange: (event: any) => {
-              // -1: unstarted, 0: ended, 1: playing, 2: paused, 3: buffering, 5: video cued
-              if (event.data === 1) {
-                // Playing
-                userInitiatedPauseRef.current = false;
-                setIsPlaying(true);
-                isPlayingRef.current = true;
-                setIsLoading(false);
-                setError(null);
-                startBackgroundCarrier();
-                if ('mediaSession' in navigator) {
-                  navigator.mediaSession.playbackState = 'playing';
-                }
-                const dur = ytPlayerRef.current?.getDuration();
-                if (dur && isFinite(dur) && dur > 0) {
-                  setDuration(dur);
-                  durationRef.current = dur;
-                }
-              } else if (event.data === 2) {
-                // Paused event received from YouTube
-                // Check if this pause was forced by mobile browser because screen turned off
-                if (document.hidden && !userInitiatedPauseRef.current && isPlayingRef.current) {
-                  // User DID NOT pause! Power button was pressed or screen locked.
-                  // Keep playing state, keep carrier active, and re-trigger playVideo
-                  startBackgroundCarrier();
-                  try {
-                    event.target.playVideo();
-                  } catch {}
-                  setTimeout(() => {
-                    if (document.hidden && !userInitiatedPauseRef.current && isPlayingRef.current) {
-                      try {
-                        ytPlayerRef.current?.playVideo();
-                      } catch {}
-                    }
-                  }, 250);
-                  return;
-                }
-
-                if (userInitiatedPauseRef.current) {
-                  setIsPlaying(false);
-                  isPlayingRef.current = false;
-                  setIsLoading(false);
-                  stopBackgroundCarrier();
-                  if ('mediaSession' in navigator) {
-                    navigator.mediaSession.playbackState = 'paused';
-                  }
-                }
-              } else if (event.data === 3) {
-                // Buffering
-                setIsLoading(true);
-              } else if (event.data === 0) {
-                // Ended
-                setIsPlaying(false);
-                isPlayingRef.current = false;
-                stopBackgroundCarrier();
-                onTrackEndedRef.current();
-              }
-            },
-            onError: (errEvent: any) => {
-              console.warn('YouTube Player error:', errEvent);
-              setIsLoading(false);
-              setIsPlaying(false);
-              stopBackgroundCarrier();
-              setError('ইউটিউব অডিও লোড হতে সমস্যা হয়েছে। লিংকটি পরীক্ষা করুন।');
-            },
-          },
-        });
-      } catch (e) {
-        console.warn('Failed to init YT.Player:', e);
-      }
-    };
-
-    initYT();
-
-    return () => {
-      if (ytIntervalRef.current) clearInterval(ytIntervalRef.current);
-    };
-  }, [volume, startBackgroundCarrier, stopBackgroundCarrier]);
-
   // Global visibilitychange listener for mobile screen lock / power button press
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
         // Screen was turned off (power button pressed) or tab minimized
         if (isPlayingRef.current && !userInitiatedPauseRef.current) {
-          // Keep silent carrier audio active to hold OS audio session
           startBackgroundCarrier();
-
-          // If YouTube track, ensure video is kept playing
-          if (isYouTubeTrackRef.current && ytPlayerRef.current) {
-            setTimeout(() => {
-              if (isPlayingRef.current && !userInitiatedPauseRef.current && ytPlayerRef.current) {
-                try {
-                  ytPlayerRef.current.playVideo();
-                } catch {}
-              }
-            }, 120);
-            setTimeout(() => {
-              if (isPlayingRef.current && !userInitiatedPauseRef.current && ytPlayerRef.current) {
-                try {
-                  ytPlayerRef.current.playVideo();
-                } catch {}
-              }
-            }, 500);
+          const audio = audioRef.current;
+          if (audio && audio.paused) {
+            audio.play().catch(() => {});
           }
         }
       } else {
         // Screen turned back on or tab focused
         if (isPlayingRef.current && !userInitiatedPauseRef.current) {
-          if (isYouTubeTrackRef.current && ytPlayerRef.current) {
-            try {
-              ytPlayerRef.current.playVideo();
-            } catch {}
+          const audio = audioRef.current;
+          if (audio && audio.paused) {
+            audio.play().catch(() => {});
           }
         }
       }
@@ -342,39 +157,6 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [startBackgroundCarrier]);
-
-  // Poll YouTube player for real-time currentTime and duration ONLY when in iframe fallback mode
-  useEffect(() => {
-    if (isYtIframeFallback && isPlaying) {
-      if (ytIntervalRef.current) clearInterval(ytIntervalRef.current);
-      ytIntervalRef.current = window.setInterval(() => {
-        if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function') {
-          try {
-            const cur = ytPlayerRef.current.getCurrentTime();
-            if (typeof cur === 'number' && !isNaN(cur)) {
-              setCurrentTime(cur);
-              currentTimeRef.current = cur;
-            }
-            const dur = ytPlayerRef.current.getDuration();
-            if (typeof dur === 'number' && isFinite(dur) && dur > 0) {
-              setDuration(dur);
-              durationRef.current = dur;
-              updateMediaSessionPosition(cur, dur);
-            }
-          } catch {}
-        }
-      }, 350);
-    } else {
-      if (ytIntervalRef.current) {
-        clearInterval(ytIntervalRef.current);
-        ytIntervalRef.current = null;
-      }
-    }
-
-    return () => {
-      if (ytIntervalRef.current) clearInterval(ytIntervalRef.current);
-    };
-  }, [isYtIframeFallback, isPlaying, updateMediaSessionPosition]);
 
   // Initialize shared HTML5 audio element for direct MP3, Dropbox & proxied YouTube audio streams
   useEffect(() => {
@@ -386,104 +168,80 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     audioRef.current = audio;
 
     const handleTimeUpdate = () => {
-      if (!isYtIframeFallbackRef.current) {
-        setCurrentTime(audio.currentTime);
-        currentTimeRef.current = audio.currentTime;
-        updateMediaSessionPosition(audio.currentTime, audio.duration);
-      }
+      setCurrentTime(audio.currentTime);
+      currentTimeRef.current = audio.currentTime;
+      updateMediaSessionPosition(audio.currentTime, audio.duration);
     };
 
     const handleLoadedMetadata = () => {
-      if (!isYtIframeFallbackRef.current) {
-        if (isFinite(audio.duration) && audio.duration > 0) {
-          setDuration(audio.duration);
-          durationRef.current = audio.duration;
-        }
-        setIsLoading(false);
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        setDuration(audio.duration);
+        durationRef.current = audio.duration;
       }
+      setIsLoading(false);
     };
 
     const handleDurationChange = () => {
-      if (!isYtIframeFallbackRef.current) {
-        if (isFinite(audio.duration) && audio.duration > 0) {
-          setDuration(audio.duration);
-          durationRef.current = audio.duration;
-        }
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        setDuration(audio.duration);
+        durationRef.current = audio.duration;
       }
     };
 
     const handleWaiting = () => {
-      if (!isYtIframeFallbackRef.current) setIsLoading(true);
+      setIsLoading(true);
     };
 
     const handlePlaying = () => {
-      if (!isYtIframeFallbackRef.current) {
-        userInitiatedPauseRef.current = false;
-        setIsLoading(false);
-        setIsPlaying(true);
-        isPlayingRef.current = true;
-        setError(null);
-        startBackgroundCarrier();
-        if ('mediaSession' in navigator) {
-          navigator.mediaSession.playbackState = 'playing';
-        }
+      userInitiatedPauseRef.current = false;
+      setIsLoading(false);
+      setIsPlaying(true);
+      isPlayingRef.current = true;
+      setError(null);
+      startBackgroundCarrier();
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'playing';
       }
     };
 
     const handlePause = () => {
-      if (!isYtIframeFallbackRef.current) {
-        // If paused because screen was locked and user did not click pause, re-trigger
-        if (document.hidden && !userInitiatedPauseRef.current && isPlayingRef.current) {
-          const p = audio.play();
-          if (p !== undefined) p.catch(() => {});
-          return;
-        }
+      // If paused by mobile OS because screen turned off but user did not click pause, re-trigger
+      if (document.hidden && !userInitiatedPauseRef.current && isPlayingRef.current) {
+        const p = audio.play();
+        if (p !== undefined) p.catch(() => {});
+        return;
+      }
 
-        if (userInitiatedPauseRef.current) {
-          setIsPlaying(false);
-          isPlayingRef.current = false;
-          stopBackgroundCarrier();
-          if ('mediaSession' in navigator) {
-            navigator.mediaSession.playbackState = 'paused';
-          }
+      if (userInitiatedPauseRef.current) {
+        setIsPlaying(false);
+        isPlayingRef.current = false;
+        stopBackgroundCarrier();
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = 'paused';
         }
       }
     };
 
     const handleEnded = () => {
-      if (!isYtIframeFallbackRef.current) {
-        setIsPlaying(false);
-        isPlayingRef.current = false;
-        stopBackgroundCarrier();
-        onTrackEndedRef.current();
-      }
+      setIsPlaying(false);
+      isPlayingRef.current = false;
+      stopBackgroundCarrier();
+      onTrackEndedRef.current();
     };
 
     const handleError = () => {
-      if (!isYtIframeFallbackRef.current) {
-        // If YouTube direct stream proxy failed, seamlessly fallback to YouTube iframe
-        if (isYouTubeTrackRef.current && currentTrackRef.current) {
-          const ytId = currentTrackRef.current.youtubeId || extractYouTubeVideoId(currentTrackRef.current.audioUrl);
-          if (ytId) {
-            console.warn('[AudioContext] Stream proxy failed, falling back to YouTube iframe:', ytId);
-            playViaYouTubeIframeRef.current(ytId, currentTrackRef.current.startTime || 0);
-            return;
-          }
-        }
-
-        setIsLoading(false);
-        setIsPlaying(false);
-        isPlayingRef.current = false;
-        stopBackgroundCarrier();
-        const audioErr = audio.error;
-        let message = 'অডিও স্ট্রিম চালাতে সমস্যা হয়েছে।';
-        if (audioErr?.code === 4) {
-          message = 'অডিও ফাইল এক্সেস করা যায়নি। অনুগ্রহ করে লিংকটি পাবলিক কিনা দেখুন।';
-        } else if (audioErr?.code === 2) {
-          message = 'নেটওয়ার্ক সংযোগ ত্রুটি হয়েছে।';
-        }
-        setError(message);
+      setIsLoading(false);
+      setIsPlaying(false);
+      isPlayingRef.current = false;
+      stopBackgroundCarrier();
+      const audioErr = audio.error;
+      let message = 'অডিও স্ট্রিম চালাতে সমস্যা হয়েছে। অনুগ্রহ করে ইন্টারনেট বা লিঙ্কটি পরীক্ষা করুন।';
+      if (audioErr?.code === 4) {
+        message = 'অডিও লিঙ্কটি পাওয়া যায়নি বা কার্যকর নয়।';
+      } else if (audioErr?.code === 2) {
+        message = 'নেটওয়ার্ক সংযোগ ত্রুটি হয়েছে।';
       }
+      setError(message);
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
@@ -507,7 +265,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
     };
-  }, [isYouTubeTrack, startBackgroundCarrier, stopBackgroundCarrier, updateMediaSessionPosition]);
+  }, [startBackgroundCarrier, stopBackgroundCarrier, updateMediaSessionPosition]);
 
   // Update MediaSession API for mobile lockscreen & hardware controls
   useEffect(() => {
@@ -562,50 +320,11 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } catch {}
       }
     } catch (e) {
-      console.warn('MediaSession configuration warning:', e);
+      console.warn('Failed to setup MediaSession API:', e);
     }
   }, [currentTrack, isPlaying]);
 
-  // Fallback to YouTube IFrame player if direct audio stream proxy is unavailable
-  const playViaYouTubeIframe = (ytId: string, startSeconds: number = 0) => {
-    isYtIframeFallbackRef.current = true;
-    setIsYtIframeFallback(true);
-
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = '';
-    }
-
-    if (isYtReadyRef.current && ytPlayerRef.current) {
-      try {
-        if (startSeconds > 0) {
-          ytPlayerRef.current.loadVideoById({
-            videoId: ytId,
-            startSeconds,
-          });
-        } else {
-          ytPlayerRef.current.loadVideoById(ytId);
-        }
-        ytPlayerRef.current.setVolume(Math.round(volume * 100));
-        ytPlayerRef.current.playVideo();
-        setIsPlaying(true);
-        isPlayingRef.current = true;
-        setIsLoading(false);
-        if ('mediaSession' in navigator) {
-          navigator.mediaSession.playbackState = 'playing';
-        }
-      } catch (e) {
-        console.warn('YouTube fallback load error:', e);
-        pendingYtVideoIdRef.current = ytId;
-        pendingYtStartTimeRef.current = startSeconds;
-      }
-    } else {
-      pendingYtVideoIdRef.current = ytId;
-      pendingYtStartTimeRef.current = startSeconds;
-    }
-  };
-
-  // Unified Track Playback Execution (Streams both YouTube & Dropbox through HTML5 Audio for screen-off playback)
+  // Unified Track Playback Execution: Streams both YouTube & Dropbox through HTML5 Audio for screen-off playback
   const startPlayback = (track: Track) => {
     setError(null);
     setIsLoading(true);
@@ -614,8 +333,6 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCurrentTime(0);
     currentTimeRef.current = 0;
     userInitiatedPauseRef.current = false;
-    isYtIframeFallbackRef.current = false;
-    setIsYtIframeFallback(false);
 
     // Start background audio carrier to maintain mobile audio focus when screen turns off
     startBackgroundCarrier();
@@ -624,113 +341,71 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const ytId = track.youtubeId || extractYouTubeVideoId(track.audioUrl);
     const isYt = !!ytId || isYouTubeUrl(track.audioUrl) || track.sourceType === 'youtube';
 
-    // Stop YouTube iframe player if playing
-    if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === 'function') {
-      try {
-        ytPlayerRef.current.pauseVideo();
-      } catch {}
-    }
+    const audio = audioRef.current;
+    if (!audio) return;
 
     const startSeconds = typeof track.startTime === 'number' && track.startTime > 0 ? track.startTime : 0;
 
+    let targetAudioSrc = '';
     if (isYt && ytId) {
-      // 1. YouTube Audio Mode (Proxied Audio Stream through HTML5 <audio> to keep playing with power button off)
+      // YouTube Audio Mode: Stream proxied m4a audio through native HTML5 <audio> tag
       setIsYouTubeTrack(true);
       isYouTubeTrackRef.current = true;
       setYoutubeVideoId(ytId);
-
-      const audio = audioRef.current;
-      if (!audio) return;
-
-      audio.pause();
-      audio.src = `/api/yt-stream?id=${encodeURIComponent(ytId)}`;
-      audio.currentTime = 0;
-      audio.volume = isMuted ? 0 : volume;
-
-      const onLoadedMetadataOnce = () => {
-        if (startSeconds > 0) {
-          try {
-            audio.currentTime = startSeconds;
-          } catch {}
-        }
-        audio.removeEventListener('loadedmetadata', onLoadedMetadataOnce);
-      };
-      audio.addEventListener('loadedmetadata', onLoadedMetadataOnce);
-
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            setIsPlaying(true);
-            isPlayingRef.current = true;
-            setIsLoading(false);
-            startBackgroundCarrier();
-            if ('mediaSession' in navigator) {
-              navigator.mediaSession.playbackState = 'playing';
-            }
-          })
-          .catch((err) => {
-            console.warn('Direct stream initiation warning, trying fallback:', err);
-            playViaYouTubeIframe(ytId, startSeconds);
-          });
-      }
+      targetAudioSrc = `/api/yt-stream?id=${encodeURIComponent(ytId)}`;
     } else {
-      // 2. HTML5 Audio Mode (Dropbox or direct MP3)
+      // Dropbox / Direct Audio Mode
       setIsYouTubeTrack(false);
       isYouTubeTrackRef.current = false;
       setYoutubeVideoId(null);
+      targetAudioSrc = getDirectAudioUrl(track.audioUrl);
+    }
 
-      const audio = audioRef.current;
-      if (!audio) return;
+    if (!targetAudioSrc) {
+      setError('এই গানের জন্য কোনো কার্যকর অডিও লিঙ্ক পাওয়া যায়নি।');
+      setIsLoading(false);
+      setIsPlaying(false);
+      isPlayingRef.current = false;
+      stopBackgroundCarrier();
+      return;
+    }
 
-      const directUrl = getDirectAudioUrl(track.audioUrl);
-      if (!directUrl) {
-        setError('এই গানের জন্য কোনো কার্যকর অডিও লিঙ্ক পাওয়া যায়নি।');
-        setIsLoading(false);
-        setIsPlaying(false);
-        isPlayingRef.current = false;
-        stopBackgroundCarrier();
-        return;
+    audio.pause();
+    audio.src = targetAudioSrc;
+    audio.currentTime = 0;
+    audio.volume = isMuted ? 0 : volume;
+
+    const onLoadedMetadataOnce = () => {
+      if (startSeconds > 0) {
+        try {
+          audio.currentTime = startSeconds;
+        } catch {}
       }
+      audio.removeEventListener('loadedmetadata', onLoadedMetadataOnce);
+    };
+    audio.addEventListener('loadedmetadata', onLoadedMetadataOnce);
 
-      audio.pause();
-      audio.src = directUrl;
-      audio.currentTime = 0;
-      audio.volume = isMuted ? 0 : volume;
-
-      const onLoadedMetadataOnce = () => {
-        if (startSeconds > 0) {
-          try {
-            audio.currentTime = startSeconds;
-          } catch {}
-        }
-        audio.removeEventListener('loadedmetadata', onLoadedMetadataOnce);
-      };
-      audio.addEventListener('loadedmetadata', onLoadedMetadataOnce);
-
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            setIsPlaying(true);
-            isPlayingRef.current = true;
-            setIsLoading(false);
-            startBackgroundCarrier();
-            if ('mediaSession' in navigator) {
-              navigator.mediaSession.playbackState = 'playing';
-            }
-          })
-          .catch((err) => {
-            console.warn('Playback initiation error:', err);
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          setIsPlaying(true);
+          isPlayingRef.current = true;
+          setIsLoading(false);
+          startBackgroundCarrier();
+          if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'playing';
+          }
+        })
+        .catch((err) => {
+          console.warn('[AudioContext] play() initiation warning:', err);
+          if (err.name === 'NotAllowedError') {
             setIsPlaying(false);
             isPlayingRef.current = false;
             setIsLoading(false);
             stopBackgroundCarrier();
-            if (err.name !== 'AbortError') {
-              setError('ব্রাউজার দ্বারা প্লেব্যাক ব্লক হয়েছে বা অডিও লিঙ্কটি কাজ করছে না।');
-            }
-          });
-      }
+          }
+        });
     }
   };
 
@@ -750,7 +425,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     startPlayback(track);
-  }, [volume, isMuted]);
+  }, [volume, isMuted, startBackgroundCarrier]);
 
   const playQueue = useCallback((tracks: Track[], startIndex = 0) => {
     if (!tracks || tracks.length === 0) return;
@@ -758,20 +433,12 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setQueue(tracks);
     setQueueIndex(validIndex);
     startPlayback(tracks[validIndex]);
-  }, [volume, isMuted]);
+  }, [volume, isMuted, startBackgroundCarrier]);
 
   const pause = useCallback(() => {
     userInitiatedPauseRef.current = true;
-    if (isYtIframeFallbackRef.current) {
-      if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === 'function') {
-        try {
-          ytPlayerRef.current.pauseVideo();
-        } catch {}
-      }
-    } else {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
+    if (audioRef.current) {
+      audioRef.current.pause();
     }
     setIsPlaying(false);
     isPlayingRef.current = false;
@@ -784,36 +451,23 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const resume = useCallback(() => {
     userInitiatedPauseRef.current = false;
     startBackgroundCarrier();
-    if (isYtIframeFallbackRef.current) {
-      if (ytPlayerRef.current && typeof ytPlayerRef.current.playVideo === 'function') {
-        try {
-          ytPlayerRef.current.playVideo();
-          setIsPlaying(true);
-          isPlayingRef.current = true;
-          if ('mediaSession' in navigator) {
-            navigator.mediaSession.playbackState = 'playing';
-          }
-        } catch {}
-      }
-    } else {
-      if (audioRef.current && currentTrack) {
-        const playPromise = audioRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              setIsPlaying(true);
-              isPlayingRef.current = true;
-              if ('mediaSession' in navigator) {
-                navigator.mediaSession.playbackState = 'playing';
-              }
-            })
-            .catch((err) => {
-              console.warn('Resume error:', err);
-              setIsPlaying(false);
-              isPlayingRef.current = false;
-              stopBackgroundCarrier();
-            });
-        }
+    if (audioRef.current && currentTrack) {
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+            isPlayingRef.current = true;
+            if ('mediaSession' in navigator) {
+              navigator.mediaSession.playbackState = 'playing';
+            }
+          })
+          .catch((err) => {
+            console.warn('Resume error:', err);
+            setIsPlaying(false);
+            isPlayingRef.current = false;
+            stopBackgroundCarrier();
+          });
       }
     }
   }, [currentTrack, startBackgroundCarrier, stopBackgroundCarrier]);
@@ -829,19 +483,9 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const seek = useCallback((seconds: number) => {
     if (!isFinite(seconds)) return;
     const target = Math.max(0, Math.min(seconds, duration || 0));
-
-    if (isYtIframeFallbackRef.current) {
-      if (ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === 'function') {
-        try {
-          ytPlayerRef.current.seekTo(target, true);
-          setCurrentTime(target);
-        } catch {}
-      }
-    } else {
-      if (audioRef.current) {
-        audioRef.current.currentTime = target;
-        setCurrentTime(target);
-      }
+    if (audioRef.current) {
+      audioRef.current.currentTime = target;
+      setCurrentTime(target);
     }
   }, [duration]);
 
@@ -865,7 +509,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } else {
       pause();
     }
-  }, [queue, queueIndex, isShuffle, repeatMode, pause]);
+  }, [queue, queueIndex, isShuffle, repeatMode, pause, startBackgroundCarrier, volume, isMuted]);
 
   const playPrevious = useCallback(() => {
     if (queue.length === 0) return;
@@ -886,7 +530,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } else {
       seek(0);
     }
-  }, [queue, queueIndex, repeatMode, currentTime, seek]);
+  }, [queue, queueIndex, repeatMode, currentTime, seek, startBackgroundCarrier, volume, isMuted]);
 
   const onTrackEnded = useCallback(() => {
     if (repeatMode === 'one' && currentTrack) {
@@ -897,7 +541,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     playNext();
   }, [repeatMode, currentTrack, playNext, resume, seek]);
 
-  // Synchronize delegate refs for early-registered effects and MediaSession action handlers
+  // Synchronize delegate refs for MediaSession action handlers
   useEffect(() => {
     resumeRef.current = resume;
     pauseRef.current = pause;
@@ -905,7 +549,6 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     playPreviousRef.current = playPrevious;
     seekRef.current = seek;
     onTrackEndedRef.current = onTrackEnded;
-    playViaYouTubeIframeRef.current = playViaYouTubeIframe;
   }, [resume, pause, playNext, playPrevious, seek, onTrackEnded]);
 
   const toggleShuffle = () => {
@@ -928,12 +571,6 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       audioRef.current.volume = clamped;
     }
 
-    if (ytPlayerRef.current && typeof ytPlayerRef.current.setVolume === 'function') {
-      try {
-        ytPlayerRef.current.setVolume(Math.round(clamped * 100));
-      } catch {}
-    }
-
     if (clamped === 0) {
       setIsMuted(true);
     } else if (isMuted) {
@@ -945,20 +582,9 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (isMuted) {
       const restoreVol = volume > 0 ? volume : 0.85;
       if (audioRef.current) audioRef.current.volume = restoreVol;
-      if (ytPlayerRef.current && typeof ytPlayerRef.current.unMute === 'function') {
-        try {
-          ytPlayerRef.current.unMute();
-          ytPlayerRef.current.setVolume(Math.round(restoreVol * 100));
-        } catch {}
-      }
       setIsMuted(false);
     } else {
       if (audioRef.current) audioRef.current.volume = 0;
-      if (ytPlayerRef.current && typeof ytPlayerRef.current.mute === 'function') {
-        try {
-          ytPlayerRef.current.mute();
-        } catch {}
-      }
       setIsMuted(true);
     }
   };
@@ -1042,7 +668,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isExpanded,
         isYouTubeTrack,
         youtubeVideoId,
-        isYtIframeFallback,
+        isYtIframeFallback: false,
         playTrack,
         playQueue,
         togglePlay,
@@ -1084,25 +710,6 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }}
         aria-hidden="true"
       />
-
-      {/* Viewport-anchored YouTube Player Host to prevent mobile browser offscreen media throttling */}
-      <div
-        id="habajaba-yt-player-container"
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          right: 0,
-          width: 2,
-          height: 2,
-          opacity: 0.01,
-          pointerEvents: 'none',
-          overflow: 'hidden',
-          zIndex: 1,
-        }}
-        aria-hidden="true"
-      >
-        <div id="habajaba-yt-iframe" />
-      </div>
     </AudioContext.Provider>
   );
 };

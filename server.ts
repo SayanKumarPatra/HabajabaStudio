@@ -74,8 +74,13 @@ async function startServer() {
   });
 
   // Direct Audio Streaming Proxy for YouTube Video IDs
-  // Enables mobile devices to play YouTube audio in HTML5 <audio> with screen locked / power button off
-  app.get('/api/yt-stream', async (req: Request, res: Response): Promise<void> => {
+  // Enables mobile devices to play YouTube audio in native HTML5 <audio> with screen locked / power button off
+  app.all('/api/yt-stream', async (req: Request, res: Response): Promise<void> => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      res.status(405).send('Method Not Allowed');
+      return;
+    }
+
     const rawId = (req.query.id as string) || '';
     // Clean and validate video ID (11 standard YouTube characters)
     const match = rawId.match(/([a-zA-Z0-9_-]{11})/);
@@ -104,26 +109,30 @@ async function startServer() {
         proxyHeaders.Range = clientRange;
       }
 
+      // If client sent HEAD request (common for audio preflight checks), send HEAD to upstream
+      const isHead = req.method === 'HEAD';
+
       const proxyReq = client.request(
         targetAudioUrl,
         {
-          method: 'GET',
+          method: isHead ? 'HEAD' : 'GET',
           headers: proxyHeaders,
         },
         (proxyRes) => {
           const statusCode = proxyRes.statusCode || 200;
 
-          // If upstream expired URL, clear cache and fail gracefully
+          // If upstream expired URL, clear cache and fail gracefully so next try regenerates URL
           if (statusCode === 403 || statusCode === 410) {
             streamCache.delete(videoId);
             res.status(502).json({ error: 'Upstream stream link expired, please retry' });
             return;
           }
 
+          const contentType = proxyRes.headers['content-type'] || 'audio/mp4';
           const responseHeaders: Record<string, any> = {
-            'Content-Type': proxyRes.headers['content-type'] || 'audio/mp4',
+            'Content-Type': contentType,
             'Accept-Ranges': 'bytes',
-            'Cache-Control': 'public, max-age=3600',
+            'Cache-Control': 'public, max-age=14400',
             'Access-Control-Allow-Origin': '*',
           };
 
@@ -135,6 +144,12 @@ async function startServer() {
           }
 
           res.writeHead(statusCode, responseHeaders);
+
+          if (isHead) {
+            res.end();
+            return;
+          }
+
           proxyRes.pipe(res);
         }
       );

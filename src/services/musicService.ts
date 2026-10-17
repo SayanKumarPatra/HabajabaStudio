@@ -5,11 +5,30 @@ import { Album, Artist, BannerSlide, BrandingConfig, HeroBannerConfig, Playlist,
 import { getFirebaseFirestore, getFirebaseRealtimeDb, getActiveFirebaseConfig } from './firebaseConfig';
 import { offlineCacheService } from './offlineCacheService';
 
-const STORAGE_CATALOG_KEY = 'habajaba_admin_catalog_v2';
-const STORAGE_CATALOG_BACKUP_KEY = 'habajaba_admin_catalog_backup_v2';
-const STORAGE_DELETED_TRACKS_KEY = 'habajaba_deleted_tracks_v2';
-const STORAGE_BRANDING_KEY = 'habajaba_admin_branding_v1';
-const STORAGE_SLIDING_BANNERS_KEY = 'habajaba_sliding_banners_v1';
+const STORAGE_CATALOG_KEY = 'habajaba_admin_catalog_v4';
+const STORAGE_CATALOG_BACKUP_KEY = 'habajaba_admin_catalog_backup_v4';
+const STORAGE_DELETED_TRACKS_KEY = 'habajaba_deleted_tracks_v4';
+const STORAGE_BRANDING_KEY = 'habajaba_admin_branding_v2';
+const STORAGE_SLIDING_BANNERS_KEY = 'habajaba_sliding_banners_v2';
+
+// Automatic purge of obsolete legacy caches (_v1, _v2, _v3) so browser starts 100% fresh
+if (typeof window !== 'undefined') {
+  try {
+    const legacyKeys = [
+      'habajaba_admin_catalog_v2',
+      'habajaba_admin_catalog_backup_v2',
+      'habajaba_deleted_tracks_v2',
+      'habajaba_admin_catalog_v1',
+      'habajaba_admin_catalog_backup_v1',
+      'habajaba_admin_catalog_v3',
+      'habajaba_admin_catalog_backup_v3',
+      'habajaba_deleted_tracks_v3',
+      'habajaba_initial_seed_done',
+      'habajaba_cached_tracks',
+    ];
+    legacyKeys.forEach((k) => localStorage.removeItem(k));
+  } catch {}
+}
 
 export const defaultSlidingBanners: BannerSlide[] = [
   {
@@ -64,8 +83,8 @@ const defaultState: CatalogState = {
     youtubeChannelName: 'Habajaba Studio LIVE',
     youtubeSubscriberText: 'অফিসিয়াল ইউটিউব চ্যানেল',
   },
-  tracks: (rawMusicData.tracks as Track[]) || [],
-  albums: (rawMusicData.albums as Album[]) || [],
+  tracks: [],
+  albums: [],
   playlists: (rawMusicData.playlists as Playlist[]) || [],
   artists: (rawMusicData.artists as Artist[]) || [],
 };
@@ -100,24 +119,31 @@ function loadState(): CatalogState {
 
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed.tracks) && parsed.tracks.length > 0) {
+      if (Array.isArray(parsed.tracks)) {
         loadedTracks = parsed.tracks;
       }
     }
 
-    // If main key has no tracks, safely restore from backup if available
-    if (loadedTracks.length === 0 && backup) {
-      try {
-        const parsedBackup = JSON.parse(backup);
-        if (Array.isArray(parsedBackup.tracks) && parsedBackup.tracks.length > 0) {
-          loadedTracks = parsedBackup.tracks;
-        }
-      } catch {}
-    }
-
-    // Filter out explicitly deleted tracks
+    // Filter out explicitly deleted tracks and invalid entries
     const deletedIds = getDeletedTrackIds();
     loadedTracks = loadedTracks.filter((t) => t && t.id && !deletedIds.has(t.id));
+
+    // Deduplicate loaded tracks by ID and by YouTube ID / Audio URL
+    const seenIds = new Set<string>();
+    const seenYt = new Set<string>();
+    const seenUrls = new Set<string>();
+    const cleanDeduplicatedTracks: Track[] = [];
+
+    for (const t of loadedTracks) {
+      if (!t || !t.id || seenIds.has(t.id)) continue;
+      if (t.youtubeId && seenYt.has(t.youtubeId)) continue;
+      if (t.audioUrl && seenUrls.has(t.audioUrl)) continue;
+
+      seenIds.add(t.id);
+      if (t.youtubeId) seenYt.add(t.youtubeId);
+      if (t.audioUrl) seenUrls.add(t.audioUrl);
+      cleanDeduplicatedTracks.push(t);
+    }
 
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -125,7 +151,7 @@ function loadState(): CatalogState {
         banner: parsed.banner || defaultState.banner,
         slidingBanners: Array.isArray(parsed.slidingBanners) && parsed.slidingBanners.length > 0 ? parsed.slidingBanners : slidingBanners,
         branding: parsed.branding || branding,
-        tracks: loadedTracks,
+        tracks: cleanDeduplicatedTracks,
         albums: Array.isArray(parsed.albums) ? parsed.albums : [],
         playlists: Array.isArray(parsed.playlists) ? parsed.playlists : defaultState.playlists,
         artists: Array.isArray(parsed.artists) ? parsed.artists : defaultState.artists,
@@ -155,11 +181,12 @@ function saveStateLocally() {
   try {
     localStorage.setItem(STORAGE_CATALOG_KEY, JSON.stringify(catalogState));
     if (catalogState.tracks.length > 0) {
-      // Keep persistent backup snapshot so songs can never be lost
       localStorage.setItem(STORAGE_CATALOG_BACKUP_KEY, JSON.stringify({
         tracks: catalogState.tracks,
         updatedAt: Date.now(),
       }));
+    } else {
+      localStorage.removeItem(STORAGE_CATALOG_BACKUP_KEY);
     }
     if (catalogState.branding) {
       localStorage.setItem(STORAGE_BRANDING_KEY, JSON.stringify(catalogState.branding));
@@ -186,26 +213,6 @@ function saveStateLocally() {
 // Background startup: register Service Worker and prime IndexedDB
 if (typeof window !== 'undefined') {
   offlineCacheService.registerServiceWorker().catch(() => {});
-
-  // If offline or localStorage is empty, restore from IndexedDB
-  if (catalogState.tracks.length === 0 || !navigator.onLine) {
-    offlineCacheService.getCachedTracks().then((cachedTracks) => {
-      if (cachedTracks && cachedTracks.length > 0 && catalogState.tracks.length === 0) {
-        const deletedIds = getDeletedTrackIds();
-        catalogState.tracks = cachedTracks.filter((t) => t && t.id && !deletedIds.has(t.id));
-        saveStateLocally();
-      }
-    }).catch(() => {});
-  }
-
-  // Pre-cache catalog into IndexedDB on initial launch
-  setTimeout(() => {
-    offlineCacheService.syncCatalog(
-      MusicService.getAlbums(),
-      MusicService.getArtists(),
-      catalogState.tracks
-    ).catch(() => {});
-  }, 1200);
 }
 
 // Helper to sanitize objects for Firebase Firestore and RTDB (removes undefined fields which Firestore rejects)
@@ -223,25 +230,41 @@ export function cleanForFirebase<T extends Record<string, any>>(obj: T): T {
   return result;
 }
 
-// Safe Intelligent Track Merging: Never drops existing local tracks when remote sync occurs
+// Strict Intelligent Track Merging: Guarantees zero duplicate songs
 function mergeRemoteTracks(remoteTracks: Track[]) {
-  if (!remoteTracks || remoteTracks.length === 0) return;
+  if (!remoteTracks) return;
   const deletedIds = getDeletedTrackIds();
+
+  // Deduplication map by primary ID
   const trackMap = new Map<string, Track>();
+  // Helper maps for YouTube ID and Audio URL to prevent duplicates with different IDs
+  const ytToId = new Map<string, string>();
+  const urlToId = new Map<string, string>();
 
   // 1. First add current local tracks that are not deleted
   catalogState.tracks.forEach((t) => {
     if (t && t.id && !deletedIds.has(t.id)) {
       trackMap.set(t.id, t);
+      if (t.youtubeId) ytToId.set(t.youtubeId, t.id);
+      if (t.audioUrl) urlToId.set(t.audioUrl, t.id);
     }
   });
 
-  // 2. Add or update remote tracks (remote takes priority for matching IDs)
+  // 2. Add or update remote tracks
   remoteTracks.forEach((r) => {
-    if (r && r.id && !deletedIds.has(r.id)) {
-      const existing = trackMap.get(r.id);
-      trackMap.set(r.id, existing ? { ...existing, ...r } : r);
-    }
+    if (!r || !r.id || deletedIds.has(r.id)) return;
+
+    // Check if this song already exists under another ID (by YouTube ID or audioUrl)
+    const existingIdByYt = r.youtubeId ? ytToId.get(r.youtubeId) : undefined;
+    const existingIdByUrl = r.audioUrl ? urlToId.get(r.audioUrl) : undefined;
+    const targetId = existingIdByYt || existingIdByUrl || r.id;
+
+    const existing = trackMap.get(targetId);
+    const mergedTrack = existing ? { ...existing, ...r, id: targetId } : r;
+    trackMap.set(targetId, mergedTrack);
+
+    if (mergedTrack.youtubeId) ytToId.set(mergedTrack.youtubeId, targetId);
+    if (mergedTrack.audioUrl) urlToId.set(mergedTrack.audioUrl, targetId);
   });
 
   catalogState.tracks = Array.from(trackMap.values());
@@ -859,8 +882,21 @@ export const MusicService = {
       saveDeletedTrackIds(deletedIds);
     }
 
-    // Deduplicate by ID and prepend new track
-    catalogState.tracks = [track, ...catalogState.tracks.filter((t) => t.id !== track.id)];
+    // Strict deduplication: check if track with same ID, same youtubeId, or same audioUrl exists
+    const existingIndex = catalogState.tracks.findIndex(
+      (t) =>
+        t.id === track.id ||
+        (t.youtubeId && track.youtubeId && t.youtubeId === track.youtubeId) ||
+        (t.audioUrl && track.audioUrl && t.audioUrl.trim().toLowerCase() === track.audioUrl.trim().toLowerCase())
+    );
+
+    if (existingIndex !== -1) {
+      // Update in place instead of creating a duplicate
+      const merged = { ...catalogState.tracks[existingIndex], ...track, id: catalogState.tracks[existingIndex].id };
+      catalogState.tracks[existingIndex] = merged;
+    } else {
+      catalogState.tracks = [track, ...catalogState.tracks];
+    }
 
     // If track has an artist not in the artists list, add and persist artist
     const trimmedArtistName = (track.artist || '').trim();
@@ -902,7 +938,24 @@ export const MusicService = {
   },
 
   async updateTrack(updated: Track) {
-    catalogState.tracks = catalogState.tracks.map((t) => (t.id === updated.id ? updated : t));
+    // Find track by ID or by matching YouTube ID / audioUrl
+    let found = false;
+    catalogState.tracks = catalogState.tracks.map((t) => {
+      if (
+        t.id === updated.id ||
+        (t.youtubeId && updated.youtubeId && t.youtubeId === updated.youtubeId) ||
+        (t.audioUrl && updated.audioUrl && t.audioUrl.trim().toLowerCase() === updated.audioUrl.trim().toLowerCase())
+      ) {
+        found = true;
+        return { ...t, ...updated, id: t.id };
+      }
+      return t;
+    });
+
+    if (!found) {
+      catalogState.tracks = [updated, ...catalogState.tracks];
+    }
+
     saveStateLocally();
     notifyListeners();
 
@@ -934,6 +987,11 @@ export const MusicService = {
     // Record deletion so background remote listeners never re-add it
     const deletedIds = getDeletedTrackIds();
     deletedIds.add(id);
+
+    // Find if the track has a youtubeId or audioUrl to also mark as deleted
+    const targetTrack = catalogState.tracks.find((t) => t.id === id);
+    if (targetTrack?.youtubeId) deletedIds.add(targetTrack.youtubeId);
+
     saveDeletedTrackIds(deletedIds);
 
     catalogState.tracks = catalogState.tracks.filter((t) => t.id !== id);
@@ -1123,8 +1181,68 @@ export const MusicService = {
   },
 
   resetCatalog() {
-    catalogState = { ...defaultState };
+    catalogState = { ...defaultState, tracks: [], albums: [] };
     saveStateLocally();
+  },
+
+  /**
+   * Completely clears all data, caches, and optionally remote database songs
+   * Leaves the website 100% clean, fresh, and free from ghost or duplicate entries.
+   */
+  async clearAllData(includeCloud = true): Promise<{ success: boolean; message: string }> {
+    // 1. Wipe in-memory catalog
+    catalogState.tracks = [];
+    catalogState.albums = [];
+
+    // 2. Clear all local storage keys
+    try {
+      localStorage.removeItem(STORAGE_CATALOG_KEY);
+      localStorage.removeItem(STORAGE_CATALOG_BACKUP_KEY);
+      localStorage.removeItem(STORAGE_DELETED_TRACKS_KEY);
+      localStorage.removeItem('habajaba_initial_seed_done');
+      localStorage.removeItem('habajaba_cached_tracks');
+    } catch {}
+
+    // 3. Clear IndexedDB offline cache
+    try {
+      await offlineCacheService.clearAllCache();
+    } catch {}
+
+    saveStateLocally();
+    notifyListeners();
+
+    // 4. Optionally purge cloud documents if Firebase is connected
+    if (includeCloud) {
+      const firestoreInstance = getFirebaseFirestore();
+      const rtdbInstance = getFirebaseRealtimeDb();
+
+      if (firestoreInstance) {
+        try {
+          const songsCol = collection(firestoreInstance.db, 'habajaba_songs');
+          const snap = await getDocs(songsCol);
+          if (!snap.empty) {
+            const batch = writeBatch(firestoreInstance.db);
+            snap.forEach((d) => batch.delete(d.ref));
+            await batch.commit();
+          }
+        } catch (e) {
+          console.warn('Firestore songs cleanup error:', e);
+        }
+      }
+
+      if (rtdbInstance) {
+        try {
+          await rtdbRemove(ref(rtdbInstance.rtdb, 'habajaba_songs'));
+        } catch (e) {
+          console.warn('RTDB songs cleanup error:', e);
+        }
+      }
+    }
+
+    return {
+      success: true,
+      message: 'সমস্ত পুরনো ডেটা ও ক্যাশ সফলভাবে মুছে ওয়েবসাইট একদম নতুন ও ফ্রেশ করা হয়েছে।',
+    };
   },
 
   // Sync all current local songs & banner into Firebase (Firestore and/or Realtime Database) in one click
