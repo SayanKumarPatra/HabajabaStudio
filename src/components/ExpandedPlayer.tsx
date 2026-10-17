@@ -143,10 +143,13 @@ export const ExpandedPlayer: React.FC = () => {
           )}
 
           {isYouTubeTrack && (
-            <div className="mt-1.5 flex items-center justify-center">
+            <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5">
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-red-600/20 text-red-300 border border-red-500/30">
                 <Youtube className="w-3 h-3 text-[#ED1025]" />
                 <span>YouTube Audio Stream</span>
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bengali">
+                <span>স্ক্রীন অফ প্লে সক্রিয়</span>
               </span>
             </div>
           )}

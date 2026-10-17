@@ -28,6 +28,7 @@ interface AudioContextType {
   isExpanded: boolean;
   isYouTubeTrack: boolean;
   youtubeVideoId: string | null;
+  isYtIframeFallback: boolean;
 
   // Actions
   playTrack: (track: Track, newQueue?: Track[]) => void;
@@ -67,6 +68,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const userInitiatedPauseRef = useRef<boolean>(false);
   const isPlayingRef = useRef<boolean>(false);
   const isYouTubeTrackRef = useRef<boolean>(false);
+  const isYtIframeFallbackRef = useRef<boolean>(false);
   const currentTrackRef = useRef<Track | null>(null);
   const currentTimeRef = useRef<number>(0);
   const durationRef = useRef<number>(0);
@@ -78,6 +80,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const playPreviousRef = useRef<() => void>(() => {});
   const playNextRef = useRef<() => void>(() => {});
   const seekRef = useRef<(seconds: number) => void>(() => {});
+  const playViaYouTubeIframeRef = useRef<(ytId: string, startSeconds?: number) => void>(() => {});
 
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -94,6 +97,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [isYouTubeTrack, setIsYouTubeTrack] = useState<boolean>(false);
   const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
+  const [isYtIframeFallback, setIsYtIframeFallback] = useState<boolean>(false);
 
   // Keep ref mirrors synchronized with state
   useEffect(() => {
@@ -339,9 +343,9 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [startBackgroundCarrier]);
 
-  // Poll YouTube player for real-time currentTime and duration when playing
+  // Poll YouTube player for real-time currentTime and duration ONLY when in iframe fallback mode
   useEffect(() => {
-    if (isYouTubeTrack && isPlaying) {
+    if (isYtIframeFallback && isPlaying) {
       if (ytIntervalRef.current) clearInterval(ytIntervalRef.current);
       ytIntervalRef.current = window.setInterval(() => {
         if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function') {
@@ -370,9 +374,9 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => {
       if (ytIntervalRef.current) clearInterval(ytIntervalRef.current);
     };
-  }, [isYouTubeTrack, isPlaying, updateMediaSessionPosition]);
+  }, [isYtIframeFallback, isPlaying, updateMediaSessionPosition]);
 
-  // Initialize shared HTML5 audio element for Dropbox & direct MP3 streams
+  // Initialize shared HTML5 audio element for direct MP3, Dropbox & proxied YouTube audio streams
   useEffect(() => {
     const audio = new Audio();
     audio.preload = 'auto';
@@ -382,7 +386,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     audioRef.current = audio;
 
     const handleTimeUpdate = () => {
-      if (!isYouTubeTrack) {
+      if (!isYtIframeFallbackRef.current) {
         setCurrentTime(audio.currentTime);
         currentTimeRef.current = audio.currentTime;
         updateMediaSessionPosition(audio.currentTime, audio.duration);
@@ -390,7 +394,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     const handleLoadedMetadata = () => {
-      if (!isYouTubeTrack) {
+      if (!isYtIframeFallbackRef.current) {
         if (isFinite(audio.duration) && audio.duration > 0) {
           setDuration(audio.duration);
           durationRef.current = audio.duration;
@@ -400,7 +404,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     const handleDurationChange = () => {
-      if (!isYouTubeTrack) {
+      if (!isYtIframeFallbackRef.current) {
         if (isFinite(audio.duration) && audio.duration > 0) {
           setDuration(audio.duration);
           durationRef.current = audio.duration;
@@ -409,11 +413,11 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     const handleWaiting = () => {
-      if (!isYouTubeTrack) setIsLoading(true);
+      if (!isYtIframeFallbackRef.current) setIsLoading(true);
     };
 
     const handlePlaying = () => {
-      if (!isYouTubeTrack) {
+      if (!isYtIframeFallbackRef.current) {
         userInitiatedPauseRef.current = false;
         setIsLoading(false);
         setIsPlaying(true);
@@ -427,7 +431,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     const handlePause = () => {
-      if (!isYouTubeTrack) {
+      if (!isYtIframeFallbackRef.current) {
         // If paused because screen was locked and user did not click pause, re-trigger
         if (document.hidden && !userInitiatedPauseRef.current && isPlayingRef.current) {
           const p = audio.play();
@@ -447,7 +451,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     const handleEnded = () => {
-      if (!isYouTubeTrack) {
+      if (!isYtIframeFallbackRef.current) {
         setIsPlaying(false);
         isPlayingRef.current = false;
         stopBackgroundCarrier();
@@ -456,7 +460,17 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     const handleError = () => {
-      if (!isYouTubeTrack) {
+      if (!isYtIframeFallbackRef.current) {
+        // If YouTube direct stream proxy failed, seamlessly fallback to YouTube iframe
+        if (isYouTubeTrackRef.current && currentTrackRef.current) {
+          const ytId = currentTrackRef.current.youtubeId || extractYouTubeVideoId(currentTrackRef.current.audioUrl);
+          if (ytId) {
+            console.warn('[AudioContext] Stream proxy failed, falling back to YouTube iframe:', ytId);
+            playViaYouTubeIframeRef.current(ytId, currentTrackRef.current.startTime || 0);
+            return;
+          }
+        }
+
         setIsLoading(false);
         setIsPlaying(false);
         isPlayingRef.current = false;
@@ -464,7 +478,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const audioErr = audio.error;
         let message = 'অডিও স্ট্রিম চালাতে সমস্যা হয়েছে।';
         if (audioErr?.code === 4) {
-          message = 'ড্রপবক্স অডিও ফাইল এক্সেস করা যায়নি। অনুগ্রহ করে লিংকটি পাবলিক কিনা দেখুন।';
+          message = 'অডিও ফাইল এক্সেস করা যায়নি। অনুগ্রহ করে লিংকটি পাবলিক কিনা দেখুন।';
         } else if (audioErr?.code === 2) {
           message = 'নেটওয়ার্ক সংযোগ ত্রুটি হয়েছে।';
         }
@@ -552,7 +566,46 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [currentTrack, isPlaying]);
 
-  // Unified Track Playback Execution (Auto routes to YouTube Player or HTML5 Audio)
+  // Fallback to YouTube IFrame player if direct audio stream proxy is unavailable
+  const playViaYouTubeIframe = (ytId: string, startSeconds: number = 0) => {
+    isYtIframeFallbackRef.current = true;
+    setIsYtIframeFallback(true);
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+    }
+
+    if (isYtReadyRef.current && ytPlayerRef.current) {
+      try {
+        if (startSeconds > 0) {
+          ytPlayerRef.current.loadVideoById({
+            videoId: ytId,
+            startSeconds,
+          });
+        } else {
+          ytPlayerRef.current.loadVideoById(ytId);
+        }
+        ytPlayerRef.current.setVolume(Math.round(volume * 100));
+        ytPlayerRef.current.playVideo();
+        setIsPlaying(true);
+        isPlayingRef.current = true;
+        setIsLoading(false);
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = 'playing';
+        }
+      } catch (e) {
+        console.warn('YouTube fallback load error:', e);
+        pendingYtVideoIdRef.current = ytId;
+        pendingYtStartTimeRef.current = startSeconds;
+      }
+    } else {
+      pendingYtVideoIdRef.current = ytId;
+      pendingYtStartTimeRef.current = startSeconds;
+    }
+  };
+
+  // Unified Track Playback Execution (Streams both YouTube & Dropbox through HTML5 Audio for screen-off playback)
   const startPlayback = (track: Track) => {
     setError(null);
     setIsLoading(true);
@@ -561,6 +614,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCurrentTime(0);
     currentTimeRef.current = 0;
     userInitiatedPauseRef.current = false;
+    isYtIframeFallbackRef.current = false;
+    setIsYtIframeFallback(false);
 
     // Start background audio carrier to maintain mobile audio focus when screen turns off
     startBackgroundCarrier();
@@ -569,59 +624,61 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const ytId = track.youtubeId || extractYouTubeVideoId(track.audioUrl);
     const isYt = !!ytId || isYouTubeUrl(track.audioUrl) || track.sourceType === 'youtube';
 
+    // Stop YouTube iframe player if playing
+    if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === 'function') {
+      try {
+        ytPlayerRef.current.pauseVideo();
+      } catch {}
+    }
+
+    const startSeconds = typeof track.startTime === 'number' && track.startTime > 0 ? track.startTime : 0;
+
     if (isYt && ytId) {
-      // 1. YouTube Audio Mode
+      // 1. YouTube Audio Mode (Proxied Audio Stream through HTML5 <audio> to keep playing with power button off)
       setIsYouTubeTrack(true);
       isYouTubeTrackRef.current = true;
       setYoutubeVideoId(ytId);
 
-      // Stop HTML5 audio completely
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-      }
+      const audio = audioRef.current;
+      if (!audio) return;
 
-      const startSeconds = typeof track.startTime === 'number' && track.startTime > 0 ? track.startTime : 0;
+      audio.pause();
+      audio.src = `/api/yt-stream?id=${encodeURIComponent(ytId)}`;
+      audio.currentTime = 0;
+      audio.volume = isMuted ? 0 : volume;
 
-      if (isYtReadyRef.current && ytPlayerRef.current) {
-        try {
-          if (startSeconds > 0) {
-            ytPlayerRef.current.loadVideoById({
-              videoId: ytId,
-              startSeconds: startSeconds,
-            });
-          } else {
-            ytPlayerRef.current.loadVideoById(ytId);
-          }
-          ytPlayerRef.current.setVolume(Math.round(volume * 100));
-          ytPlayerRef.current.playVideo();
-          setIsPlaying(true);
-          isPlayingRef.current = true;
-          setIsLoading(false);
-          if ('mediaSession' in navigator) {
-            navigator.mediaSession.playbackState = 'playing';
-          }
-        } catch (e) {
-          console.warn('YouTube load error:', e);
-          pendingYtVideoIdRef.current = ytId;
-          pendingYtStartTimeRef.current = startSeconds;
+      const onLoadedMetadataOnce = () => {
+        if (startSeconds > 0) {
+          try {
+            audio.currentTime = startSeconds;
+          } catch {}
         }
-      } else {
-        pendingYtVideoIdRef.current = ytId;
-        pendingYtStartTimeRef.current = startSeconds;
+        audio.removeEventListener('loadedmetadata', onLoadedMetadataOnce);
+      };
+      audio.addEventListener('loadedmetadata', onLoadedMetadataOnce);
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+            isPlayingRef.current = true;
+            setIsLoading(false);
+            startBackgroundCarrier();
+            if ('mediaSession' in navigator) {
+              navigator.mediaSession.playbackState = 'playing';
+            }
+          })
+          .catch((err) => {
+            console.warn('Direct stream initiation warning, trying fallback:', err);
+            playViaYouTubeIframe(ytId, startSeconds);
+          });
       }
     } else {
       // 2. HTML5 Audio Mode (Dropbox or direct MP3)
       setIsYouTubeTrack(false);
       isYouTubeTrackRef.current = false;
       setYoutubeVideoId(null);
-
-      // Stop YouTube player if playing
-      if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === 'function') {
-        try {
-          ytPlayerRef.current.pauseVideo();
-        } catch {}
-      }
 
       const audio = audioRef.current;
       if (!audio) return;
@@ -640,6 +697,16 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       audio.src = directUrl;
       audio.currentTime = 0;
       audio.volume = isMuted ? 0 : volume;
+
+      const onLoadedMetadataOnce = () => {
+        if (startSeconds > 0) {
+          try {
+            audio.currentTime = startSeconds;
+          } catch {}
+        }
+        audio.removeEventListener('loadedmetadata', onLoadedMetadataOnce);
+      };
+      audio.addEventListener('loadedmetadata', onLoadedMetadataOnce);
 
       const playPromise = audio.play();
       if (playPromise !== undefined) {
@@ -695,7 +762,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const pause = useCallback(() => {
     userInitiatedPauseRef.current = true;
-    if (isYouTubeTrack) {
+    if (isYtIframeFallbackRef.current) {
       if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === 'function') {
         try {
           ytPlayerRef.current.pauseVideo();
@@ -712,12 +779,12 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if ('mediaSession' in navigator) {
       navigator.mediaSession.playbackState = 'paused';
     }
-  }, [isYouTubeTrack, stopBackgroundCarrier]);
+  }, [stopBackgroundCarrier]);
 
   const resume = useCallback(() => {
     userInitiatedPauseRef.current = false;
     startBackgroundCarrier();
-    if (isYouTubeTrack) {
+    if (isYtIframeFallbackRef.current) {
       if (ytPlayerRef.current && typeof ytPlayerRef.current.playVideo === 'function') {
         try {
           ytPlayerRef.current.playVideo();
@@ -749,7 +816,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       }
     }
-  }, [isYouTubeTrack, currentTrack, startBackgroundCarrier, stopBackgroundCarrier]);
+  }, [currentTrack, startBackgroundCarrier, stopBackgroundCarrier]);
 
   const togglePlay = useCallback(() => {
     if (isPlaying) {
@@ -763,7 +830,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!isFinite(seconds)) return;
     const target = Math.max(0, Math.min(seconds, duration || 0));
 
-    if (isYouTubeTrack) {
+    if (isYtIframeFallbackRef.current) {
       if (ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === 'function') {
         try {
           ytPlayerRef.current.seekTo(target, true);
@@ -776,7 +843,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setCurrentTime(target);
       }
     }
-  }, [isYouTubeTrack, duration]);
+  }, [duration]);
 
   const playNext = useCallback(() => {
     if (queue.length === 0) return;
@@ -838,6 +905,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     playPreviousRef.current = playPrevious;
     seekRef.current = seek;
     onTrackEndedRef.current = onTrackEnded;
+    playViaYouTubeIframeRef.current = playViaYouTubeIframe;
   }, [resume, pause, playNext, playPrevious, seek, onTrackEnded]);
 
   const toggleShuffle = () => {
@@ -974,6 +1042,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isExpanded,
         isYouTubeTrack,
         youtubeVideoId,
+        isYtIframeFallback,
         playTrack,
         playQueue,
         togglePlay,

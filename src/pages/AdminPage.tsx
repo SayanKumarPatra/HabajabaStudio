@@ -887,8 +887,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
                       <span>{isTestingAudio ? 'টেস্ট...' : 'টেস্ট'}</span>
                     </button>
                   </div>
-                  <p className="text-[11px] text-neutral-400 font-bengali">
-                    ইউটিউব লিঙ্ক পেস্ট করলে অডিও ও কভার স্বয়ংক্রিয়ভাবে যুক্ত হবে।
+                  <p className="text-[11px] text-emerald-300 font-bengali flex items-center gap-1.5">
+                    <span>✨</span>
+                    <span>ইউটিউব লিঙ্ক পেস্ট করলে অডিও স্বয়ংক্রিয়ভাবে মোবাইল স্ক্রিন অফ (পাওয়ার বাটন অফ) মোডেও নিরবচ্ছিন্নভাবে চলবে।</span>
                   </p>
                 </div>
               ) : (
