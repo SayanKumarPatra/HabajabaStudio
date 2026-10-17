@@ -59,13 +59,13 @@ export const MiniPlayer: React.FC = () => {
 
   return (
     <div
-      className="fixed z-40 left-0 right-0 bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] md:bottom-0 bg-white/95 backdrop-blur-md border-t border-[#EAEAEA] shadow-[0_-8px_24px_rgba(0,0,0,0.06)] transition-all duration-300"
+      className="fixed z-40 left-0 right-0 bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] md:bottom-0 bg-[#0E0F16]/90 backdrop-blur-2xl border-t border-white/10 shadow-[0_-8px_32px_rgba(0,0,0,0.7)] transition-all duration-300"
       role="region"
       aria-label="Audio Player"
     >
       {/* Top thin interactive progress scrubber */}
       <div
-        className="w-full h-1.5 bg-neutral-100 hover:h-2 cursor-pointer transition-all group relative"
+        className="w-full h-1.5 bg-white/10 hover:h-2 cursor-pointer transition-all group relative"
         onClick={handleProgressBarClick}
         title="Seek position"
       >
@@ -73,20 +73,20 @@ export const MiniPlayer: React.FC = () => {
           className="h-full bg-[#ED1025] relative transition-all"
           style={{ width: `${progressPercent}%` }}
         >
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[#ED1025] opacity-0 group-hover:opacity-100 transition-opacity shadow-sm" />
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-white opacity-0 group-hover:opacity-100 transition-opacity shadow-sm" />
         </div>
       </div>
 
       {/* Error alert toast if link fails */}
       {error && (
-        <div className="bg-red-50 border-b border-red-200 px-4 py-2 flex items-center justify-between text-xs text-red-700">
+        <div className="bg-red-950/80 border-b border-red-500/30 px-4 py-2 flex items-center justify-between text-xs text-red-200">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 text-[#ED1025]" />
             <span className="line-clamp-1">{error}</span>
           </div>
           <button
             onClick={clearError}
-            className="text-red-700 font-semibold hover:underline ml-2 whitespace-nowrap"
+            className="text-red-300 font-semibold hover:underline ml-2 whitespace-nowrap cursor-pointer"
           >
             Dismiss
           </button>
@@ -99,7 +99,7 @@ export const MiniPlayer: React.FC = () => {
         <div className="min-w-0 flex items-center gap-2 sm:gap-3 justify-start overflow-hidden">
           <button
             onClick={() => setIsExpanded(true)}
-            className="relative shrink-0 w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg overflow-hidden group focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#ED1025]"
+            className="relative shrink-0 w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg overflow-hidden group focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#ED1025] border border-white/10"
             title="Expand player"
           >
             <CoverImage
@@ -109,7 +109,7 @@ export const MiniPlayer: React.FC = () => {
               artist={currentTrack.artist}
               className="w-full h-full object-cover rounded-lg"
             />
-            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
               <Maximize2 className="w-4 h-4" />
             </div>
           </button>
@@ -119,10 +119,10 @@ export const MiniPlayer: React.FC = () => {
             className="cursor-pointer min-w-0 truncate pr-1"
             title="Click to view player"
           >
-            <h4 className="text-xs md:text-sm font-semibold text-[#171717] truncate leading-tight hover:text-[#ED1025] transition-colors">
+            <h4 className="text-xs md:text-sm font-semibold text-white truncate leading-tight hover:text-[#ED1025] transition-colors">
               {currentTrack.title}
             </h4>
-            <p className="text-[10px] md:text-xs text-[#6B7280] truncate mt-0.5">
+            <p className="text-[10px] md:text-xs text-neutral-400 truncate mt-0.5">
               {currentTrack.artist}
             </p>
           </div>
@@ -130,10 +130,10 @@ export const MiniPlayer: React.FC = () => {
           {/* Quick Favorite Toggle */}
           <button
             onClick={() => toggleFavorite(currentTrack.id)}
-            className={`min-h-[44px] min-w-[44px] hidden sm:flex items-center justify-center rounded-full transition-colors shrink-0 ${
+            className={`min-h-[44px] min-w-[44px] hidden sm:flex items-center justify-center rounded-full transition-colors shrink-0 cursor-pointer ${
               isFavorite(currentTrack.id)
                 ? 'text-[#ED1025]'
-                : 'text-[#6B7280] hover:text-[#171717]'
+                : 'text-neutral-400 hover:text-white'
             }`}
             title={isFavorite(currentTrack.id) ? 'Remove favorite' : 'Add to favorites'}
             aria-label="Toggle Favorite"
@@ -149,7 +149,7 @@ export const MiniPlayer: React.FC = () => {
           <div className="flex items-center justify-center gap-1 sm:gap-2 md:gap-3">
             <button
               onClick={playPrevious}
-              className="min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center text-[#171717] hover:text-[#ED1025] rounded-full transition-colors active:scale-95"
+              className="min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center text-neutral-300 hover:text-white rounded-full transition-colors active:scale-95 cursor-pointer"
               title="Previous song"
               aria-label="Previous"
             >
@@ -159,7 +159,7 @@ export const MiniPlayer: React.FC = () => {
             <button
               onClick={togglePlay}
               disabled={isLoading}
-              className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white flex items-center justify-center shadow-md shadow-[#ED1025]/30 active:scale-95 transition-all shrink-0"
+              className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white flex items-center justify-center shadow-md shadow-[#ED1025]/30 active:scale-95 transition-all shrink-0 cursor-pointer"
               title={isPlaying ? 'Pause' : 'Play'}
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
@@ -174,7 +174,7 @@ export const MiniPlayer: React.FC = () => {
 
             <button
               onClick={playNext}
-              className="min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center text-[#171717] hover:text-[#ED1025] rounded-full transition-colors active:scale-95"
+              className="min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center text-neutral-300 hover:text-white rounded-full transition-colors active:scale-95 cursor-pointer"
               title="Next song"
               aria-label="Next"
             >
@@ -183,7 +183,7 @@ export const MiniPlayer: React.FC = () => {
           </div>
 
           {/* Time indicator */}
-          <div className="hidden md:flex items-center justify-center gap-1 text-[11px] font-mono tabular-nums text-[#6B7280]">
+          <div className="hidden md:flex items-center justify-center gap-1 text-[11px] font-mono tabular-nums text-neutral-400">
             <span>{formatTime(currentTime)}</span>
             <span>/</span>
             <span>{formatTime(duration)}</span>
@@ -196,7 +196,7 @@ export const MiniPlayer: React.FC = () => {
           <div className="hidden lg:flex items-center gap-2">
             <button
               onClick={toggleMute}
-              className="text-[#6B7280] hover:text-[#171717] transition-colors p-1"
+              className="text-neutral-400 hover:text-white transition-colors p-1 cursor-pointer"
               title={isMuted ? 'Unmute' : 'Mute'}
               aria-label="Mute toggle"
             >
@@ -213,7 +213,7 @@ export const MiniPlayer: React.FC = () => {
               step="0.02"
               value={isMuted ? 0 : volume}
               onChange={(e) => setVolume(parseFloat(e.target.value))}
-              className="w-18 h-1 bg-neutral-200 accent-[#ED1025] rounded-lg cursor-pointer"
+              className="w-18 h-1 bg-white/20 accent-[#ED1025] rounded-lg cursor-pointer"
               aria-label="Volume slider"
             />
           </div>
@@ -221,7 +221,7 @@ export const MiniPlayer: React.FC = () => {
           {/* Expand Full Player Button */}
           <button
             onClick={() => setIsExpanded(true)}
-            className="min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:px-3 flex items-center justify-center gap-1.5 text-xs font-medium text-[#171717] hover:bg-neutral-100 rounded-lg transition-colors shrink-0"
+            className="min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:px-3 flex items-center justify-center gap-1.5 text-xs font-medium text-white hover:bg-white/10 rounded-lg transition-colors shrink-0 cursor-pointer"
             title="Expand full player"
             aria-label="Expand player"
           >

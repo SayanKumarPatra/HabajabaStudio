@@ -34,29 +34,29 @@ export const SearchPage: React.FC<SearchPageProps> = ({
   return (
     <div className="space-y-6 pb-6">
       {/* Search Header */}
-      <div className="space-y-3 pb-2 border-b border-[#EAEAEA]">
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#171717]">
+      <div className="space-y-3 pb-2 border-b border-white/10">
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
           Search Catalog
         </h1>
-        <p className="text-xs sm:text-sm text-[#6B7280] font-medium font-bengali">
+        <p className="text-xs sm:text-sm text-neutral-400 font-medium font-bengali">
           গান, শিল্পী, অ্যালবাম বা জঁর খুঁজুন · Search songs, artists, albums, or genres
         </p>
 
         {/* Big Search Input with Clear Button */}
         <div className="relative max-w-2xl pt-1">
-          <SearchIcon className="w-5 h-5 text-[#6B7280] absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <SearchIcon className="w-5 h-5 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Type in Bengali or English (e.g., মেঘের ডাকে, Rabindra, Arghya)..."
             autoFocus
-            className="w-full text-sm pl-11 pr-10 py-3 rounded-2xl border border-[#EAEAEA] focus:border-[#ED1025] focus:ring-2 focus:ring-[#ED1025]/10 focus:outline-hidden bg-white shadow-xs"
+            className="w-full text-sm pl-11 pr-10 py-3 rounded-2xl border border-white/15 focus:border-[#ED1025] focus:ring-2 focus:ring-[#ED1025]/20 focus:outline-hidden bg-black/50 text-white placeholder-neutral-400 backdrop-blur-xl shadow-lg"
           />
           {query && (
             <button
               onClick={() => setQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center text-[#6B7280] transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-neutral-300 transition-colors cursor-pointer"
               title="Clear search"
             >
               <X className="w-3.5 h-3.5" />
@@ -76,10 +76,10 @@ export const SearchPage: React.FC<SearchPageProps> = ({
               <button
                 key={f.id}
                 onClick={() => setFilterType(f.id as any)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                   filterType === f.id
                     ? 'bg-[#ED1025] text-white shadow-xs'
-                    : 'bg-neutral-100 text-[#6B7280] hover:text-[#171717]'
+                    : 'bg-white/10 text-neutral-300 hover:text-white border border-white/10'
                 }`}
               >
                 {f.label}
@@ -92,15 +92,15 @@ export const SearchPage: React.FC<SearchPageProps> = ({
       {/* Results Section */}
       {!query.trim() ? (
         /* Empty State / Recommended Searches */
-        <div className="p-8 sm:p-12 text-center bg-neutral-50/70 rounded-3xl border border-[#EAEAEA] space-y-4">
-          <div className="w-12 h-12 rounded-2xl bg-white shadow-xs border border-[#EAEAEA] flex items-center justify-center mx-auto text-[#ED1025]">
+        <div className="p-8 sm:p-12 text-center bg-black/40 backdrop-blur-xl rounded-3xl border border-white/10 space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#ED1025]/20 border border-[#ED1025]/30 flex items-center justify-center mx-auto text-[#ED1025]">
             <SearchIcon className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-sm sm:text-base font-bold text-[#171717]">
+            <h3 className="text-sm sm:text-base font-bold text-white">
               Explore Habajaba Studio LIVE
             </h3>
-            <p className="text-xs text-[#6B7280] max-w-md mx-auto mt-1">
+            <p className="text-xs text-neutral-400 max-w-md mx-auto mt-1">
               Search by Bengali title, English romanization, artist name, or album.
             </p>
           </div>
@@ -110,7 +110,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
                 <button
                   key={suggestion}
                   onClick={() => setQuery(suggestion)}
-                  className="px-3 py-1.5 rounded-full bg-white border border-[#EAEAEA] hover:border-[#ED1025] text-xs text-[#171717] transition-colors"
+                  className="px-3.5 py-1.5 rounded-full bg-white/10 border border-white/10 hover:border-[#ED1025] text-xs text-white hover:bg-white/15 transition-colors cursor-pointer"
                 >
                   {suggestion}
                 </button>
@@ -120,9 +120,9 @@ export const SearchPage: React.FC<SearchPageProps> = ({
         </div>
       ) : totalResults === 0 ? (
         /* No Matches State */
-        <div className="p-12 text-center bg-neutral-50 rounded-2xl border border-dashed border-[#EAEAEA] space-y-2">
-          <p className="text-sm font-semibold text-[#171717]">No matches found for "{query}"</p>
-          <p className="text-xs text-[#6B7280]">
+        <div className="p-12 text-center bg-black/40 backdrop-blur-xl rounded-2xl border border-dashed border-white/15 space-y-2">
+          <p className="text-sm font-semibold text-white">No matches found for "{query}"</p>
+          <p className="text-xs text-neutral-400">
             Check your spelling or try searching for another artist or song name.
           </p>
         </div>
@@ -134,11 +134,11 @@ export const SearchPage: React.FC<SearchPageProps> = ({
             <div className="space-y-3">
               <div className="flex items-center gap-2 px-1">
                 <Music2 className="w-4 h-4 text-[#ED1025]" />
-                <h3 className="text-sm sm:text-base font-bold text-[#171717]">
+                <h3 className="text-sm sm:text-base font-bold text-white">
                   Songs ({results.tracks.length})
                 </h3>
               </div>
-              <div className="bg-white rounded-2xl border border-[#EAEAEA] divide-y divide-[#EAEAEA] overflow-hidden shadow-xs">
+              <div className="bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden shadow-xl">
                 {results.tracks.map((track, idx) => (
                   <SongRow
                     key={track.id}
@@ -163,7 +163,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
             <div className="space-y-3">
               <div className="flex items-center gap-2 px-1">
                 <Disc3 className="w-4 h-4 text-[#ED1025]" />
-                <h3 className="text-sm sm:text-base font-bold text-[#171717]">
+                <h3 className="text-sm sm:text-base font-bold text-white">
                   Albums ({results.albums.length})
                 </h3>
               </div>
@@ -185,7 +185,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({
             <div className="space-y-3">
               <div className="flex items-center gap-2 px-1">
                 <Users className="w-4 h-4 text-[#ED1025]" />
-                <h3 className="text-sm sm:text-base font-bold text-[#171717]">
+                <h3 className="text-sm sm:text-base font-bold text-white">
                   Artists ({results.artists.length})
                 </h3>
               </div>

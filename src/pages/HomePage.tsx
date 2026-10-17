@@ -68,7 +68,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* 2.5 Real-Time Listener Feedback & Comments */}
       <CommunityFeedbackSection />
 
-      {/* 2. Compact Category Shortcuts (Mobile 4-Column Layout, Zero Vertical Spill) */}
+      {/* 2. Compact Category Shortcuts (Glassmorphism 4-Column Layout) */}
       <section className="grid grid-cols-4 gap-2 sm:gap-3">
         {[
           {
@@ -109,16 +109,16 @@ export const HomePage: React.FC<HomePageProps> = ({
                 e.preventDefault();
                 cat.action();
               }}
-              className="p-2 sm:p-3.5 rounded-xl sm:rounded-2xl bg-white hover:bg-neutral-50 border border-[#EAEAEA] text-center sm:text-left transition-all hover:shadow-xs group flex flex-col sm:flex-row items-center sm:items-start gap-1.5 sm:gap-3 cursor-pointer active:scale-95 select-none"
+              className="p-2 sm:p-3.5 rounded-xl sm:rounded-2xl bg-black/40 hover:bg-white/10 backdrop-blur-xl border border-white/10 text-center sm:text-left transition-all hover:border-[#ED1025]/40 hover:shadow-lg group flex flex-col sm:flex-row items-center sm:items-start gap-1.5 sm:gap-3 cursor-pointer active:scale-95 select-none"
             >
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-neutral-100 group-hover:bg-[#ED1025]/10 flex items-center justify-center text-[#171717] group-hover:text-[#ED1025] transition-colors shrink-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-white/10 group-hover:bg-[#ED1025] flex items-center justify-center text-white transition-colors shrink-0">
                 <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
               <div className="min-w-0 w-full sm:w-auto">
-                <h4 className="text-[11px] sm:text-sm font-bold text-[#171717] group-hover:text-[#ED1025] transition-colors truncate">
+                <h4 className="text-[11px] sm:text-sm font-bold text-white group-hover:text-[#ED1025] transition-colors truncate">
                   {cat.label}
                 </h4>
-                <p className="text-[9px] sm:text-[11px] text-[#6B7280] truncate mt-0.5">
+                <p className="text-[9px] sm:text-[11px] text-neutral-400 truncate mt-0.5">
                   {cat.subtitle}
                 </p>
               </div>
@@ -129,19 +129,20 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {/* 3. If no songs published yet, show Clean Welcome State for listeners */}
       {allSongs.length === 0 ? (
-        <section className="p-8 sm:p-12 text-center bg-white rounded-2xl sm:rounded-3xl border border-[#EAEAEA] shadow-xs space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-[#ED1025]/10 flex items-center justify-center mx-auto text-[#ED1025]">
+        <section className="p-8 sm:p-12 text-center bg-black/40 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/10 shadow-xl space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-[#ED1025]/20 flex items-center justify-center mx-auto text-[#ED1025]">
             <Music2 className="w-6 h-6" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-base sm:text-lg font-black text-[#171717] tracking-tight">
+            <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
               হ্যাবাজ্যাবা স্টুডিও লাইভ (Habajaba Studio LIVE)
             </h3>
-            <p className="text-xs sm:text-sm text-[#6B7280] max-w-md mx-auto font-bengali leading-relaxed">
+            <p className="text-xs sm:text-sm text-neutral-300 max-w-md mx-auto font-bengali leading-relaxed">
               অরিজিনাল বাংলা মিউজিক ও লাইভ স্টুডিও সেশন। নতুন গান খুব শীঘ্রই প্রকাশিত হচ্ছে। সাথেই থাকুন।
             </p>
           </div>
         </section>
+
       ) : (
         <>
           {/* 4. Latest Releases in 16:9 YouTube Thumbnail Cards */}
@@ -157,7 +158,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 className="group shrink-0 cursor-pointer w-44 sm:w-56 select-none"
               >
                 {/* 16:9 YouTube Format Card Thumbnail */}
-                <div className="relative aspect-video rounded-xl overflow-hidden bg-neutral-100 border border-[#EAEAEA] shadow-xs group-hover:shadow-md transition-all">
+                <div className="relative aspect-video rounded-xl overflow-hidden bg-neutral-900 border border-white/10 shadow-lg group-hover:border-[#ED1025]/40 transition-all">
                   <CoverImage
                     src={track.coverUrl}
                     alt={track.title}
@@ -167,7 +168,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   <button
-                    className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-[#ED1025] text-white flex items-center justify-center shadow-md shadow-[#ED1025]/30 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-[#ED1025] text-white flex items-center justify-center shadow-md shadow-[#ED1025]/30 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                     title={`Play ${track.title}`}
                     aria-label={`Play ${track.title}`}
                   >
@@ -175,10 +176,10 @@ export const HomePage: React.FC<HomePageProps> = ({
                   </button>
                 </div>
                 <div className="mt-2 px-0.5">
-                  <h4 className="text-xs sm:text-sm font-semibold text-[#171717] group-hover:text-[#ED1025] transition-colors truncate">
+                  <h4 className="text-xs sm:text-sm font-semibold text-white group-hover:text-[#ED1025] transition-colors truncate">
                     {track.title}
                   </h4>
-                  <p className="text-[11px] text-[#6B7280] truncate mt-0.5">
+                  <p className="text-[11px] text-neutral-400 truncate mt-0.5">
                     {track.artist}
                   </p>
                 </div>
@@ -208,10 +209,10 @@ export const HomePage: React.FC<HomePageProps> = ({
           <section className="space-y-3 pt-2">
             <div className="flex items-center justify-between px-1">
               <div>
-                <h3 className="text-base sm:text-lg font-bold tracking-tight text-[#171717]">
+                <h3 className="text-base sm:text-lg font-bold tracking-tight text-white">
                   All Songs Preview
                 </h3>
-                <p className="text-xs text-[#6B7280] font-medium font-bengali">
+                <p className="text-xs text-neutral-400 font-medium font-bengali">
                   হবজব স্টুডিও লাইভ এর প্রকাশিত গানসমূহ
                 </p>
               </div>
@@ -224,7 +225,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               </button>
             </div>
 
-            <div className="bg-white rounded-2xl border border-[#EAEAEA] divide-y divide-[#EAEAEA] overflow-hidden shadow-xs">
+            <div className="bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden shadow-xl">
               {allSongs.slice(0, 8).map((track, idx) => (
                 <SongRow
                   key={track.id}
@@ -242,6 +243,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               ))}
             </div>
           </section>
+
         </>
       )}
     </div>

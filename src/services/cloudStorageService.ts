@@ -28,10 +28,10 @@ export async function uploadImageToCloud(
   const maxHeight = options?.maxHeight || (isLogo ? 240 : 720);
   const quality = options?.quality || (isLogo ? 0.95 : 0.85);
 
-  // 1. Optimize image first
+  // 1. Optimize image first (instant downscaling)
   const optimizedDataUrl = await optimizeImageFile(file, maxWidth, maxHeight, quality, format);
 
-  // 2. Try Firebase Storage
+  // 2. Try Firebase Storage with a strict 3-second timeout to prevent lag
   const storageInstance = getFirebaseStorage();
   if (storageInstance) {
     try {
@@ -39,16 +39,26 @@ export async function uploadImageToCloud(
       const filename = `habajaba_${folder}/${Date.now()}_${cleanName}`;
       const fileRef = ref(storageInstance.storage, filename);
 
-      // Convert optimized data URL to blob
-      const res = await fetch(optimizedDataUrl);
-      const blob = await res.blob();
+      const performStorageUpload = async (): Promise<string | null> => {
+        // Convert optimized data URL to blob
+        const res = await fetch(optimizedDataUrl);
+        const blob = await res.blob();
 
-      await uploadBytes(fileRef, blob, {
-        contentType: blob.type || (format === 'image/png' ? 'image/png' : 'image/jpeg'),
-        cacheControl: 'public, max-age=31536000',
-      });
+        await uploadBytes(fileRef, blob, {
+          contentType: blob.type || (format === 'image/png' ? 'image/png' : 'image/jpeg'),
+          cacheControl: 'public, max-age=31536000',
+        });
 
-      const downloadUrl = await getDownloadURL(fileRef);
+        return await getDownloadURL(fileRef);
+      };
+
+      // Race upload with a 3-second timeout so user never waits indefinitely
+      const timeoutPromise = new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), 3000)
+      );
+
+      const downloadUrl = await Promise.race([performStorageUpload(), timeoutPromise]);
+
       if (downloadUrl) {
         return {
           url: downloadUrl,
@@ -57,14 +67,15 @@ export async function uploadImageToCloud(
         };
       }
     } catch (storageErr: any) {
-      console.warn('Firebase Storage direct upload skipped/failed, falling back to data URL:', storageErr);
+      console.warn('Firebase Storage upload error, using instant optimized fallback:', storageErr);
     }
   }
 
-  // Fallback to optimized inline data URL
+  // Instant fallback to optimized inline data URL
   return {
     url: optimizedDataUrl,
     isCloudStorage: false,
     message: 'অপ্টিমাইজড হাই-ডেফিনিশন ইমেজ হিসেবে সংরক্ষিত হয়েছে।',
   };
 }
+

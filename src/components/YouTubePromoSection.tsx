@@ -16,7 +16,7 @@ export const YouTubePromoSection: React.FC<YouTubePromoSectionProps> = ({
 
   return (
     <div
-      className={`w-full rounded-xl sm:rounded-2xl border border-red-500/20 bg-white/80 backdrop-blur-xl px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-3 shadow-xs hover:border-red-500/40 transition-all ${className}`}
+      className={`w-full rounded-xl sm:rounded-2xl border border-red-500/30 bg-black/40 backdrop-blur-xl px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-3 shadow-lg hover:border-red-500/50 transition-all ${className}`}
       aria-label="Official YouTube Channel Strip"
     >
       {/* Left: Authentic Official YouTube Logo + Title in a single line */}
@@ -44,14 +44,15 @@ export const YouTubePromoSection: React.FC<YouTubePromoSectionProps> = ({
         </a>
 
         <div className="flex items-center gap-2 truncate">
-          <span className="text-xs sm:text-sm font-bold text-[#171717] truncate">
+          <span className="text-xs sm:text-sm font-bold text-white truncate">
             Official YouTube Channel
           </span>
-          <span className="hidden sm:inline text-xs text-[#6B7280]">
+          <span className="hidden sm:inline text-xs text-neutral-400">
             · Habajaba Studio LIVE
           </span>
         </div>
       </div>
+
 
       {/* Right: Small Subscribe Button with Official YouTube Red */}
       <a

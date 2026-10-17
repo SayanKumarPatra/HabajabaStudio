@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Send, Heart, Star, Sparkles, CheckCircle2, User } from 'lucide-react';
+import { MessageSquare, Send, Heart, Star, ChevronDown, ChevronUp, User, CheckCircle2 } from 'lucide-react';
 import { feedbackService, ListenerComment } from '../services/feedbackService';
 
 export const CommunityFeedbackSection: React.FC = () => {
   const [comments, setComments] = useState<ListenerComment[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
   const [authorName, setAuthorName] = useState('');
   const [message, setMessage] = useState('');
-  const [rating, setRating] = useState(5);
+  const [rating, setRating] = useState<number>(0); // 0 = empty / unselected by default per user request
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     const unsub = feedbackService.subscribe((list) => {
@@ -24,8 +24,13 @@ export const CommunityFeedbackSection: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      await feedbackService.addComment(authorName, message, rating);
+      await feedbackService.addComment(
+        authorName,
+        message,
+        rating > 0 ? rating : undefined
+      );
       setMessage('');
+      setRating(0); // reset back to empty
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
     } finally {
@@ -50,180 +55,203 @@ export const CommunityFeedbackSection: React.FC = () => {
   };
 
   return (
-    <section className="w-full rounded-2xl sm:rounded-3xl bg-white/90 backdrop-blur-xl border border-red-500/15 p-4 sm:p-5 shadow-xs space-y-4">
-      {/* Header Prompt */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-neutral-100">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#ED1025]"></span>
+    <div className="w-full rounded-xl sm:rounded-2xl border border-red-500/30 bg-black/45 backdrop-blur-xl shadow-lg transition-all overflow-hidden">
+      {/* 1. Compact Single-Line Strip (পাতি ভাবে করা হেডার) */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-2.5 text-left cursor-pointer hover:bg-white/5 transition-colors select-none"
+        aria-expanded={isOpen}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-500/15 text-[#ED1025] flex items-center justify-center shrink-0">
+            <MessageSquare className="w-4 h-4" />
+          </div>
+          <div className="flex items-center gap-2 truncate">
+            <span className="text-xs sm:text-sm font-bold text-white font-bengali truncate">
+              শ্রোতাদের লাইভ মন্তব্য ও মতামত
             </span>
-            <span className="text-[11px] font-bold tracking-wider uppercase text-[#ED1025] font-mono">
-              শ্রোতাদের লাইভ মন্তব্য
+            <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-[#ED1025] font-bold font-mono shrink-0">
+              {comments.length}
             </span>
           </div>
-          <h3 className="text-sm sm:text-base font-black text-[#171717] font-bengali leading-snug">
-            আমাদের ওয়েব অ্যাপ্লিকেশন আপনাদের কেমন লেগেছে? আপনার মূল্যবান মন্তব্য জানান
-          </h3>
-          <p className="text-xs text-[#6B7280] font-bengali">
-            এখানে আপনার মন্তব্য লিখলে তা সাথে সাথেই সরাসরি লাইভ হয়ে যাবে এবং সবাই দেখতে পাবে।
+        </div>
+
+        {/* Action Toggle with Arrow Indicator */}
+        <div className="flex items-center gap-1.5 shrink-0 text-xs font-semibold text-[#ED1025]">
+          <span className="hidden sm:inline font-bengali text-xs">
+            {isOpen ? 'বন্ধ করুন' : 'মন্তব্য দিন ও দেখুন'}
+          </span>
+          <div className="w-6 h-6 rounded-full bg-red-500/15 flex items-center justify-center">
+            {isOpen ? (
+              <ChevronUp className="w-3.5 h-3.5" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5" />
+            )}
+          </div>
+        </div>
+      </button>
+
+      {/* 2. Expandable Dropdown Content (টাচ করলে নিচের দিকে ওপেন হয়ে যাবে) */}
+      {isOpen && (
+        <div className="p-3 sm:p-3.5 pt-1.5 border-t border-white/10 space-y-2.5 animate-in slide-in-from-top-1 duration-150">
+          <p className="text-[11px] sm:text-xs text-neutral-300 font-bengali">
+            আমাদের ওয়েব অ্যাপ্লিকেশন আপনাদের কেমন লেগেছে? আপনার মতামত ও অনুভূতি লিখুন:
           </p>
-        </div>
 
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-[#ED1025] text-xs font-bold shrink-0 self-start sm:self-center">
-          <MessageSquare className="w-3.5 h-3.5" />
-          <span>{comments.length} টি মন্তব্য</span>
-        </div>
-      </div>
+          {/* Comment Form - Compact, zero-waste spacing */}
+          <form onSubmit={handleSubmit} className="space-y-2 bg-white/[0.04] p-2.5 rounded-xl border border-white/10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] font-bold text-neutral-300 block mb-0.5 font-bengali">
+                  আপনার নাম (Name):
+                </label>
+                <div className="relative">
+                  <User className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={authorName}
+                    onChange={(e) => setAuthorName(e.target.value)}
+                    placeholder="শ্রোতার নাম লিখুন"
+                    maxLength={35}
+                    className="w-full text-xs pl-8 pr-2.5 py-1.5 rounded-lg border border-white/15 bg-black/60 text-white focus:border-[#ED1025] focus:outline-hidden font-bengali"
+                  />
+                </div>
+              </div>
 
-      {/* Comment Input Form Box */}
-      <form onSubmit={handleSubmit} className="space-y-3 bg-neutral-50/70 p-3 sm:p-4 rounded-2xl border border-neutral-200/60">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          <div>
-            <label className="text-[11px] font-bold text-[#4B5563] block mb-1 font-bengali">
-              আপনার নাম (Name):
-            </label>
-            <div className="relative">
-              <User className="w-3.5 h-3.5 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={authorName}
-                onChange={(e) => setAuthorName(e.target.value)}
-                placeholder="যেমন: অনিক রায় / সঙ্গীতপ্রেমী"
-                maxLength={40}
-                className="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-neutral-200 bg-white focus:border-[#ED1025] focus:outline-hidden font-bengali"
+              {/* Star Rating — Compact row */}
+              <div>
+                <label className="text-[10px] font-bold text-neutral-300 block mb-0.5 font-bengali">
+                  রেটিং (ঐচ্ছিক): {rating > 0 ? `${rating} Star` : '(স্টার নির্বাচন করুন)'}
+                </label>
+                <div className="flex items-center gap-1 py-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star === rating ? 0 : star)}
+                      className="p-0.5 hover:scale-110 transition-transform cursor-pointer"
+                      title={`${star} Star`}
+                    >
+                      <Star
+                        className={`w-4 h-4 sm:w-4.5 sm:h-4.5 ${
+                          star <= rating
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-neutral-600 fill-transparent'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                  {rating > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setRating(0)}
+                      className="text-[10px] text-neutral-400 hover:text-white underline ml-1 cursor-pointer"
+                    >
+                      ক্লিয়ার
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-neutral-300 block mb-0.5 font-bengali">
+                আপনার মন্তব্য ও শহর/দেশ (Comment &amp; Location):
+              </label>
+              <textarea
+                required
+                rows={2}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="গান কেমন লেগেছে এবং কোথা থেকে শুনছেন লিখুন..."
+                maxLength={400}
+                className="w-full text-xs p-2 rounded-lg border border-white/15 bg-black/60 text-white focus:border-[#ED1025] focus:outline-hidden font-bengali resize-none"
               />
             </div>
-          </div>
 
-          <div>
-            <label className="text-[11px] font-bold text-[#4B5563] block mb-1 font-bengali">
-              অ্যাপ রেটিং দিন (Rating):
-            </label>
-            <div className="flex items-center gap-1 py-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => setRating(star)}
-                  className="p-1 hover:scale-110 transition-transform cursor-pointer"
-                  title={`${star} Star`}
-                >
-                  <Star
-                    className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                      star <= rating
-                        ? 'fill-amber-400 text-amber-400'
-                        : 'text-neutral-300'
-                    }`}
-                  />
-                </button>
-              ))}
-              <span className="text-xs font-mono font-bold text-amber-600 ml-1.5">
-                {rating}.0
+            <div className="flex items-center justify-between gap-2 pt-0.5">
+              <span className="text-[10px] text-neutral-400 font-bengali">
+                ⚡ সেন্ড করলেই সরাসরি লাইভ হবে
               </span>
+
+              <button
+                type="submit"
+                disabled={isSubmitting || !message.trim()}
+                className="px-3 py-1.5 rounded-lg bg-[#ED1025] hover:bg-[#D90D20] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Send className="w-3 h-3" />
+                <span>{isSubmitting ? 'পোস্ট হচ্ছে...' : 'সেন্ড করুন'}</span>
+              </button>
             </div>
+
+            {showSuccessToast && (
+              <div className="p-2 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-1.5 animate-in fade-in">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="font-bengali">আপনার মন্তব্য সফলভাবে লাইভ প্রকাশিত হয়েছে!</span>
+              </div>
+            )}
+          </form>
+
+          {/* Genuine User Comments Feed - Compact, tight list */}
+          <div className="space-y-1.5 pt-0.5">
+            <span className="text-[11px] font-bold text-white font-bengali block">
+              শ্রোতাদের মন্তব্য ({comments.length}):
+            </span>
+
+            {comments.length === 0 ? (
+              <div className="p-3.5 text-center bg-white/[0.02] rounded-xl border border-dashed border-white/10 text-neutral-400 text-xs font-bengali">
+                এখনও কোনো মন্তব্য জমা পড়েনি। প্রথম মন্তব্যটি আপনিই করুন!
+              </div>
+            ) : (
+              <div className="divide-y divide-white/10 max-h-56 overflow-y-auto pr-1 space-y-1.5">
+                {comments.map((item) => (
+                  <div key={item.id} className="pt-1.5 first:pt-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-5 h-5 rounded-full bg-[#ED1025]/20 text-[#ED1025] font-bold text-[10px] flex items-center justify-center shrink-0">
+                          {item.authorName.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-xs font-bold text-white font-bengali leading-tight">
+                          {item.authorName}
+                        </span>
+                        <span className="text-[9px] text-neutral-400 font-mono">
+                          · {formatRelativeTime(item.timestamp)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {item.rating && item.rating > 0 && (
+                          <div className="flex items-center gap-0.5">
+                            {Array.from({ length: item.rating }).map((_, i) => (
+                              <Star key={i} className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                            ))}
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleLike(item.id, e)}
+                          className="flex items-center gap-1 text-[10px] text-neutral-400 hover:text-[#ED1025] transition-colors px-1 py-0.5 rounded hover:bg-white/10 cursor-pointer"
+                          title="Like comment"
+                        >
+                          <Heart className="w-3 h-3 text-[#ED1025] fill-[#ED1025]/30" />
+                          <span className="font-mono text-[10px] tabular-nums">{item.likes || 0}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-neutral-200 font-bengali mt-0.5 pl-6.5 leading-snug">
+                      {item.message}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
+      )}
 
-        <div>
-          <label className="text-[11px] font-bold text-[#4B5563] block mb-1 font-bengali">
-            আপনার অনুভূতি বা পরামর্শ (Comment):
-          </label>
-          <textarea
-            required
-            rows={2}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="ওয়েবসাইটের গান, প্লেয়ার ও ডিজাইন সম্পর্কে আপনার মতামত লিখুন..."
-            maxLength={400}
-            className="w-full text-xs p-3 rounded-xl border border-neutral-200 bg-white focus:border-[#ED1025] focus:outline-hidden font-bengali resize-none"
-          />
-        </div>
-
-        <div className="flex items-center justify-between gap-2 pt-1">
-          <span className="text-[10px] text-[#9CA3AF] font-bengali">
-            ⚡ সেন্ড করার সাথে সাথেই রিয়েল-টাইমে লাইভ হবে
-          </span>
-
-          <button
-            type="submit"
-            disabled={isSubmitting || !message.trim()}
-            className="px-4 py-2 rounded-xl bg-[#ED1025] hover:bg-[#D90D20] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-          >
-            <Send className="w-3.5 h-3.5" />
-            <span>{isSubmitting ? 'পোস্ট হচ্ছে...' : 'সেন্ড করুন (Post Live)'}</span>
-          </button>
-        </div>
-
-        {showSuccessToast && (
-          <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 animate-in fade-in">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span className="font-bengali">আপনার মন্তব্য সফলভাবে লাইভ প্রকাশিত হয়েছে! ধন্যবাদ।</span>
-          </div>
-        )}
-      </form>
-
-      {/* Real-time Comments Live Feed */}
-      <div className="space-y-2.5 pt-1">
-        <div className="flex items-center justify-between text-xs text-[#6B7280]">
-          <span className="font-bold text-[#171717] font-bengali">সাম্প্রতিক মন্তব্যসমূহ (Recent Live Feed):</span>
-          {comments.length > 3 && (
-            <button
-              type="button"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="text-[#ED1025] hover:underline font-semibold font-bengali cursor-pointer"
-            >
-              {isExpanded ? 'সংক্ষিপ্ত করুন' : `সবগুলো দেখুন (${comments.length})`}
-            </button>
-          )}
-        </div>
-
-        <div className="divide-y divide-neutral-100 max-h-72 overflow-y-auto pr-1 space-y-2">
-          {(isExpanded ? comments : comments.slice(0, 3)).map((item) => (
-            <div key={item.id} className="pt-2.5 first:pt-0">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-[#ED1025]/10 text-[#ED1025] font-bold text-[10px] flex items-center justify-center shrink-0">
-                    {item.authorName.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-[#171717] font-bengali block leading-tight">
-                      {item.authorName}
-                    </span>
-                    <span className="text-[10px] text-[#9CA3AF] font-mono">
-                      {formatRelativeTime(item.timestamp)}
-                    </span>
-                  </div>
-                </div>
-
-                {item.rating && (
-                  <div className="flex items-center gap-0.5">
-                    {Array.from({ length: item.rating }).map((_, i) => (
-                      <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <p className="text-xs text-[#4B5563] font-bengali mt-1 pl-8 leading-relaxed">
-                {item.message}
-              </p>
-
-              <div className="flex items-center justify-end gap-1.5 pl-8 mt-1">
-                <button
-                  type="button"
-                  onClick={(e) => handleLike(item.id, e)}
-                  className="flex items-center gap-1 text-[11px] text-[#6B7280] hover:text-[#ED1025] transition-colors p-1 rounded-md hover:bg-neutral-100 cursor-pointer"
-                >
-                  <Heart className="w-3 h-3 text-[#ED1025] fill-[#ED1025]/20" />
-                  <span className="font-mono tabular-nums">{item.likes || 1}</span>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
+    </div>
   );
 };

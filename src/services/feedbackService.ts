@@ -11,34 +11,7 @@ export interface ListenerComment {
   likes?: number;
 }
 
-const STORAGE_COMMENTS_KEY = 'habajaba_community_comments_v1';
-
-const DEFAULT_COMMENTS: ListenerComment[] = [
-  {
-    id: 'comm-1',
-    authorName: 'সৌমেন মুখার্জী',
-    message: 'অসাধারণ স্টুডিও সাউন্ড কোয়ালিটি! বিশেষ করে অ্যাকোস্টিক ট্র্যাকগুলো এক নিশ্বাসে শুনলাম। এমন উদ্যোগ বাংলায় বিরল।',
-    timestamp: Date.now() - 3600000 * 2,
-    rating: 5,
-    likes: 14,
-  },
-  {
-    id: 'comm-2',
-    authorName: 'তানিশা হক',
-    message: 'মোবাইল থেকে খুব স্মুথ চলছে, কোনো ল্যাগ নেই। হাবাজ্যাবা স্টুডিও লাইভ এর ইউটিউব চ্যানেলও সাবস্ক্রাইব করেছি!',
-    timestamp: Date.now() - 3600000 * 5,
-    rating: 5,
-    likes: 9,
-  },
-  {
-    id: 'comm-3',
-    authorName: 'অনির্বাণ ঘোষাল',
-    message: 'ক্যাসেট প্লেয়ার আর অরিজিনাল সাউন্ডট্র্যাক দুর্দান্ত অভিজ্ঞতা। নতুন আরও গান প্রকাশ করার অনুরোধ রইল।',
-    timestamp: Date.now() - 3600000 * 12,
-    rating: 5,
-    likes: 21,
-  },
-];
+const STORAGE_COMMENTS_KEY = 'habajaba_real_comments_v2';
 
 class FeedbackService {
   private comments: ListenerComment[] = [];
@@ -57,15 +30,25 @@ class FeedbackService {
       const stored = localStorage.getItem(STORAGE_COMMENTS_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          this.comments = parsed;
+        if (Array.isArray(parsed)) {
+          // Strictly exclude any legacy mock data
+          this.comments = parsed.filter(
+            (c) =>
+              c.id !== 'comm-1' &&
+              c.id !== 'comm-2' &&
+              c.id !== 'comm-3' &&
+              !c.authorName?.includes('সৌমেন') &&
+              !c.authorName?.includes('তানিশা') &&
+              !c.authorName?.includes('অনির্বাণ')
+          );
           return;
         }
       }
     } catch (e) {
       console.warn('Failed to parse local comments:', e);
     }
-    this.comments = [...DEFAULT_COMMENTS];
+    // Strictly zero mock comments — only genuine user submissions!
+    this.comments = [];
   }
 
   private initBroadcastChannel() {
@@ -111,10 +94,18 @@ class FeedbackService {
               const remote: ListenerComment[] = [];
               snapshot.forEach((docSnap) => {
                 const data = docSnap.data() as ListenerComment;
-                remote.push({
-                  ...data,
-                  id: docSnap.id || data.id,
-                });
+                // Exclude any mock items
+                if (
+                  data.id !== 'comm-1' &&
+                  data.id !== 'comm-2' &&
+                  data.id !== 'comm-3' &&
+                  !data.authorName?.includes('সৌমেন')
+                ) {
+                  remote.push({
+                    ...data,
+                    id: docSnap.id || data.id,
+                  });
+                }
               });
               this.comments = remote;
               this.saveLocal();
@@ -139,8 +130,15 @@ class FeedbackService {
           const val = snapshot.val();
           if (val && typeof val === 'object') {
             const list: ListenerComment[] = Object.values(val);
-            list.sort((a, b) => b.timestamp - a.timestamp);
-            this.comments = list;
+            const filtered = list.filter(
+              (c) =>
+                c.id !== 'comm-1' &&
+                c.id !== 'comm-2' &&
+                c.id !== 'comm-3' &&
+                !c.authorName?.includes('সৌমেন')
+            );
+            filtered.sort((a, b) => b.timestamp - a.timestamp);
+            this.comments = filtered;
             this.saveLocal();
             this.isFirebaseConnected = true;
           }
@@ -180,18 +178,18 @@ class FeedbackService {
   public async addComment(
     authorName: string,
     message: string,
-    rating = 5
+    rating?: number
   ): Promise<ListenerComment> {
     const trimmedAuthor = authorName.trim() || 'সঙ্গীতপ্রেমী শ্রোতা';
     const trimmedMessage = message.trim();
 
     const newComment: ListenerComment = {
-      id: `comm-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: `real-comm-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       authorName: trimmedAuthor,
       message: trimmedMessage,
       timestamp: Date.now(),
-      rating,
-      likes: 1,
+      rating: rating && rating > 0 ? rating : undefined,
+      likes: 0,
     };
 
     // Prepend immediately for instant zero-latency UI response

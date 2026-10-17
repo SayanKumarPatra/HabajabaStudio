@@ -58,25 +58,26 @@ export const BrandingAdminSection: React.FC = () => {
       setSavedAlert({
         show: true,
         message: uploadResult.isCloudStorage
-          ? 'লোগো সফলভাবে Firebase Cloud Storage-এ আপলোড ও লাইভ সেভ হয়েছে!'
-          : 'লোগো সফলভাবে অপ্টিমাইজ ও লাইভ সেভ হয়েছে!',
+          ? 'নতুন লোগো সরাসরি ফায়ারবেস ক্লাউড স্টোরেজে আপলোড ও লাইভ সেভ হয়েছে!'
+          : 'লোগো সফলভাবে ব্রাউজারে সংরক্ষিত হয়েছে।',
       });
       setTimeout(() => setSavedAlert({ show: false, message: '' }), 4000);
     } catch (err) {
-      console.error('Logo upload error:', err);
-      alert('লোগো প্রসেস বা আপলোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      console.error('Failed to upload branding image:', err);
+      alert('লোগো আপলোড করতে ব্যর্থ হয়েছে। আবার চেষ্টা করুন।');
     } finally {
       setIsProcessing(false);
-      if (e.target) e.target.value = '';
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsProcessing(true);
     await MusicService.saveBranding(branding);
-    setIsProcessing(false);
-    setSavedAlert({ show: true, message: 'লোগো ও ব্র্যান্ডিং সফলভাবে সেভ ও লাইভ আপডেট হয়েছে!' });
+    setSavedAlert({
+      show: true,
+      message: 'ব্র্যান্ডিং ও ইউটিউব প্রমোশন সেটিংস সফলভাবে সেভ হয়েছে!',
+    });
     setTimeout(() => setSavedAlert({ show: false, message: '' }), 3500);
   };
 
@@ -95,15 +96,15 @@ export const BrandingAdminSection: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-2xl border border-[#EAEAEA] p-5 shadow-xs space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#EAEAEA]">
+    <div className="space-y-6 text-white">
+      <div className="bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 p-5 shadow-xl space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
           <div>
-            <h3 className="text-base sm:text-lg font-black text-[#171717] flex items-center gap-2">
+            <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
               <ImageIcon className="w-5 h-5 text-[#ED1025]" />
               <span>লোগো ও ব্র্যান্ডিং কাস্টমাইজেশন (Official Studio Logo)</span>
             </h3>
-            <p className="text-xs text-[#6B7280] mt-1 font-bengali">
+            <p className="text-xs text-neutral-400 mt-1 font-bengali">
               আপনার ডাউনলোড করা নতুন লোগোটি এখানে আপলোড করুন। এটি স্বয়ংক্রিয়ভাবে উপরের রেড হেডারে প্রদর্শিত হবে।
             </p>
           </div>
@@ -111,7 +112,7 @@ export const BrandingAdminSection: React.FC = () => {
           <button
             type="button"
             onClick={handleResetToDefault}
-            className="px-3 py-1.5 rounded-lg border border-neutral-300 hover:bg-neutral-100 text-xs font-semibold text-neutral-600 flex items-center gap-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-xs font-semibold text-neutral-300 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>ডিফল্ট লোগোতে ফিরুন</span>
@@ -120,8 +121,8 @@ export const BrandingAdminSection: React.FC = () => {
 
         {/* Saved notification alert */}
         {savedAlert.show && (
-          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
-            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+          <div className="p-3.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{savedAlert.message}</span>
           </div>
         )}
@@ -129,7 +130,7 @@ export const BrandingAdminSection: React.FC = () => {
         <form onSubmit={handleSave} className="space-y-5">
           {/* 1. Upload new logo file */}
           <div>
-            <label className="block text-xs font-bold text-[#171717] mb-2">
+            <label className="block text-xs font-bold text-neutral-200 mb-2 font-bengali">
               ১. লোগো ইমেজ ফাইল আপলোড করুন (PNG, JPG, SVG, WebP)
             </label>
             <div className="flex flex-col sm:flex-row items-center gap-3">
@@ -145,7 +146,7 @@ export const BrandingAdminSection: React.FC = () => {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isProcessing}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center justify-center gap-2 border border-white/15 transition-colors cursor-pointer"
               >
                 {isProcessing ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
@@ -162,7 +163,7 @@ export const BrandingAdminSection: React.FC = () => {
                 value={branding.logoUrl || ''}
                 onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value })}
                 placeholder="https://example.com/logo.png"
-                className="flex-1 w-full px-3 py-2 rounded-xl border border-neutral-300 text-xs focus:ring-2 focus:ring-[#ED1025] focus:outline-hidden"
+                className="flex-1 w-full px-3 py-2 rounded-xl border border-white/15 bg-black/60 text-white text-xs focus:border-[#ED1025] focus:outline-hidden"
               />
             </div>
           </div>
@@ -170,7 +171,7 @@ export const BrandingAdminSection: React.FC = () => {
           {/* 2. Studio Name & Bengali Tagline */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-[#171717] mb-1">
+              <label className="block text-xs font-bold text-neutral-200 mb-1">
                 স্টুডিও নাম (Studio Name)
               </label>
               <input
@@ -178,12 +179,12 @@ export const BrandingAdminSection: React.FC = () => {
                 value={branding.studioName || ''}
                 onChange={(e) => setBranding({ ...branding, studioName: e.target.value })}
                 placeholder="Habajaba Studio LIVE"
-                className="w-full px-3 py-2 rounded-xl border border-neutral-300 text-xs focus:ring-2 focus:ring-[#ED1025] focus:outline-hidden"
+                className="w-full px-3 py-2 rounded-xl border border-white/15 bg-black/60 text-white text-xs focus:border-[#ED1025] focus:outline-hidden"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#171717] mb-1">
+              <label className="block text-xs font-bold text-neutral-200 mb-1">
                 বাংলা স্লোগান (Tagline)
               </label>
               <input
@@ -191,22 +192,22 @@ export const BrandingAdminSection: React.FC = () => {
                 value={branding.tagline || ''}
                 onChange={(e) => setBranding({ ...branding, tagline: e.target.value })}
                 placeholder="অরিজিনাল বাংলা মিউজিক"
-                className="w-full px-3 py-2 rounded-xl border border-neutral-300 text-xs font-bengali focus:ring-2 focus:ring-[#ED1025] focus:outline-hidden"
+                className="w-full px-3 py-2 rounded-xl border border-white/15 bg-black/60 text-white text-xs font-bengali focus:border-[#ED1025] focus:outline-hidden"
               />
             </div>
           </div>
 
           {/* 3. YouTube Channel Promotion Settings */}
-          <div className="p-4 rounded-xl bg-red-50/60 border border-red-200/80 space-y-3">
+          <div className="p-4 rounded-xl bg-red-950/30 border border-red-500/30 space-y-3">
             <div className="flex items-center gap-2">
               <Youtube className="w-4 h-4 text-[#ED1025]" />
-              <span className="text-xs font-bold text-[#171717]">
+              <span className="text-xs font-bold text-white">
                 ইউটিউব চ্যানেল প্রমোশন লিংক ও তথ্য (YouTube Channel Promotion)
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-bold text-[#171717] mb-1">
+                <label className="block text-[11px] font-bold text-neutral-300 mb-1">
                   ইউটিউব চ্যানেল ইউআরএল (Channel Link)
                 </label>
                 <input
@@ -214,11 +215,11 @@ export const BrandingAdminSection: React.FC = () => {
                   value={branding.youtubeChannelUrl || ''}
                   onChange={(e) => setBranding({ ...branding, youtubeChannelUrl: e.target.value })}
                   placeholder="https://www.youtube.com/@habajabastudio"
-                  className="w-full px-3 py-2 rounded-xl border border-neutral-300 text-xs focus:ring-2 focus:ring-[#ED1025] focus:outline-hidden bg-white"
+                  className="w-full px-3 py-2 rounded-xl border border-white/15 bg-black/60 text-white text-xs focus:border-[#ED1025] focus:outline-hidden"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-[#171717] mb-1">
+                <label className="block text-[11px] font-bold text-neutral-300 mb-1">
                   চ্যানেলের নাম (Display Name)
                 </label>
                 <input
@@ -226,7 +227,7 @@ export const BrandingAdminSection: React.FC = () => {
                   value={branding.youtubeChannelName || ''}
                   onChange={(e) => setBranding({ ...branding, youtubeChannelName: e.target.value })}
                   placeholder="হ্যাবাজ্যাবা স্টুডিও (Habajaba Studio)"
-                  className="w-full px-3 py-2 rounded-xl border border-neutral-300 text-xs focus:ring-2 focus:ring-[#ED1025] focus:outline-hidden bg-white"
+                  className="w-full px-3 py-2 rounded-xl border border-white/15 bg-black/60 text-white text-xs focus:border-[#ED1025] focus:outline-hidden"
                 />
               </div>
             </div>
@@ -234,13 +235,13 @@ export const BrandingAdminSection: React.FC = () => {
 
           {/* 4. Real-Time Previews */}
           <div className="space-y-3 pt-2">
-            <h4 className="text-xs font-bold text-[#171717] uppercase tracking-wider">
+            <h4 className="text-xs font-bold text-neutral-300 uppercase tracking-wider">
               রিয়েল-টাইম প্রিভিউ (Live Header Preview):
             </h4>
 
-            {/* A. Live Preview on the actual Red Header */}
+            {/* Live Preview on Red Header */}
             <div className="space-y-1">
-              <span className="text-[11px] text-[#6B7280] font-medium">
+              <span className="text-[11px] text-neutral-400 font-medium">
                 হেডারের লাল ব্যাকগ্রাউন্ডে যেমন দেখাবে (Red Header):
               </span>
               <div className="p-4 rounded-xl bg-[#ED1025] text-white flex items-center justify-between shadow-xs border border-red-700">
@@ -276,16 +277,16 @@ export const BrandingAdminSection: React.FC = () => {
               </div>
             </div>
 
-            {/* B. Preview on Light Card */}
+            {/* Preview on Dark Glass Panel */}
             <div className="space-y-1">
-              <span className="text-[11px] text-[#6B7280] font-medium">
-                লাইট ব্যাকগ্রাউন্ডে প্রিভিউ (Light Theme):
+              <span className="text-[11px] text-neutral-400 font-medium">
+                ডার্ক গ্লাস ব্যাকগ্রাউন্ডে প্রিভিউ (Dark Glass):
               </span>
-              <div className="p-4 rounded-xl bg-neutral-100 border border-neutral-200 flex items-center gap-3">
+              <div className="p-4 rounded-xl bg-black/50 border border-white/10 flex items-center gap-3 backdrop-blur-md">
                 {branding.logoUrl ? (
                   <img
                     src={branding.logoUrl}
-                    alt="Logo Preview Light"
+                    alt="Logo Preview Dark"
                     className="h-10 w-auto object-contain shrink-0 rounded"
                   />
                 ) : (
@@ -296,7 +297,7 @@ export const BrandingAdminSection: React.FC = () => {
                     <span className="font-extrabold text-[#ED1025] text-base">HabaJaba Studio</span>
                   </div>
                 )}
-                <span className="text-xs text-[#6B7280] font-bengali">
+                <span className="text-xs text-neutral-300 font-bengali">
                   {branding.tagline || 'অরিজিনাল বাংলা মিউজিক'}
                 </span>
               </div>
@@ -306,7 +307,7 @@ export const BrandingAdminSection: React.FC = () => {
           <div className="pt-3 flex justify-end">
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-[#ED1025] hover:bg-[#D90D20] text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+              className="px-6 py-2.5 rounded-xl bg-[#ED1025] hover:bg-[#D90D20] text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-[#ED1025]/30 transition-colors cursor-pointer"
             >
               <Save className="w-4 h-4" />
               <span>লোগো ও ব্র্যান্ডিং সেভ করুন (Save Branding)</span>

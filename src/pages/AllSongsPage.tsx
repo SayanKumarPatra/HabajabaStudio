@@ -51,12 +51,12 @@ export const AllSongsPage: React.FC<AllSongsPageProps> = ({
   return (
     <div className="space-y-5 pb-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#EAEAEA]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-white/10">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#171717]">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
             All Songs
           </h1>
-          <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 font-medium font-bengali">
+          <p className="text-xs sm:text-sm text-neutral-400 mt-0.5 font-medium font-bengali">
             {filteredTracks.length} প্রকাশিত গান · Original Bengali Audio Tracks
           </p>
         </div>
@@ -67,7 +67,7 @@ export const AllSongsPage: React.FC<AllSongsPageProps> = ({
             <>
               <button
                 onClick={handlePlayAll}
-                className="min-h-[42px] px-5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-xs transition-all"
+                className="min-h-[42px] px-5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-md shadow-[#ED1025]/25 active:scale-95 transition-all cursor-pointer"
               >
                 <Play className="w-4 h-4 fill-current translate-x-0.5" />
                 <span>Play All</span>
@@ -75,7 +75,7 @@ export const AllSongsPage: React.FC<AllSongsPageProps> = ({
 
               <button
                 onClick={handleShuffle}
-                className="min-h-[42px] px-4 rounded-full bg-neutral-100 hover:bg-neutral-200 text-[#171717] font-semibold text-xs sm:text-sm flex items-center gap-1.5 border border-[#EAEAEA] transition-colors"
+                className="min-h-[42px] px-4 rounded-full bg-white/10 hover:bg-white/15 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 border border-white/15 backdrop-blur-md transition-colors cursor-pointer active:scale-95"
               >
                 <Shuffle className="w-4 h-4" />
                 <span className="hidden xs:inline">Shuffle</span>
@@ -90,15 +90,15 @@ export const AllSongsPage: React.FC<AllSongsPageProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
           {/* Genre Filter Tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-            <Filter className="w-3.5 h-3.5 text-[#6B7280] mr-1 shrink-0" />
+            <Filter className="w-3.5 h-3.5 text-neutral-400 mr-1 shrink-0" />
             {genres.map((genre) => (
               <button
                 key={genre}
                 onClick={() => setSelectedGenre(genre)}
-                className={`px-3 py-1.5 rounded-full font-medium transition-colors whitespace-nowrap shrink-0 ${
+                className={`px-3 py-1.5 rounded-full font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   selectedGenre === genre
-                    ? 'bg-[#171717] text-white'
-                    : 'bg-neutral-100 text-[#6B7280] hover:text-[#171717] hover:bg-neutral-200/70'
+                    ? 'bg-[#ED1025] text-white shadow-xs'
+                    : 'bg-white/10 text-neutral-300 hover:text-white hover:bg-white/15 border border-white/10'
                 }`}
               >
                 {genre}
@@ -108,16 +108,16 @@ export const AllSongsPage: React.FC<AllSongsPageProps> = ({
 
           {/* Sort Select */}
           <div className="flex items-center gap-2 shrink-0">
-            <ArrowUpDown className="w-3.5 h-3.5 text-[#6B7280]" />
+            <ArrowUpDown className="w-3.5 h-3.5 text-neutral-400" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="text-xs bg-white border border-[#EAEAEA] rounded-lg px-2.5 py-1.5 text-[#171717] focus:outline-hidden focus:border-[#ED1025]"
+              className="text-xs bg-neutral-900 border border-white/15 rounded-lg px-2.5 py-1.5 text-white focus:outline-hidden focus:border-[#ED1025] cursor-pointer"
               aria-label="Sort tracks"
             >
-              <option value="newest">Newest Releases</option>
-              <option value="title">Title (A-Z)</option>
-              <option value="artist">Artist Name</option>
+              <option value="newest" className="bg-neutral-900 text-white">Newest Releases</option>
+              <option value="title" className="bg-neutral-900 text-white">Title (A-Z)</option>
+              <option value="artist" className="bg-neutral-900 text-white">Artist Name</option>
             </select>
           </div>
         </div>
@@ -125,7 +125,7 @@ export const AllSongsPage: React.FC<AllSongsPageProps> = ({
 
       {/* Song List */}
       {filteredTracks.length > 0 ? (
-        <div className="bg-white rounded-2xl border border-[#EAEAEA] divide-y divide-[#EAEAEA] overflow-hidden shadow-xs">
+        <div className="bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden shadow-xl">
           {filteredTracks.map((track, idx) => (
             <SongRow
               key={track.id}
@@ -143,11 +143,11 @@ export const AllSongsPage: React.FC<AllSongsPageProps> = ({
           ))}
         </div>
       ) : (
-        <div className="p-10 text-center bg-neutral-50 rounded-2xl border border-dashed border-[#EAEAEA] space-y-2">
-          <p className="text-sm font-semibold text-[#171717]">
+        <div className="p-10 text-center bg-black/40 backdrop-blur-xl rounded-2xl border border-dashed border-white/15 space-y-2">
+          <p className="text-sm font-semibold text-white">
             শীঘ্রই নতুন গান প্রকাশিত হচ্ছে (New Tracks Coming Soon)
           </p>
-          <p className="text-xs text-[#6B7280] max-w-sm mx-auto font-bengali">
+          <p className="text-xs text-neutral-300 max-w-sm mx-auto font-bengali">
             হ্যাবাজ্যাবা স্টুডিও লাইভের নতুন অরিজিনাল মাস্টার্স প্রস্তুতি চলছে। সাথেই থাকুন।
           </p>
         </div>

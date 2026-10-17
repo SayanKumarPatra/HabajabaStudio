@@ -7,7 +7,6 @@ import {
   Check,
   Play,
   Loader2,
-  ExternalLink,
   Music,
 } from 'lucide-react';
 import { analyzeAudioUrl, testAudioStreamability } from '../utils/dropbox';
@@ -60,97 +59,98 @@ export const DropboxGuideModal: React.FC<DropboxGuideModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150"
       role="dialog"
       aria-modal="true"
       aria-label="Dropbox Music Guide and URL Validator"
     >
-      <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-[#EAEAEA] overflow-hidden my-6">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EAEAEA] bg-neutral-50/70">
+      <div className="bg-[#10121A]/95 backdrop-blur-2xl rounded-2xl max-w-xl w-full shadow-2xl border border-white/15 overflow-hidden my-4 text-white">
+        {/* Modal Header - Compact & Tight */}
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10 bg-white/[0.03]">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#ED1025]/10 flex items-center justify-center text-[#ED1025]">
-              <Music className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-[#ED1025]/20 flex items-center justify-center text-[#ED1025]">
+              <Music className="w-3.5 h-3.5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-[#171717]">
-                Dropbox Audio Integration & Music Management Guide
+              <h3 className="text-xs sm:text-sm font-bold text-white">
+                Dropbox Audio &amp; Music Guide
               </h3>
-              <p className="text-[11px] text-[#6B7280]">
-                Habajaba Studio LIVE Centralized Music Configuration
+              <p className="text-[10px] text-neutral-400">
+                Habajaba Studio Centralized Audio Stream Validator
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full hover:bg-neutral-200/80 flex items-center justify-center text-[#6B7280] hover:text-[#171717] transition-colors"
+            className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center text-neutral-400 hover:text-white transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Modal Body */}
-        <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto text-[#171717]">
+        {/* Modal Body - Tight Spacing & Glass Style */}
+        <div className="p-3.5 sm:p-4 space-y-3 max-h-[75vh] overflow-y-auto text-xs">
           {/* Section 1: Live Interactive Dropbox URL Tester */}
-          <div className="p-4 rounded-xl bg-neutral-50 border border-[#EAEAEA] space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#171717] flex items-center gap-1.5">
-              <span>Test & Convert Your Dropbox Audio URL</span>
+          <div className="p-3 rounded-xl bg-white/[0.04] border border-white/10 space-y-2">
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#ED1025] flex items-center gap-1.5">
+              <span>Test &amp; Convert Dropbox Audio URL</span>
             </h4>
-            <p className="text-xs text-[#6B7280]">
-              Paste any Dropbox share link (e.g.{' '}
-              <code className="text-[#171717] bg-white px-1 py-0.5 rounded border border-[#EAEAEA]">
+
+            <p className="text-[11px] text-neutral-300 leading-snug">
+              Paste your Dropbox share link (e.g.{' '}
+              <code className="text-white bg-black/40 px-1 py-0.5 rounded border border-white/10 font-mono text-[10px]">
                 https://www.dropbox.com/s/.../song.mp3?dl=0
               </code>
-              ). This tool converts it into a browser streamable URL and checks HTML5 audio compatibility.
+              ). We will convert and test HTML5 direct streamability.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 pt-0.5">
               <input
                 type="url"
                 value={testUrl}
                 onChange={(e) => setTestUrl(e.target.value)}
-                placeholder="https://www.dropbox.com/scl/fi/... or direct audio link"
-                className="flex-1 text-xs px-3 py-2.5 rounded-lg border border-[#EAEAEA] focus:border-[#ED1025] focus:outline-hidden bg-white"
+                placeholder="Paste Dropbox audio link..."
+                className="flex-1 text-xs px-3 py-2 rounded-lg border border-white/15 focus:border-[#ED1025] focus:outline-hidden bg-black/50 text-white placeholder-neutral-500"
               />
               <button
                 onClick={handleTest}
                 disabled={isTesting || !testUrl.trim()}
-                className="px-4 py-2.5 text-xs font-semibold rounded-lg bg-[#ED1025] hover:bg-[#D90D20] text-white flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors shrink-0"
+                className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-[#ED1025] hover:bg-[#D90D20] text-white flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors shrink-0 cursor-pointer shadow-xs"
               >
                 {isTesting ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Verifying...</span>
+                    <span>Testing...</span>
                   </>
                 ) : (
                   <>
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Test Audio Stream</span>
+                    <Play className="w-3 h-3 fill-current" />
+                    <span>Validate Stream</span>
                   </>
                 )}
               </button>
             </div>
 
-            {/* Test Results Display */}
+            {/* Test Results */}
             {testResult && (
               <div
-                className={`p-3.5 rounded-lg border text-xs space-y-2 ${
+                className={`p-2.5 rounded-lg border text-xs space-y-1.5 ${
                   testResult.success
-                    ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
-                    : 'bg-amber-50/80 border-amber-200 text-amber-900'
+                    ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-200'
+                    : 'bg-amber-950/40 border-amber-500/30 text-amber-200'
                 }`}
               >
                 <div className="flex items-start gap-2">
                   {testResult.success ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                   ) : (
-                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                   )}
                   <div className="flex-1">
-                    <p className="font-semibold">{testResult.message}</p>
+                    <p className="font-semibold text-xs">{testResult.message}</p>
                     {testResult.duration && (
-                      <p className="text-[11px] opacity-80 mt-0.5">
-                        Detected Duration: {Math.floor(testResult.duration / 60)}m{' '}
+                      <p className="text-[10px] opacity-80 mt-0.5">
+                        Duration: {Math.floor(testResult.duration / 60)}m{' '}
                         {Math.floor(testResult.duration % 60)}s
                       </p>
                     )}
@@ -158,23 +158,23 @@ export const DropboxGuideModal: React.FC<DropboxGuideModalProps> = ({
                 </div>
 
                 {testResult.convertedUrl && (
-                  <div className="pt-2 border-t border-black/10 flex items-center justify-between gap-2">
-                    <span className="font-mono text-[10px] truncate max-w-[80%] text-neutral-700 bg-white/70 px-2 py-1 rounded">
+                  <div className="pt-1.5 border-t border-white/10 flex items-center justify-between gap-2">
+                    <span className="font-mono text-[10px] truncate max-w-[70%] text-neutral-300 bg-black/40 px-2 py-0.5 rounded border border-white/10">
                       {testResult.convertedUrl}
                     </span>
                     <button
                       onClick={handleCopyConverted}
-                      className="px-2.5 py-1 text-[11px] font-semibold bg-white border border-black/10 rounded hover:bg-neutral-100 flex items-center gap-1 shrink-0"
+                      className="px-2 py-1 text-[10px] font-semibold bg-white/10 hover:bg-white/20 border border-white/15 rounded flex items-center gap-1 shrink-0 text-white cursor-pointer"
                     >
                       {copied ? (
                         <>
-                          <Check className="w-3 h-3 text-emerald-600" />
-                          <span>Copied</span>
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span>Copied!</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-3 h-3" />
-                          <span>Copy for music.json</span>
+                          <span>Copy URL</span>
                         </>
                       )}
                     </button>
@@ -184,86 +184,47 @@ export const DropboxGuideModal: React.FC<DropboxGuideModalProps> = ({
             )}
           </div>
 
-          {/* Section 2: 8-Step Release Workflow */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#171717]">
-              Step-by-Step Music Publishing Workflow
+          {/* Section 2: Step-by-Step Music Publishing - Compact Grid */}
+          <div className="space-y-1.5">
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-neutral-300">
+              Quick Publishing Steps
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-              <div className="p-3 rounded-lg border border-[#EAEAEA] bg-white">
-                <span className="font-bold text-[#ED1025] block mb-1">01. Upload to Dropbox</span>
-                <p className="text-[#6B7280]">
-                  Upload your authorized MP3/WAV file into your Dropbox account.
-                </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
+              <div className="p-2 rounded-lg border border-white/10 bg-white/[0.03]">
+                <span className="font-bold text-[#ED1025] block mb-0.5">01. Upload to Dropbox</span>
+                <p className="text-neutral-400">Upload your authorized audio file (MP3/WAV).</p>
               </div>
 
-              <div className="p-3 rounded-lg border border-[#EAEAEA] bg-white">
-                <span className="font-bold text-[#ED1025] block mb-1">02. Create Shared Link</span>
-                <p className="text-[#6B7280]">
-                  Right-click the file &rarr; Share &rarr; Set permissions to "Anyone with the link can view".
-                </p>
+              <div className="p-2 rounded-lg border border-white/10 bg-white/[0.03]">
+                <span className="font-bold text-[#ED1025] block mb-0.5">02. Shareable Link</span>
+                <p className="text-neutral-400">Right click &rarr; Share &rarr; Anyone with link can view.</p>
               </div>
 
-              <div className="p-3 rounded-lg border border-[#EAEAEA] bg-white">
-                <span className="font-bold text-[#ED1025] block mb-1">03. Convert / Verify Link</span>
-                <p className="text-[#6B7280]">
-                  Use the validator above or replace <code className="text-[#ED1025]">dl=0</code> with <code className="text-[#ED1025]">raw=1</code>.
-                </p>
+              <div className="p-2 rounded-lg border border-white/10 bg-white/[0.03]">
+                <span className="font-bold text-[#ED1025] block mb-0.5">03. Convert Link</span>
+                <p className="text-neutral-400">Replace <code className="text-[#ED1025]">dl=0</code> with <code className="text-[#ED1025]">raw=1</code> or test above.</p>
               </div>
 
-              <div className="p-3 rounded-lg border border-[#EAEAEA] bg-white">
-                <span className="font-bold text-[#ED1025] block mb-1">04. Update music.json</span>
-                <p className="text-[#6B7280]">
-                  Add track entry with title, artist, album, and playable audio URL to <code className="text-[#171717]">src/data/music.json</code>.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-lg border border-[#EAEAEA] bg-white">
-                <span className="font-bold text-[#ED1025] block mb-1">05. Add Artwork</span>
-                <p className="text-[#6B7280]">
-                  Place artwork in <code className="text-[#171717]">public/covers/</code> or provide a direct image URL.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-lg border border-[#EAEAEA] bg-white">
-                <span className="font-bold text-[#ED1025] block mb-1">06. Add to Album / Playlist</span>
-                <p className="text-[#6B7280]">
-                  Include the track id in the corresponding album or playlist <code className="text-[#171717]">trackIds</code> array.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-lg border border-[#EAEAEA] bg-white">
-                <span className="font-bold text-[#ED1025] block mb-1">07. Set Published</span>
-                <p className="text-[#6B7280]">
-                  Ensure <code className="text-[#171717]">"published": true</code> so it appears across all sections.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-lg border border-[#EAEAEA] bg-white">
-                <span className="font-bold text-[#ED1025] block mb-1">08. Deploy to Vercel</span>
-                <p className="text-[#6B7280]">
-                  Run <code className="text-[#171717]">git push</code>. Vercel automatically redeploys your updated catalog!
-                </p>
+              <div className="p-2 rounded-lg border border-white/10 bg-white/[0.03]">
+                <span className="font-bold text-[#ED1025] block mb-0.5">04. Update Catalog</span>
+                <p className="text-neutral-400">Use Admin Songs tab to add song details &amp; audio link.</p>
               </div>
             </div>
           </div>
 
-          {/* Section 3: Technical Note on Dropbox Streaming */}
-          <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 text-xs text-blue-900 space-y-1.5">
-            <p className="font-semibold flex items-center gap-1.5">
-              <span>Why Dropbox Links Require Formatting</span>
-            </p>
-            <p className="text-blue-800 leading-relaxed">
-              Standard Dropbox shared links return an interactive web preview page rather than the raw MP3 audio stream. The Habajaba Studio player automatically converts Dropbox URLs using the direct content server (<code className="font-mono">dl.dropboxusercontent.com</code>) with <code className="font-mono">raw=1</code>.
+          {/* Technical Note */}
+          <div className="p-2.5 rounded-lg bg-blue-950/30 border border-blue-500/20 text-[11px] text-blue-200">
+            <p className="leading-snug">
+              <span className="font-bold text-white">Direct Stream Info:</span> Habajaba Studio player automatically rewrites Dropbox URLs using <code className="text-white font-mono">dl.dropboxusercontent.com</code> with <code className="text-white font-mono">raw=1</code> for seamless background playback.
             </p>
           </div>
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3.5 border-t border-[#EAEAEA] bg-neutral-50/80 flex justify-end">
+        <div className="px-4 py-2.5 border-t border-white/10 bg-white/[0.02] flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold rounded-lg bg-[#171717] text-white hover:bg-neutral-800 transition-colors"
+            className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-white/10 text-white hover:bg-white/20 border border-white/10 transition-colors cursor-pointer"
           >
             Close Guide
           </button>

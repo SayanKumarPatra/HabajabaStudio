@@ -18,6 +18,7 @@ import { FavoritesPage } from './pages/FavoritesPage';
 import { AlbumDetailsPage } from './pages/AlbumDetailsPage';
 import { AdminPage } from './pages/AdminPage';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { ScrollingNoticeTicker } from './components/ScrollingNoticeTicker';
 
 function AppContent() {
   const { currentTrack } = useAudio();
@@ -226,12 +227,13 @@ function AppContent() {
     : 'pb-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:pb-8';
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-br from-[#FAFAF9] via-[#FFF8F8] to-[#FBF5F7] flex flex-col text-[#171717] overflow-x-hidden relative">
-      {/* Subtle Floating Ambient Light Orbs (Non-white gentle motion) */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
-        <div className="absolute -top-20 -left-20 w-80 sm:w-[500px] h-80 sm:h-[500px] bg-red-500/10 rounded-full blur-[90px] animate-ambient-1" />
-        <div className="absolute top-1/3 -right-20 w-72 sm:w-[460px] h-72 sm:h-[460px] bg-amber-400/10 rounded-full blur-[100px] animate-ambient-2" />
-        <div className="absolute -bottom-20 left-1/4 w-80 sm:w-[480px] h-80 sm:h-[480px] bg-rose-400/10 rounded-full blur-[110px] animate-ambient-1" />
+    <div className="mesh-gradient-container flex flex-col text-white overflow-x-hidden relative">
+      {/* Background Animated Mesh Gradient Layer ONLY on page background */}
+      <div className="mesh-gradient-layer" aria-hidden="true">
+        <div className="mesh-orb-1" />
+        <div className="mesh-orb-2" />
+        <div className="mesh-orb-3" />
+        <div className="mesh-orb-4" />
       </div>
 
       {/* Top Application Header */}
@@ -240,11 +242,15 @@ function AppContent() {
         onNavigate={handleNavigate}
       />
 
+      {/* Scrolling Announcement Marquee Notice directly below the red header ribbon */}
+      <ScrollingNoticeTicker />
+
       {/* Network & Offline Cache Status Indicator */}
       <OfflineIndicator />
 
       {/* Main Content Area */}
-      <main className={`flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 pt-2.5 sm:pt-5 ${contentBottomPadding}`}>
+      <main className={`flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 pt-2.5 sm:pt-5 relative z-10 ${contentBottomPadding}`}>
+
         {currentTab === 'home' && (
           <HomePage
             onNavigate={handleNavigate}
@@ -307,16 +313,16 @@ function AppContent() {
       </main>
 
       {/* Rich Footer with Descriptions, Copyright & Discreet Admin Access */}
-      <footer className="border-t border-[#EAEAEA] bg-neutral-50/90 py-6 px-4 text-xs text-[#6B7280]">
+      <footer className="border-t border-neutral-800/80 bg-[#101116]/95 py-6 px-4 text-xs text-neutral-400 relative z-10">
         <div className="max-w-7xl mx-auto space-y-4">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-[#ED1025] tracking-tight">HabaJaba Studio LIVE</span>
-                <span className="text-[#9CA3AF]">·</span>
-                <span className="font-bold text-[#171717] font-bengali">অরিজিনাল বাংলা মিউজিক প্ল্যাটফর্ম</span>
+                <span className="text-neutral-600">·</span>
+                <span className="font-bold text-white font-bengali">অরিজিনাল বাংলা মিউজিক প্ল্যাটফর্ম</span>
               </div>
-              <p className="text-[11px] text-[#6B7280] max-w-xl font-bengali leading-relaxed">
+              <p className="text-[11px] text-neutral-400 max-w-xl font-bengali leading-relaxed">
                 লাইভ অ্যাকোস্টিক সেশন, স্টুডিও মাস্টার্স ও অরিজিনাল বাংলা গানের ডিজিটাল হোম। সকল অডিও ড্রপবক্স ডিরেক্ট স্ট্রিমিং এবং ফায়ারবেস রিয়েল-টাইম ক্লাউড সিঙ্ক দ্বারা পরিচালিত।
               </p>
             </div>
@@ -324,32 +330,32 @@ function AppContent() {
             <div className="flex flex-wrap items-center gap-2.5 text-[11px]">
               <button
                 onClick={() => handleNavigate('songs')}
-                className="hover:text-[#ED1025] transition-colors"
+                className="hover:text-[#ED1025] text-neutral-300 transition-colors cursor-pointer"
               >
                 All Songs
               </button>
-              <span className="text-neutral-300">·</span>
+              <span className="text-neutral-600">·</span>
               <button
                 onClick={() => handleNavigate('artists')}
-                className="hover:text-[#ED1025] transition-colors"
+                className="hover:text-[#ED1025] text-neutral-300 transition-colors cursor-pointer"
               >
                 Artists
               </button>
-              <span className="text-neutral-300">·</span>
+              <span className="text-neutral-600">·</span>
               <button
                 onClick={() => handleNavigate('playlists')}
-                className="hover:text-[#ED1025] transition-colors"
+                className="hover:text-[#ED1025] text-neutral-300 transition-colors cursor-pointer"
               >
                 Playlists
               </button>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-neutral-200/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#6B7280]">
+          <div className="pt-3 border-t border-neutral-800/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-neutral-400">
             <div className="flex items-center gap-1">
               <span
                 onClick={() => handleNavigate('admin')}
-                className="cursor-pointer select-none hover:text-[#ED1025] transition-colors p-1 -m-1 font-bold text-[#4B5563]"
+                className="cursor-pointer select-none hover:text-[#ED1025] transition-colors p-1 -m-1 font-bold text-neutral-300"
                 title=""
                 aria-label="Copyright"
               >
@@ -358,14 +364,15 @@ function AppContent() {
               <span>{new Date().getFullYear()} Habajaba Studio LIVE. All rights reserved.</span>
             </div>
 
-            <div className="flex items-center gap-2 text-[#9CA3AF]">
+            <div className="flex items-center gap-2 text-neutral-500">
               <span>Digital Acoustic Master</span>
-              <span className="text-neutral-300">·</span>
+              <span className="text-neutral-700">·</span>
               <span>High-Fidelity Bengali Audio</span>
             </div>
           </div>
         </div>
       </footer>
+
 
       {/* Persistent Mini Player */}
       <MiniPlayer />

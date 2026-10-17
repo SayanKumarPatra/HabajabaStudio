@@ -78,15 +78,15 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
         {/* Back Button */}
         <button
           onClick={() => onSelectArtist(null)}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6B7280] hover:text-[#171717] transition-colors py-1 px-2 rounded-lg hover:bg-neutral-100"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-300 hover:text-white transition-colors py-1.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to All Artists</span>
         </button>
 
-        {/* Artist Hero Header - Clean White & Red (No Black Box) */}
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white border border-[#EAEAEA] shadow-xs">
-          <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-neutral-100 border-2 border-[#ED1025]/20 shrink-0 shadow-xs flex items-center justify-center">
+        {/* Artist Hero Header - Dark Glassmorphism */}
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-xl">
+          <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-neutral-900 border-2 border-[#ED1025]/40 shrink-0 shadow-lg flex items-center justify-center">
             {activeArtist.avatarUrl ? (
               <CoverImage
                 src={activeArtist.avatarUrl}
@@ -106,13 +106,13 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
             <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-bold text-[#ED1025]">
               Featured Vocalist
             </span>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-[#171717]">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white">
               {activeArtist.name}
             </h1>
-            <p className="text-xs sm:text-sm text-[#6B7280] max-w-xl font-medium line-clamp-2">
+            <p className="text-xs sm:text-sm text-neutral-300 max-w-xl font-medium line-clamp-2">
               {activeArtist.bio}
             </p>
-            <div className="flex items-center justify-center sm:justify-start gap-2 text-xs text-[#6B7280] pt-0.5 font-mono">
+            <div className="flex items-center justify-center sm:justify-start gap-2 text-xs text-neutral-400 pt-0.5 font-mono">
               <span>{artistTracks.length} Published Tracks</span>
               {artistAlbums.length > 0 && (
                 <>
@@ -126,7 +126,7 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
               {artistTracks.length > 0 && (
                 <button
                   onClick={handlePlayArtistTracks}
-                  className="min-h-[40px] px-5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-sm shadow-[#ED1025]/25 active:scale-95 transition-all cursor-pointer"
+                  className="min-h-[40px] px-5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-md shadow-[#ED1025]/25 active:scale-95 transition-all cursor-pointer"
                 >
                   <Play className="w-3.5 h-3.5 fill-current translate-x-0.5" />
                   <span>Play All Tracks</span>
@@ -138,9 +138,9 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
                   href={activeArtist.youtubeUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="min-h-[40px] px-4 rounded-full bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="min-h-[40px] px-4 rounded-full bg-red-500/20 hover:bg-red-500/30 text-red-200 border border-red-500/30 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <Youtube className="w-4 h-4 fill-current" />
+                  <Youtube className="w-4 h-4 fill-current text-[#ED1025]" />
                   <span>YouTube Channel</span>
                   <ExternalLink className="w-3 h-3 opacity-70" />
                 </a>
@@ -151,11 +151,11 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
 
         {/* Artist Songs */}
         <div className="space-y-3">
-          <h3 className="text-base sm:text-lg font-bold text-[#171717]">
+          <h3 className="text-base sm:text-lg font-bold text-white">
             Songs by {activeArtist.name}
           </h3>
           {artistTracks.length > 0 ? (
-            <div className="bg-white rounded-2xl border border-[#EAEAEA] divide-y divide-[#EAEAEA] overflow-hidden shadow-xs">
+            <div className="bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden shadow-xl">
               {artistTracks.map((track, idx) => (
                 <SongRow
                   key={track.id}
@@ -172,7 +172,7 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
               ))}
             </div>
           ) : (
-            <div className="p-8 text-center bg-neutral-50 rounded-2xl border border-[#EAEAEA] text-xs text-[#6B7280]">
+            <div className="p-8 text-center bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 text-xs text-neutral-400">
               No tracks published for this artist yet.
             </div>
           )}
@@ -181,7 +181,7 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
         {/* Artist Albums if any */}
         {artistAlbums.length > 0 && (
           <div className="space-y-3 pt-3">
-            <h3 className="text-base sm:text-lg font-bold text-[#171717]">
+            <h3 className="text-base sm:text-lg font-bold text-white">
               Albums by {activeArtist.name}
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -204,25 +204,25 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
   return (
     <div className="space-y-6 pb-6">
       {/* Header with Search */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#EAEAEA]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-white/10">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#171717]">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
             Artists & Vocalists
           </h1>
-          <p className="text-xs sm:text-sm text-[#6B7280] mt-1 font-medium font-bengali">
+          <p className="text-xs sm:text-sm text-neutral-400 mt-1 font-medium font-bengali">
             হবজব স্টুডিও লাইভ এর শিল্পী ও কলাকুশলীবৃন্দ
           </p>
         </div>
 
         {/* Search Filter */}
         <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 text-[#6B7280] absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search artists..."
-            className="w-full text-xs pl-9 pr-3 py-2 rounded-xl border border-[#EAEAEA] focus:border-[#ED1025] focus:outline-hidden bg-white"
+            className="w-full text-xs pl-9 pr-3 py-2 rounded-xl border border-white/15 focus:border-[#ED1025] focus:outline-hidden bg-black/40 text-white placeholder-neutral-400 backdrop-blur-md"
           />
         </div>
       </div>
@@ -239,9 +239,9 @@ export const ArtistsPage: React.FC<ArtistsPageProps> = ({
           ))}
         </div>
       ) : (
-        <div className="p-12 text-center bg-neutral-50 rounded-2xl border border-dashed border-[#EAEAEA]">
-          <p className="text-sm font-semibold text-[#171717]">No artists found</p>
-          <p className="text-xs text-[#6B7280] mt-1">
+        <div className="p-12 text-center bg-black/40 backdrop-blur-xl rounded-2xl border border-dashed border-white/15">
+          <p className="text-sm font-semibold text-white">No artists found</p>
+          <p className="text-xs text-neutral-400 mt-1">
             Try searching with a different name.
           </p>
         </div>

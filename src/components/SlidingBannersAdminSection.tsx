@@ -38,11 +38,29 @@ export const SlidingBannersAdminSection: React.FC = () => {
     }));
 
     try {
-      // 16:9 widescreen format optimization
+      // Fast local preview immediately
+      const instantPreviewUrl = URL.createObjectURL(file);
+      const preliminary = [...banners];
+      if (!preliminary[index]) {
+        preliminary[index] = {
+          id: `slide-${index + 1}`,
+          imageUrl: instantPreviewUrl,
+          title: `Habajaba Studio Banner ${index + 1}`,
+        };
+      } else {
+        preliminary[index] = {
+          ...preliminary[index],
+          imageUrl: instantPreviewUrl,
+        };
+      }
+      setBanners(preliminary);
+
+      // Fast HD 16:9 widescreen format optimization (720p HD, instant processing)
       const result = await uploadImageToCloud(file, 'banners', {
-        maxWidth: 1920,
-        maxHeight: 1080,
-        quality: 0.9,
+        maxWidth: 1280,
+        maxHeight: 720,
+        quality: 0.82,
+        format: 'image/jpeg',
       });
 
       const updated = [...banners];
@@ -65,13 +83,13 @@ export const SlidingBannersAdminSection: React.FC = () => {
       setUploadStatus((prev) => ({
         ...prev,
         [index]: result.isCloudStorage
-          ? 'Firebase Cloud Storage-এ আপলোড সম্পন্ন!'
-          : 'লোকাল অপ্টিমাইজড সেভ সম্পন্ন!',
+          ? 'Firebase Cloud Storage-এ সংরক্ষিত ও লাইভ!'
+          : 'অপ্টিমাইজড ব্যানার ইমেজ সফলভাবে লাইভ!',
       }));
 
       setSavedAlert({
         show: true,
-        message: `ব্যানার #${index + 1} সফলভাবে ক্লাউড স্টোরেজে সেভ ও লাইভ আপডেট হয়েছে!`,
+        message: `ব্যানার #${index + 1} সফলভাবে সংরক্ষিত ও লাইভ আপডেট হয়েছে!`,
       });
       setTimeout(() => setSavedAlert({ show: false, message: '' }), 4000);
     } catch (err) {
@@ -80,6 +98,7 @@ export const SlidingBannersAdminSection: React.FC = () => {
     } finally {
       setUploadingIndex(null);
     }
+
   };
 
   const handleResetToDefaults = async () => {
@@ -98,14 +117,14 @@ export const SlidingBannersAdminSection: React.FC = () => {
   const slots = [0, 1, 2, 3];
 
   return (
-    <div className="bg-white rounded-2xl border border-[#EAEAEA] p-5 shadow-xs space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#EAEAEA]">
+    <div className="bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 p-5 shadow-xl space-y-5 text-white">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
         <div>
-          <h3 className="text-base sm:text-lg font-black text-[#171717] flex items-center gap-2">
+          <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
             <Sliders className="w-5 h-5 text-[#ED1025]" />
             <span>হোমপেজ ৪টি স্লাইডিং ব্যানার ম্যানেজার (Sliding 16:9 Banners)</span>
           </h3>
-          <p className="text-xs text-[#6B7280] mt-1 font-bengali">
+          <p className="text-xs text-neutral-400 mt-1 font-bengali">
             এখানে আপনার পছন্দের ৪টি ব্যানার ছবি সরাসরি আপলোড করুন। হোমপেজে কোনো টেক্সট বা প্লে বাটন ছাড়া নিখুঁত ১৬:৯ রেশিওতে ব্যানারগুলো স্লাইড করবে।
           </p>
         </div>
@@ -113,7 +132,7 @@ export const SlidingBannersAdminSection: React.FC = () => {
         <button
           type="button"
           onClick={handleResetToDefaults}
-          className="px-3 py-1.5 rounded-lg border border-neutral-300 hover:bg-neutral-100 text-xs font-semibold text-neutral-600 flex items-center gap-1.5 transition-colors shrink-0"
+          className="px-3.5 py-1.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-xs font-semibold text-neutral-300 hover:text-white flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>ডিফল্ট ব্যানারে ফিরুন</span>
@@ -121,8 +140,8 @@ export const SlidingBannersAdminSection: React.FC = () => {
       </div>
 
       {savedAlert.show && (
-        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 animate-in fade-in">
-          <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+        <div className="p-3.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+          <Check className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{savedAlert.message}</span>
         </div>
       )}
@@ -137,21 +156,21 @@ export const SlidingBannersAdminSection: React.FC = () => {
           return (
             <div
               key={slotIndex}
-              className="p-4 rounded-2xl bg-neutral-50 border border-[#EAEAEA] space-y-3 flex flex-col justify-between"
+              className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 space-y-3 flex flex-col justify-between"
             >
               {/* Slot Header */}
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#171717] flex items-center gap-1.5">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
                   <span className="w-5 h-5 rounded-full bg-[#ED1025] text-white text-[11px] font-mono flex items-center justify-center">
                     {slotIndex + 1}
                   </span>
                   <span>স্লাইডিং ব্যানার স্লট #{slotIndex + 1}</span>
                 </span>
-                <span className="text-[10px] font-mono text-[#6B7280]">১৬:৯ Widescreen</span>
+                <span className="text-[10px] font-mono text-neutral-400">১৬:৯ Widescreen</span>
               </div>
 
               {/* 16:9 Image Preview */}
-              <div className="relative aspect-[16/9] w-full rounded-xl overflow-hidden bg-white border border-neutral-200 shadow-2xs flex items-center justify-center">
+              <div className="relative aspect-[16/9] w-full rounded-xl overflow-hidden bg-black/60 border border-white/15 shadow-md flex items-center justify-center">
                 {currentSlide?.imageUrl ? (
                   <img
                     src={currentSlide.imageUrl}
@@ -170,7 +189,7 @@ export const SlidingBannersAdminSection: React.FC = () => {
                 )}
 
                 {isSlotUploading && (
-                  <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex flex-col items-center justify-center text-white text-xs font-medium gap-2">
+                  <div className="absolute inset-0 bg-black/70 backdrop-blur-xs flex flex-col items-center justify-center text-white text-xs font-medium gap-2">
                     <RefreshCw className="w-5 h-5 animate-spin text-[#ED1025]" />
                     <span>আপলোড হচ্ছে...</span>
                   </div>
@@ -179,8 +198,8 @@ export const SlidingBannersAdminSection: React.FC = () => {
 
               {/* Upload Button */}
               <div className="space-y-1.5 pt-1">
-                <label className="w-full min-h-[38px] px-4 py-2 rounded-xl bg-white hover:bg-neutral-100 text-[#171717] hover:text-[#ED1025] border border-neutral-300 hover:border-[#ED1025] text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-2xs active:scale-95 transition-all">
-                  <Upload className="w-3.5 h-3.5 text-[#ED1025]" />
+                <label className="w-full min-h-[38px] px-4 py-2 rounded-xl bg-white/10 hover:bg-[#ED1025] text-white border border-white/15 hover:border-[#ED1025] text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95 transition-all">
+                  <Upload className="w-3.5 h-3.5 text-white" />
                   <span>
                     {isSlotUploading ? 'আপলোড হচ্ছে...' : `ব্যানার #${slotIndex + 1} ছবি নির্বাচন করুন`}
                   </span>

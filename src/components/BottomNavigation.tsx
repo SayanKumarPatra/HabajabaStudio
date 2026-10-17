@@ -25,7 +25,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-2xl border-t border-neutral-200/50 shadow-[0_-8px_32px_rgba(0,0,0,0.07)] pb-[calc(0.35rem+env(safe-area-inset-bottom,0px))]"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#07080A]/85 backdrop-blur-2xl border-t border-white/10 shadow-[0_-8px_32px_rgba(0,0,0,0.6)] pb-[calc(0.35rem+env(safe-area-inset-bottom,0px))]"
       aria-label="Mobile Navigation"
     >
       <div className="grid grid-cols-5 items-center h-16 px-1 max-w-lg mx-auto">
@@ -48,13 +48,13 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
               className={`group min-h-[48px] flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all duration-200 relative select-none cursor-pointer active:scale-90 active:-translate-y-0.5 ${
                 isActive
                   ? 'text-[#ED1025]'
-                  : 'text-[#6B7280] hover:text-[#171717]'
+                  : 'text-neutral-400 hover:text-white'
               }`}
               aria-current={isActive ? 'page' : undefined}
             >
               {/* Glass Pill Backdrop for Active State */}
               {isActive && (
-                <span className="absolute inset-x-1.5 inset-y-1 rounded-xl bg-red-500/10 border border-red-500/20 shadow-xs pointer-events-none transition-all duration-300 animate-in fade-in zoom-in-95" />
+                <span className="absolute inset-x-1.5 inset-y-1 rounded-xl bg-red-500/15 border border-red-500/25 shadow-xs pointer-events-none transition-all duration-300 animate-in fade-in zoom-in-95" />
               )}
 
               {/* Icon with Dynamic Scaling */}
@@ -67,7 +67,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                   }`}
                 />
                 {isActive && (
-                  <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-[#ED1025] ring-2 ring-white shadow-xs" />
+                  <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-[#ED1025] ring-2 ring-black shadow-xs" />
                 )}
               </div>
 
@@ -76,7 +76,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                 className={`text-[10px] tracking-tight mt-0.5 whitespace-nowrap transition-all duration-200 ${
                   isActive
                     ? 'font-bold text-[#ED1025] scale-105'
-                    : 'font-medium text-[#6B7280] group-hover:text-[#171717]'
+                    : 'font-medium text-neutral-400 group-hover:text-white'
                 }`}
               >
                 {item.label}
@@ -86,5 +86,6 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
         })}
       </div>
     </nav>
+
   );
 };

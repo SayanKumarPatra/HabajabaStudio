@@ -40,15 +40,15 @@ export const AlbumDetailsPage: React.FC<AlbumDetailsPageProps> = ({
       {/* Back button */}
       <button
         onClick={onBack}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6B7280] hover:text-[#171717] transition-colors py-1 px-2 rounded-lg hover:bg-neutral-100"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-300 hover:text-white transition-colors py-1.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer"
       >
         <ArrowLeft className="w-4 h-4" />
         <span>Back to Releases</span>
       </button>
 
-      {/* Album Header Hero - Clean White & Red (No Black Box) */}
-      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 p-4 sm:p-6 sm:p-8 rounded-2xl sm:rounded-3xl bg-white border border-[#EAEAEA] shadow-xs">
-        <div className="w-28 h-28 sm:w-40 sm:h-40 rounded-2xl overflow-hidden shadow-xs border border-[#EAEAEA] shrink-0">
+      {/* Album Header Hero - Dark Glassmorphism */}
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 p-4 sm:p-6 sm:p-8 rounded-2xl sm:rounded-3xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-xl">
+        <div className="w-28 h-28 sm:w-40 sm:h-40 rounded-2xl overflow-hidden shadow-md border border-white/15 shrink-0 bg-neutral-900">
           <CoverImage
             src={album.coverUrl}
             alt={album.title}
@@ -65,25 +65,25 @@ export const AlbumDetailsPage: React.FC<AlbumDetailsPageProps> = ({
             </span>
           </div>
 
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-[#171717]">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white">
             {album.title}
           </h1>
 
           <p
             onClick={() => onSelectArtist(album.artist)}
-            className="text-sm font-semibold text-[#6B7280] cursor-pointer hover:text-[#ED1025] hover:underline transition-colors"
+            className="text-sm font-semibold text-neutral-300 cursor-pointer hover:text-[#ED1025] hover:underline transition-colors"
           >
             {album.artist}
           </p>
 
           {album.description && (
-            <p className="text-xs sm:text-sm text-[#6B7280] max-w-xl font-medium line-clamp-2">
+            <p className="text-xs sm:text-sm text-neutral-400 max-w-xl font-medium line-clamp-2">
               {album.description}
             </p>
           )}
 
           {/* Metadata badges (clean unboxed) */}
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 text-xs text-[#6B7280] pt-1 font-medium">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 text-xs text-neutral-400 pt-1 font-medium">
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-[#ED1025]" />
               <span>{album.releaseDate}</span>
@@ -107,7 +107,7 @@ export const AlbumDetailsPage: React.FC<AlbumDetailsPageProps> = ({
             <button
               onClick={handlePlayAll}
               disabled={albumTracks.length === 0}
-              className="min-h-[40px] px-5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-sm shadow-[#ED1025]/25 active:scale-95 disabled:opacity-50 transition-all"
+              className="min-h-[40px] px-5 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-md shadow-[#ED1025]/25 active:scale-95 disabled:opacity-50 transition-all cursor-pointer"
             >
               <Play className="w-3.5 h-3.5 fill-current translate-x-0.5" />
               <span>Play Album</span>
@@ -116,7 +116,7 @@ export const AlbumDetailsPage: React.FC<AlbumDetailsPageProps> = ({
             <button
               onClick={handleShuffle}
               disabled={albumTracks.length === 0}
-              className="min-h-[40px] px-4 rounded-full bg-neutral-100 hover:bg-neutral-200 text-[#171717] font-semibold text-xs sm:text-sm flex items-center gap-1.5 border border-[#EAEAEA] disabled:opacity-50 transition-colors"
+              className="min-h-[40px] px-4 rounded-full bg-white/10 hover:bg-white/15 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 border border-white/15 backdrop-blur-md disabled:opacity-50 transition-colors cursor-pointer"
             >
               <Shuffle className="w-3.5 h-3.5" />
               <span>Shuffle</span>
@@ -127,13 +127,13 @@ export const AlbumDetailsPage: React.FC<AlbumDetailsPageProps> = ({
 
       {/* Album Tracklist */}
       <div className="space-y-3">
-        <h3 className="text-base sm:text-lg font-bold text-[#171717] flex items-center gap-2">
+        <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
           <Disc3 className="w-4 h-4 text-[#ED1025]" />
           <span>Tracklist</span>
         </h3>
 
         {albumTracks.length > 0 ? (
-          <div className="bg-white rounded-2xl border border-[#EAEAEA] divide-y divide-[#EAEAEA] overflow-hidden shadow-xs">
+          <div className="bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 divide-y divide-white/10 overflow-hidden shadow-xl">
             {albumTracks.map((track, idx) => (
               <SongRow
                 key={track.id}
@@ -151,7 +151,7 @@ export const AlbumDetailsPage: React.FC<AlbumDetailsPageProps> = ({
             ))}
           </div>
         ) : (
-          <div className="p-8 text-center bg-neutral-50 rounded-2xl border border-[#EAEAEA] text-xs text-[#6B7280]">
+          <div className="p-8 text-center bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 text-xs text-neutral-400">
             No tracks in this album yet.
           </div>
         )}

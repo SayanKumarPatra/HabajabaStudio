@@ -28,11 +28,11 @@ export const AlbumCarousel: React.FC<AlbumCarouselProps> = ({
       {/* Header with Title and Scroll Controls */}
       <div className="flex items-end justify-between mb-3 px-1">
         <div>
-          <h3 className="text-base sm:text-lg font-bold tracking-tight text-[#171717]">
+          <h3 className="text-base sm:text-lg font-bold tracking-tight text-white">
             {title}
           </h3>
           {subtitle && (
-            <p className="text-xs text-[#6B7280] mt-0.5 font-medium">{subtitle}</p>
+            <p className="text-xs text-neutral-400 mt-0.5 font-medium">{subtitle}</p>
           )}
         </div>
 
@@ -40,7 +40,7 @@ export const AlbumCarousel: React.FC<AlbumCarouselProps> = ({
           {onViewAll && (
             <button
               onClick={onViewAll}
-              className="text-xs font-semibold text-[#ED1025] hover:underline mr-2 py-1 px-2"
+              className="text-xs font-semibold text-[#ED1025] hover:underline mr-2 py-1 px-2 cursor-pointer"
             >
               See All
             </button>
@@ -49,7 +49,7 @@ export const AlbumCarousel: React.FC<AlbumCarouselProps> = ({
           <div className="hidden sm:flex items-center gap-1">
             <button
               onClick={() => scroll('left')}
-              className="w-8 h-8 rounded-full border border-[#EAEAEA] bg-white hover:bg-neutral-50 flex items-center justify-center text-[#171717] transition-colors"
+              className="w-8 h-8 rounded-full border border-white/10 bg-black/40 backdrop-blur-md hover:bg-white/10 flex items-center justify-center text-white transition-colors cursor-pointer"
               title="Scroll left"
               aria-label="Previous items"
             >
@@ -57,7 +57,7 @@ export const AlbumCarousel: React.FC<AlbumCarouselProps> = ({
             </button>
             <button
               onClick={() => scroll('right')}
-              className="w-8 h-8 rounded-full border border-[#EAEAEA] bg-white hover:bg-neutral-50 flex items-center justify-center text-[#171717] transition-colors"
+              className="w-8 h-8 rounded-full border border-white/10 bg-black/40 backdrop-blur-md hover:bg-white/10 flex items-center justify-center text-white transition-colors cursor-pointer"
               title="Scroll right"
               aria-label="Next items"
             >

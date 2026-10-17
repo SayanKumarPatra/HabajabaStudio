@@ -43,7 +43,7 @@ export const AlbumCard: React.FC<AlbumCardProps> = ({
       className={`group shrink-0 cursor-pointer flex flex-col select-none transition-transform active:scale-[0.98] ${widthClasses[size]}`}
     >
       {/* Artwork Box */}
-      <div className="relative aspect-square rounded-2xl overflow-hidden bg-neutral-100 border border-[#EAEAEA] shadow-xs group-hover:shadow-md transition-all">
+      <div className="relative aspect-square rounded-2xl overflow-hidden bg-neutral-900 border border-white/10 shadow-md group-hover:border-[#ED1025]/40 transition-all">
         <CoverImage
           src={album.coverUrl}
           alt={album.title}
@@ -55,7 +55,7 @@ export const AlbumCard: React.FC<AlbumCardProps> = ({
         {/* Floating Quick Play Action Button */}
         <button
           onClick={handlePlayDirect}
-          className={`absolute bottom-3 right-3 w-10 h-10 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white flex items-center justify-center shadow-lg shadow-[#ED1025]/30 transition-all ${
+          className={`absolute bottom-3 right-3 w-10 h-10 rounded-full bg-[#ED1025] hover:bg-[#D90D20] text-white flex items-center justify-center shadow-lg shadow-[#ED1025]/30 transition-all cursor-pointer ${
             isThisAlbumPlaying
               ? 'opacity-100 scale-100'
               : 'opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0'
@@ -73,10 +73,10 @@ export const AlbumCard: React.FC<AlbumCardProps> = ({
 
       {/* Metadata (clean, unboxed) */}
       <div className="mt-2.5 px-0.5">
-        <h4 className="text-xs sm:text-sm font-semibold text-[#171717] group-hover:text-[#ED1025] transition-colors truncate">
+        <h4 className="text-xs sm:text-sm font-semibold text-white group-hover:text-[#ED1025] transition-colors truncate">
           {album.title}
         </h4>
-        <p className="text-[11px] sm:text-xs text-[#6B7280] truncate mt-0.5">
+        <p className="text-[11px] sm:text-xs text-neutral-400 truncate mt-0.5">
           {album.artist}
         </p>
         <div className="flex items-center gap-1.5 text-[10px] text-[#6B7280]/80 mt-1">

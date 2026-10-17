@@ -18,11 +18,12 @@
   }
 
   body {
-    background-color: #FAFAFA;
-    color: #171717;
+    background-color: #040406;
+    color: #FFFFFF;
     min-height: 100dvh;
     overflow-x: hidden;
   }
+
 }
 
 .font-bengali {
@@ -48,37 +49,201 @@
   padding-top: env(safe-area-inset-top, 0px);
 }
 
-/* Gentle ambient background floating light animation */
-@keyframes ambientGlow {
-  0%, 100% {
-    transform: translate(0px, 0px) scale(1);
-    opacity: 0.45;
+/* Scrolling Notice Marquee Animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
   }
-  33% {
-    transform: translate(40px, -25px) scale(1.08);
-    opacity: 0.65;
-  }
-  66% {
-    transform: translate(-30px, 30px) scale(0.96);
-    opacity: 0.5;
+  100% {
+    transform: translateX(-50%);
   }
 }
 
-@keyframes ambientGlowAlt {
+.animate-marquee {
+  animation: marquee 38s linear infinite;
+  display: inline-flex;
+  width: max-content;
+}
+
+/* Animated Mesh Gradient Background - Pure Red & Black Dynamic Moving Mesh */
+.mesh-gradient-container {
+  background-color: #040406;
+  position: relative;
+  min-height: 100dvh;
+  color: #FFFFFF;
+}
+
+.mesh-gradient-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background-color: #040406;
+}
+
+@keyframes redMeshFloat1 {
   0%, 100% {
-    transform: translate(0px, 0px) scale(1);
-    opacity: 0.35;
+    transform: translate(0%, 0%) scale(1);
+    opacity: 0.45;
+  }
+  25% {
+    transform: translate(12%, -14%) scale(1.18);
+    opacity: 0.65;
   }
   50% {
-    transform: translate(-45px, 35px) scale(1.12);
+    transform: translate(-10%, 10%) scale(0.92);
+    opacity: 0.50;
+  }
+  75% {
+    transform: translate(8%, 15%) scale(1.12);
+    opacity: 0.60;
+  }
+}
+
+@keyframes redMeshFloat2 {
+  0%, 100% {
+    transform: translate(0%, 0%) scale(1);
+    opacity: 0.40;
+  }
+  30% {
+    transform: translate(-15%, 15%) scale(1.22);
+    opacity: 0.60;
+  }
+  60% {
+    transform: translate(12%, -10%) scale(0.95);
+    opacity: 0.45;
+  }
+  85% {
+    transform: translate(-8%, -12%) scale(1.08);
     opacity: 0.55;
   }
 }
 
-.animate-ambient-1 {
-  animation: ambientGlow 20s ease-in-out infinite;
+@keyframes redMeshFloat3 {
+  0%, 100% {
+    transform: translate(0%, 0%) scale(1);
+    opacity: 0.35;
+  }
+  35% {
+    transform: translate(16%, 12%) scale(1.15);
+    opacity: 0.55;
+  }
+  70% {
+    transform: translate(-12%, -8%) scale(0.90);
+    opacity: 0.40;
+  }
 }
 
-.animate-ambient-2 {
-  animation: ambientGlowAlt 26s ease-in-out infinite;
+@keyframes redMeshFloat4 {
+  0%, 100% {
+    transform: translate(0%, 0%) scale(1);
+    opacity: 0.40;
+  }
+  40% {
+    transform: translate(-14%, -14%) scale(1.16);
+    opacity: 0.58;
+  }
+  80% {
+    transform: translate(10%, 12%) scale(0.96);
+    opacity: 0.48;
+  }
 }
+
+.mesh-orb-1 {
+  position: absolute;
+  top: -12%;
+  left: -8%;
+  width: 65vw;
+  height: 65vw;
+  max-width: 850px;
+  max-height: 850px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(237, 16, 37, 0.52) 0%, rgba(185, 28, 28, 0.28) 42%, transparent 70%);
+  filter: blur(80px);
+  animation: redMeshFloat1 20s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.mesh-orb-2 {
+  position: absolute;
+  top: 25%;
+  right: -12%;
+  width: 60vw;
+  height: 60vw;
+  max-width: 780px;
+  max-height: 780px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(220, 38, 38, 0.48) 0%, rgba(153, 27, 27, 0.24) 45%, transparent 70%);
+  filter: blur(85px);
+  animation: redMeshFloat2 24s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.mesh-orb-3 {
+  position: absolute;
+  bottom: -12%;
+  left: 15%;
+  width: 70vw;
+  height: 70vw;
+  max-width: 900px;
+  max-height: 900px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(237, 16, 37, 0.45) 0%, rgba(127, 29, 29, 0.26) 48%, transparent 70%);
+  filter: blur(90px);
+  animation: redMeshFloat3 26s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.mesh-orb-4 {
+  position: absolute;
+  top: 55%;
+  left: -12%;
+  width: 55vw;
+  height: 55vw;
+  max-width: 720px;
+  max-height: 720px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.42) 0%, rgba(99, 10, 18, 0.22) 50%, transparent 70%);
+  filter: blur(80px);
+  animation: redMeshFloat4 22s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Glassmorphism Templates */
+.glass-panel {
+  background-color: rgba(12, 13, 18, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.glass-panel-interactive {
+  background-color: rgba(15, 16, 22, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-interactive:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(237, 16, 37, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(237, 16, 37, 0.15);
+}
+
+.glass-input {
+  background-color: rgba(8, 9, 12, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+}
+
+.glass-input:focus {
+  border-color: #ED1025;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(237, 16, 37, 0.25);
+}
+
+

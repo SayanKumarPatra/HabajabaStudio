@@ -63,10 +63,10 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist, onSelect }) => {
   return (
     <div
       onClick={() => onSelect(artist)}
-      className="group flex flex-col items-center text-center p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl cursor-pointer hover:bg-neutral-50/80 border border-transparent hover:border-[#EAEAEA] transition-all select-none active:scale-95"
+      className="group flex flex-col items-center text-center p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl cursor-pointer hover:bg-white/[0.08] border border-transparent hover:border-white/10 transition-all select-none active:scale-95"
     >
       {/* Circle Avatar */}
-      <div className="relative w-16 h-16 sm:w-22 sm:h-22 md:w-26 md:h-26 rounded-full overflow-hidden bg-neutral-100 border-2 border-white shadow-xs group-hover:shadow-md group-hover:scale-105 transition-all mb-1.5 sm:mb-2 shrink-0">
+      <div className="relative w-16 h-16 sm:w-22 sm:h-22 md:w-26 md:h-26 rounded-full overflow-hidden bg-neutral-900 border-2 border-white/20 shadow-xs group-hover:shadow-md group-hover:scale-105 transition-all mb-1.5 sm:mb-2 shrink-0">
         {!hasError && activeSrc ? (
           <img
             src={activeSrc}
@@ -87,10 +87,10 @@ export const ArtistCard: React.FC<ArtistCardProps> = ({ artist, onSelect }) => {
       </div>
 
       {/* Name & Details */}
-      <h4 className="text-xs sm:text-sm font-bold text-[#171717] group-hover:text-[#ED1025] transition-colors truncate max-w-full leading-tight">
+      <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-[#ED1025] transition-colors truncate max-w-full leading-tight">
         {artist.name}
       </h4>
-      <p className="text-[10px] sm:text-xs text-[#6B7280] line-clamp-1 mt-0.5 font-medium">
+      <p className="text-[10px] sm:text-xs text-neutral-400 line-clamp-1 mt-0.5 font-medium">
         {artist.role}
       </p>
       {artist.trackCount !== undefined && artist.trackCount > 0 && (
