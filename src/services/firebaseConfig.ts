@@ -12,6 +12,7 @@ export interface FirebaseConfigParams {
   messagingSenderId: string;
   appId: string;
   databaseURL?: string;
+  measurementId?: string;
 }
 
 const STORAGE_KEY = 'habajaba_firebase_config';
@@ -38,6 +39,7 @@ export function getEnvFirebaseConfig(): FirebaseConfigParams | null {
       databaseURL:
         import.meta.env.VITE_FIREBASE_DATABASE_URL ||
         `https://${projectId}-default-rtdb.firebaseio.com`,
+      measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '',
     };
   }
   return null;
@@ -49,6 +51,16 @@ export function getStoredFirebaseConfig(): FirebaseConfigParams | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
+      // If stored config belongs to an old obsolete project (e.g. habajabastudio-19379), purge it
+      if (
+        parsed &&
+        parsed.projectId &&
+        DEFAULT_FIREBASE_CONFIG?.projectId &&
+        parsed.projectId !== DEFAULT_FIREBASE_CONFIG.projectId
+      ) {
+        localStorage.removeItem(STORAGE_KEY);
+        return null;
+      }
       if (parsed && parsed.apiKey && parsed.projectId) {
         return parsed;
       }

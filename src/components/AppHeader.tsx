@@ -103,20 +103,20 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </button>
 
-          {/* Official Login Trigger directly after Favorites & Search */}
+          {/* Compact English Official Login Button */}
           <button
             type="button"
             onClick={() => onNavigate('admin')}
-            title="অফিসিয়াল লগইন (এডমিন প্যানেল)"
-            aria-label="অফিসিয়াল লগইন"
-            className={`min-h-[34px] sm:min-h-[38px] px-2.5 sm:px-3 flex items-center gap-1.5 rounded-full text-xs font-bold transition-all cursor-pointer active:scale-95 ${
+            title="Official Login (Admin Panel)"
+            aria-label="Official Login"
+            className={`h-7 sm:h-8 px-2.5 flex items-center gap-1.5 rounded-full text-[11px] sm:text-xs font-semibold tracking-tight transition-all cursor-pointer active:scale-95 ${
               currentTab === 'admin'
-                ? 'bg-white text-[#ED1025] shadow-xs font-extrabold'
-                : 'bg-black/35 hover:bg-white/20 text-white border border-white/25 shadow-xs'
+                ? 'bg-white text-[#ED1025] shadow-xs font-bold'
+                : 'bg-black/40 hover:bg-white/20 text-white/95 border border-white/20 shadow-xs'
             }`}
           >
-            <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#ED1025] fill-white shrink-0" />
-            <span className="font-bengali text-xs tracking-tight">অফিসিয়াল লগইন</span>
+            <ShieldCheck className="w-3.5 h-3.5 text-[#ED1025] shrink-0" />
+            <span className="font-sans whitespace-nowrap">Official Login</span>
           </button>
         </div>
       </div>

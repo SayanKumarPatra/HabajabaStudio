@@ -232,7 +232,7 @@ export const FirebaseAdminSection: React.FC = () => {
         <textarea
           value={rawSnippet}
           onChange={(e) => handleParseSnippet(e.target.value)}
-          placeholder={`const firebaseConfig = {\n  apiKey: "AIzaSy...",\n  projectId: "habajaba-studio-19379"\n};`}
+          placeholder={`const firebaseConfig = {\n  apiKey: "AIzaSy...",\n  projectId: "habajabastudio-b4aa0"\n};`}
           rows={2}
           className="w-full px-3 py-2 rounded-xl border border-white/15 font-mono text-xs focus:border-[#ED1025] focus:outline-hidden bg-black/60 text-white"
         />
@@ -270,7 +270,7 @@ export const FirebaseAdminSection: React.FC = () => {
               type="text"
               value={config.projectId}
               onChange={(e) => setConfig({ ...config, projectId: e.target.value })}
-              placeholder="habajaba-studio-19379"
+              placeholder="habajabastudio-b4aa0"
               className="w-full px-3 py-1.5 rounded-lg border border-white/15 bg-black/60 text-white text-xs font-mono focus:border-[#ED1025] focus:outline-hidden"
               required
             />

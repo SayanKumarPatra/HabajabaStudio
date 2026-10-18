@@ -5,13 +5,13 @@ import { Album, Artist, BannerSlide, BrandingConfig, HeroBannerConfig, Playlist,
 import { getFirebaseFirestore, getFirebaseRealtimeDb, getActiveFirebaseConfig } from './firebaseConfig';
 import { offlineCacheService } from './offlineCacheService';
 
-const STORAGE_CATALOG_KEY = 'habajaba_admin_catalog_v4';
-const STORAGE_CATALOG_BACKUP_KEY = 'habajaba_admin_catalog_backup_v4';
-const STORAGE_DELETED_TRACKS_KEY = 'habajaba_deleted_tracks_v4';
-const STORAGE_BRANDING_KEY = 'habajaba_admin_branding_v2';
-const STORAGE_SLIDING_BANNERS_KEY = 'habajaba_sliding_banners_v2';
+const STORAGE_CATALOG_KEY = 'habajaba_admin_catalog_v5';
+const STORAGE_CATALOG_BACKUP_KEY = 'habajaba_admin_catalog_backup_v5';
+const STORAGE_DELETED_TRACKS_KEY = 'habajaba_deleted_tracks_v5';
+const STORAGE_BRANDING_KEY = 'habajaba_admin_branding_v3';
+const STORAGE_SLIDING_BANNERS_KEY = 'habajaba_sliding_banners_v3';
 
-// Automatic purge of obsolete legacy caches (_v1, _v2, _v3) so browser starts 100% fresh
+// Automatic purge of obsolete legacy caches (_v1, _v2, _v3, _v4) so browser starts 100% fresh
 if (typeof window !== 'undefined') {
   try {
     const legacyKeys = [
@@ -23,10 +23,14 @@ if (typeof window !== 'undefined') {
       'habajaba_admin_catalog_v3',
       'habajaba_admin_catalog_backup_v3',
       'habajaba_deleted_tracks_v3',
+      'habajaba_admin_catalog_v4',
+      'habajaba_admin_catalog_backup_v4',
+      'habajaba_deleted_tracks_v4',
       'habajaba_initial_seed_done',
       'habajaba_cached_tracks',
     ];
     legacyKeys.forEach((k) => localStorage.removeItem(k));
+    offlineCacheService.clearAllCache().catch(() => {});
   } catch {}
 }
 
