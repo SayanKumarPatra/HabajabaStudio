@@ -1,9 +1,39 @@
-import React from 'react';
-import { Sparkles, Radio } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, Radio, Users, Eye } from 'lucide-react';
+import { VisitorService, VisitorStats } from '../services/visitorService';
 
 export const ScrollingNoticeTicker: React.FC = () => {
+  const [stats, setStats] = useState<VisitorStats>(() => VisitorService.getStats());
+
+  useEffect(() => {
+    const unsub = VisitorService.subscribe((newStats) => {
+      setStats(newStats);
+    });
+    return unsub;
+  }, []);
+
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('en-US').format(num);
+  };
+
   const NoticeItem = () => (
-    <span className="text-xs sm:text-[13px] text-neutral-200 font-medium font-bengali tracking-normal pr-14 inline-flex items-center gap-2">
+    <span className="text-xs sm:text-[13px] text-neutral-200 font-medium font-bengali tracking-normal pr-14 inline-flex items-center gap-2.5">
+      {/* Live Visitor Tag */}
+      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold text-[11px] shadow-xs">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        <span>{stats.activeOnline} জন লাইভ শুনছেন</span>
+      </span>
+
+      <span>·</span>
+
+      <span className="inline-flex items-center gap-1 text-neutral-300 text-[11px]">
+        <Eye className="w-3 h-3 text-[#ED1025]" />
+        <span>মোট ভিজিট:</span>
+        <strong className="text-white font-mono">{formatNumber(stats.totalVisits)}</strong>
+      </span>
+
+      <span>·</span>
+
       <span>আপনাদের সাইটে আসার জন্য অসংখ্য ধন্যবাদ আমাদের সাইটটি কেমন লেগেছে নিচে কমেন্ট বক্স আছে সেখানে কমেন্ট করে দাও —</span>
       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/25 via-rose-500/25 to-amber-500/25 text-amber-300 border border-amber-400/50 font-bold shadow-xs animate-pulse">
         <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />

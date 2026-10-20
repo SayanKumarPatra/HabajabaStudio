@@ -31,6 +31,7 @@ import {
   Search,
   RotateCcw,
   Sparkles,
+  Activity,
 } from 'lucide-react';
 import { HeroBannerConfig, Track } from '../types/music';
 import { MusicService } from '../services/musicService';
@@ -50,6 +51,7 @@ import { SlidingBannersAdminSection } from '../components/SlidingBannersAdminSec
 import { ArtistsAdminSection } from '../components/ArtistsAdminSection';
 import { OfflineAdminSection } from '../components/OfflineAdminSection';
 import { CommentsAdminSection } from '../components/CommentsAdminSection';
+import { VisitorsAdminSection } from '../components/VisitorsAdminSection';
 import { uploadImageToCloud } from '../services/cloudStorageService';
 
 export interface AdminPageProps {
@@ -74,7 +76,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
   const [pinError, setPinError] = useState<string | null>(null);
 
   // Tab state
-  const [adminTab, setAdminTab] = useState<'songs' | 'banners' | 'artists' | 'comments' | 'branding' | 'firebase' | 'offline'>('songs');
+  const [adminTab, setAdminTab] = useState<'songs' | 'banners' | 'artists' | 'comments' | 'branding' | 'visitors' | 'firebase' | 'offline'>('songs');
 
   // In-Page View Mode: 'catalog' | 'song-form' | 'export-json' (NO POPUPS)
   const [viewMode, setViewMode] = useState<'catalog' | 'song-form' | 'export-json'>('catalog');
@@ -1297,6 +1299,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
         </button>
 
         <button
+          onClick={() => setAdminTab('visitors')}
+          className={`min-h-[38px] px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+            adminTab === 'visitors'
+              ? 'bg-[#ED1025] text-white shadow-xs'
+              : 'bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10 border border-white/10'
+          }`}
+        >
+          <Activity className="w-3.5 h-3.5" />
+          <span>লাইভ ভিজিটর ও ইউটিউব</span>
+        </button>
+
+        <button
           onClick={() => setAdminTab('firebase')}
           className={`min-h-[38px] px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
             adminTab === 'firebase'
@@ -1530,6 +1544,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onOpenDropboxGuide }) => {
 
       {/* Tab: Branding & YouTube */}
       {adminTab === 'branding' && <BrandingAdminSection />}
+
+      {/* Tab: Live Visitors & YouTube Metrics */}
+      {adminTab === 'visitors' && <VisitorsAdminSection />}
 
       {/* Tab: Firebase Cloud */}
       {adminTab === 'firebase' && <FirebaseAdminSection />}

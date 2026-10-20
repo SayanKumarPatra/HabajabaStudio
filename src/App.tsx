@@ -22,6 +22,8 @@ import { ScrollingNoticeTicker } from './components/ScrollingNoticeTicker';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ShareToast } from './components/ShareToast';
 import { AnimatedCosmicBackground } from './components/AnimatedCosmicBackground';
+import { WebsiteVisitorCounter } from './components/WebsiteVisitorCounter';
+import { FooterLiveMetrics } from './components/FooterLiveMetrics';
 
 function AppContent() {
   const { currentTrack, playTrack } = useAudio();
@@ -370,6 +372,9 @@ function AppContent() {
               </button>
             </div>
           </div>
+
+          {/* Compact Live YouTube Subscriber Counter & Website Visitor Metrics */}
+          <FooterLiveMetrics />
 
           <div className="pt-3 border-t border-neutral-800/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-neutral-400">
             <div className="flex items-center gap-1">

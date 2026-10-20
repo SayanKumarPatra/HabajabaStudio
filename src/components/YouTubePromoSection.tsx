@@ -53,7 +53,6 @@ export const YouTubePromoSection: React.FC<YouTubePromoSectionProps> = ({
         </div>
       </div>
 
-
       {/* Right: Small Subscribe Button with Official YouTube Red */}
       <a
         href={channelUrl}
