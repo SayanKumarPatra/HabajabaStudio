@@ -297,8 +297,8 @@ export const SlidingBannersAdminSection: React.FC = () => {
                 </div>
               </div>
 
-              {/* 16:9 Image Preview */}
-              <div className="relative aspect-[16/9] w-full rounded-xl overflow-hidden bg-neutral-900 border border-white/10 flex items-center justify-center shadow-inner">
+              {/* 16:9 Image Preview - Borderless */}
+              <div className="relative aspect-[16/9] w-full rounded-xl overflow-hidden bg-neutral-900 border-0 border-none flex items-center justify-center shadow-inner">
                 {slide.imageUrl ? (
                   <img
                     src={slide.imageUrl}

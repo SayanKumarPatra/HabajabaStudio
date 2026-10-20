@@ -1,6 +1,6 @@
 /**
  * Tactile Haptic Feedback Utility for Mobile Devices
- * Provides satisfying, cushioned touch sensations when tapping songs, buttons, and navigation.
+ * Provides subtle, standard vibration when tapping controls (if supported).
  */
 
 export function triggerHaptic(type: 'light' | 'selection' | 'medium' | 'success' = 'light') {
@@ -9,16 +9,16 @@ export function triggerHaptic(type: 'light' | 'selection' | 'medium' | 'success'
   try {
     switch (type) {
       case 'selection':
-        navigator.vibrate(6); // Ultra subtle tick
+        navigator.vibrate(5);
         break;
       case 'light':
-        navigator.vibrate(10); // Crisp comfortable tap
+        navigator.vibrate(8);
         break;
       case 'medium':
-        navigator.vibrate(18); // Solid action feel
+        navigator.vibrate(15);
         break;
       case 'success':
-        navigator.vibrate([10, 30, 15]); // Delightful double tap
+        navigator.vibrate([8, 20, 10]);
         break;
     }
   } catch {
@@ -27,43 +27,8 @@ export function triggerHaptic(type: 'light' | 'selection' | 'medium' | 'success'
 }
 
 /**
- * Initializes global touch response so mobile users experience a comfortable,
- * tactile feel on every button, card, and interactive element.
+ * Clean no-op to prevent any unwanted touch overlays or sticky active effects.
  */
 export function initMobileTouchFeedback() {
-  if (typeof window === 'undefined') return;
-
-  let lastTouchTime = 0;
-
-  const handleTouchStart = (e: TouchEvent) => {
-    const target = e.target as HTMLElement | null;
-    if (!target) return;
-
-    // Check if target or parent is interactive
-    const interactive = target.closest(
-      'button, a, [role="button"], .interactive-card, .song-row, .carousel-card, .album-card, .artist-card, input[type="range"], nav a'
-    );
-
-    if (interactive) {
-      const now = Date.now();
-      if (now - lastTouchTime > 60) {
-        lastTouchTime = now;
-        triggerHaptic('light');
-      }
-
-      // Add active tactile touch visual class
-      interactive.classList.add('mobile-touch-active');
-
-      const cleanup = () => {
-        interactive.classList.remove('mobile-touch-active');
-        interactive.removeEventListener('touchend', cleanup);
-        interactive.removeEventListener('touchcancel', cleanup);
-      };
-
-      interactive.addEventListener('touchend', cleanup, { passive: true });
-      interactive.addEventListener('touchcancel', cleanup, { passive: true });
-    }
-  };
-
-  document.addEventListener('touchstart', handleTouchStart, { passive: true });
+  // Deliberately no-op: clean native mobile interactions without artificial overlays
 }

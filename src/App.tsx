@@ -22,7 +22,6 @@ import { ScrollingNoticeTicker } from './components/ScrollingNoticeTicker';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ShareToast } from './components/ShareToast';
 import { AnimatedCosmicBackground } from './components/AnimatedCosmicBackground';
-import { TouchAnimationOverlay } from './components/TouchAnimationOverlay';
 
 function AppContent() {
   const { currentTrack, playTrack } = useAudio();
@@ -256,9 +255,6 @@ function AppContent() {
     <div className="red-aurora-container flex flex-col text-white overflow-x-hidden relative min-h-screen">
       {/* Dynamic Animated Cosmic Aurora & Floating Studio Embers Canvas Background */}
       <AnimatedCosmicBackground />
-
-      {/* Global Interactive Mobile Touch Ripple Animation Layer */}
-      <TouchAnimationOverlay />
 
       {/* Top Application Header */}
       <AppHeader

@@ -191,41 +191,7 @@
   will-change: opacity, filter, transform;
 }
 
-/* ==========================================================================
-   Mobile Touch Animation System
-   Generates a luminous, expanding neon ripple and sparkle on every touch
-   ========================================================================== */
-@keyframes touchRippleBurst {
-  0% {
-    transform: translate(-50%, -50%) scale(0.15);
-    opacity: 0.95;
-    border-width: 3.5px;
-  }
-  60% {
-    opacity: 0.75;
-    border-width: 2px;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(2.6);
-    opacity: 0;
-    border-width: 1px;
-  }
-}
-
-.touch-ripple-effect {
-  border-style: solid;
-  animation: touchRippleBurst 0.52s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
-  box-shadow: 0 0 25px rgba(237, 16, 37, 0.7), inset 0 0 15px rgba(237, 16, 37, 0.4);
-  pointer-events: none;
-}
-
-/* Tactile Mobile Touch Sensations for Interactive Controls */
-.mobile-touch-active {
-  transform: scale(0.96) !important;
-  filter: brightness(1.22) !important;
-  box-shadow: 0 0 22px rgba(237, 16, 37, 0.5) !important;
-  transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.4, 1), filter 0.1s ease !important;
-}
+/* Clean, native-feeling tactile feedback for interactive controls */
 
 /* Smooth tactile feedback for all buttons, song cards & player controls */
 button,

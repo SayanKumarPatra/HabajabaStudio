@@ -64,7 +64,7 @@ export const SlidingBannerCarousel: React.FC<SlidingBannerCarouselProps> = ({
 
   return (
     <section
-      className={`relative w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl bg-black/60 select-none ${className}`}
+      className={`relative w-full rounded-2xl sm:rounded-3xl overflow-hidden border-0 border-none ring-0 shadow-2xl bg-black/40 select-none ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onTouchStart={handleTouchStart}
@@ -72,8 +72,8 @@ export const SlidingBannerCarousel: React.FC<SlidingBannerCarouselProps> = ({
       onTouchEnd={handleTouchEnd}
       aria-label="Official Sliding Banners"
     >
-      {/* Sliding track container - Borderless, smooth 16:9 / ergonomic mobile ratio */}
-      <div className="relative aspect-[21/9] xs:aspect-[2.35/1] sm:aspect-[2.5/1] md:aspect-[16/9] w-full max-h-[145px] xs:max-h-[165px] sm:max-h-[240px] md:max-h-[350px] overflow-hidden bg-transparent">
+      {/* Sliding track container - Completely borderless, smooth 16:9 / ergonomic mobile ratio */}
+      <div className="relative aspect-[21/9] xs:aspect-[2.35/1] sm:aspect-[2.5/1] md:aspect-[16/9] w-full max-h-[145px] xs:max-h-[165px] sm:max-h-[240px] md:max-h-[350px] overflow-hidden border-0 border-none bg-transparent">
         <div
           className="flex h-full w-full transition-transform duration-700 ease-out"
           style={{ transform: `translateX(-${currentIndex * 100}%)` }}
@@ -81,7 +81,7 @@ export const SlidingBannerCarousel: React.FC<SlidingBannerCarouselProps> = ({
           {safeBanners.map((slide, idx) => (
             <div
               key={slide.id || `banner-${idx}`}
-              className="relative w-full h-full shrink-0 flex items-center justify-center cursor-pointer"
+              className="relative w-full h-full shrink-0 flex items-center justify-center cursor-pointer border-0 border-none outline-hidden"
               onClick={() => onSlideClick && onSlideClick(slide, idx)}
             >
               <img
@@ -91,7 +91,7 @@ export const SlidingBannerCarousel: React.FC<SlidingBannerCarouselProps> = ({
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/banner-default.svg';
                 }}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover border-0 border-none outline-hidden"
                 loading={idx === 0 ? 'eager' : 'lazy'}
               />
             </div>
