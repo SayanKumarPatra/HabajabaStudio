@@ -168,6 +168,23 @@ class OfflineCacheService {
     }
   }
 
+  public async saveArtist(artist: Artist): Promise<void> {
+    try {
+      const db = await this.getDB();
+      const tx = db.transaction(['artists'], 'readwrite');
+      const store = tx.objectStore('artists');
+      if (artist && artist.id) {
+        store.put(artist);
+      }
+      return new Promise((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    } catch (e) {
+      console.warn('[OfflineDB] Error saving single artist:', e);
+    }
+  }
+
   /**
    * Explicitly delete an artist from IndexedDB
    */

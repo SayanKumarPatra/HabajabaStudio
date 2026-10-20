@@ -1,9 +1,11 @@
-import React from 'react';
-import { Play, Pause } from 'lucide-react';
+import React, { useState } from 'react';
+import { Play, Pause, Share2, Check } from 'lucide-react';
 import { Album } from '../types/music';
 import { useAudio } from '../context/AudioContext';
 import { MusicService } from '../services/musicService';
 import { CoverImage } from './CoverImage';
+import { shareAlbum } from '../utils/share';
+import { triggerHaptic } from '../utils/haptics';
 
 interface AlbumCardProps {
   album: Album;
@@ -17,10 +19,21 @@ export const AlbumCard: React.FC<AlbumCardProps> = ({
   size = 'md',
 }) => {
   const { currentTrack, isPlaying, togglePlay, playQueue } = useAudio();
+  const [isShared, setIsShared] = useState(false);
 
   const albumTracks = MusicService.getAlbumTracks(album);
   const isThisAlbumPlaying =
     isPlaying && albumTracks.some((t) => t.id === currentTrack?.id);
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    triggerHaptic('light');
+    const res = await shareAlbum(album);
+    if (res.success) {
+      setIsShared(true);
+      setTimeout(() => setIsShared(false), 2200);
+    }
+  };
 
   const handlePlayDirect = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -40,7 +53,7 @@ export const AlbumCard: React.FC<AlbumCardProps> = ({
   return (
     <div
       onClick={() => onSelect(album)}
-      className={`group shrink-0 cursor-pointer flex flex-col select-none transition-transform active:scale-[0.98] ${widthClasses[size]}`}
+      className={`album-card group shrink-0 cursor-pointer flex flex-col select-none transition-transform active:scale-[0.98] ${widthClasses[size]}`}
     >
       {/* Artwork Box */}
       <div className="relative aspect-square rounded-2xl overflow-hidden bg-neutral-900 border border-white/10 shadow-md group-hover:border-[#ED1025]/40 transition-all">
@@ -51,6 +64,25 @@ export const AlbumCard: React.FC<AlbumCardProps> = ({
           artist={album.artist}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
+
+        {/* Floating Quick Share Button in top-right - Always Visible */}
+        <button
+          type="button"
+          onClick={handleShare}
+          className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full backdrop-blur-md border transition-all cursor-pointer flex items-center justify-center active:scale-90 z-10 ${
+            isShared
+              ? 'bg-emerald-500/90 text-white border-emerald-400 opacity-100 scale-100 shadow-md'
+              : 'bg-black/75 hover:bg-black/90 text-white border-white/25 hover:border-white/40 opacity-100 shadow-sm'
+          }`}
+          title={isShared ? 'অ্যালবাম লিঙ্ক শেয়ার করা হয়েছে!' : 'অ্যালবাম শেয়ার করুন'}
+          aria-label={`Share ${album.title}`}
+        >
+          {isShared ? (
+            <Check className="w-3.5 h-3.5 text-white" />
+          ) : (
+            <Share2 className="w-3.5 h-3.5 text-white" />
+          )}
+        </button>
 
         {/* Floating Quick Play Action Button */}
         <button

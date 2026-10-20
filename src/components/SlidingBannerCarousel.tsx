@@ -64,7 +64,7 @@ export const SlidingBannerCarousel: React.FC<SlidingBannerCarouselProps> = ({
 
   return (
     <section
-      className={`relative w-full rounded-2xl sm:rounded-3xl overflow-hidden border border-[#EAEAEA] shadow-xs bg-white select-none ${className}`}
+      className={`relative w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl bg-black/60 select-none ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onTouchStart={handleTouchStart}
@@ -72,8 +72,8 @@ export const SlidingBannerCarousel: React.FC<SlidingBannerCarouselProps> = ({
       onTouchEnd={handleTouchEnd}
       aria-label="Official Sliding Banners"
     >
-      {/* Sliding track container - Exact 16:9 / ergonomic mobile ratio */}
-      <div className="relative aspect-[21/9] xs:aspect-[2.35/1] sm:aspect-[2.5/1] md:aspect-[16/9] w-full max-h-[145px] xs:max-h-[165px] sm:max-h-[240px] md:max-h-[350px] overflow-hidden bg-neutral-100">
+      {/* Sliding track container - Borderless, smooth 16:9 / ergonomic mobile ratio */}
+      <div className="relative aspect-[21/9] xs:aspect-[2.35/1] sm:aspect-[2.5/1] md:aspect-[16/9] w-full max-h-[145px] xs:max-h-[165px] sm:max-h-[240px] md:max-h-[350px] overflow-hidden bg-transparent">
         <div
           className="flex h-full w-full transition-transform duration-700 ease-out"
           style={{ transform: `translateX(-${currentIndex * 100}%)` }}
@@ -98,7 +98,7 @@ export const SlidingBannerCarousel: React.FC<SlidingBannerCarouselProps> = ({
           ))}
         </div>
 
-        {/* Navigation Arrows (Glassmorphic, subtle, non-intrusive) */}
+        {/* Navigation Arrows (Borderless, sleek, translucent dark glass) */}
         {safeBanners.length > 1 && (
           <>
             <button
@@ -106,11 +106,11 @@ export const SlidingBannerCarousel: React.FC<SlidingBannerCarouselProps> = ({
                 e.stopPropagation();
                 goToPrev();
               }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/70 hover:bg-white/95 text-[#171717] backdrop-blur-md flex items-center justify-center shadow-xs border border-white/60 transition-all opacity-70 hover:opacity-100 active:scale-95"
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-black/45 hover:bg-black/75 text-white backdrop-blur-md flex items-center justify-center shadow-lg transition-all opacity-80 hover:opacity-100 active:scale-95 cursor-pointer"
               title="Previous Banner"
               aria-label="Previous Banner"
             >
-              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-[#171717]" />
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </button>
 
             <button
@@ -118,18 +118,18 @@ export const SlidingBannerCarousel: React.FC<SlidingBannerCarouselProps> = ({
                 e.stopPropagation();
                 goToNext();
               }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/70 hover:bg-white/95 text-[#171717] backdrop-blur-md flex items-center justify-center shadow-xs border border-white/60 transition-all opacity-70 hover:opacity-100 active:scale-95"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-black/45 hover:bg-black/75 text-white backdrop-blur-md flex items-center justify-center shadow-lg transition-all opacity-80 hover:opacity-100 active:scale-95 cursor-pointer"
               title="Next Banner"
               aria-label="Next Banner"
             >
-              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-[#171717]" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </button>
           </>
         )}
 
-        {/* 4 Dot Indicators at the bottom */}
+        {/* 4 Dot Indicators at the bottom (Borderless sleek pill) */}
         {safeBanners.length > 1 && (
-          <div className="absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/25 backdrop-blur-md border border-white/20">
+          <div className="absolute bottom-2.5 sm:bottom-3.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md shadow-md">
             {safeBanners.map((_, dotIdx) => (
               <button
                 key={dotIdx}

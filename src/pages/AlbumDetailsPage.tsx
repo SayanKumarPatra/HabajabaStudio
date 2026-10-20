@@ -1,10 +1,12 @@
-import React from 'react';
-import { Play, Shuffle, ArrowLeft, Disc3, Calendar, Globe, Tag } from 'lucide-react';
+import React, { useState } from 'react';
+import { Play, Shuffle, ArrowLeft, Disc3, Calendar, Globe, Tag, Share2, Check } from 'lucide-react';
 import { Album, Track } from '../types/music';
 import { MusicService } from '../services/musicService';
 import { useAudio } from '../context/AudioContext';
 import { SongRow } from '../components/SongRow';
 import { CoverImage } from '../components/CoverImage';
+import { shareAlbum } from '../utils/share';
+import { triggerHaptic } from '../utils/haptics';
 
 interface AlbumDetailsPageProps {
   album: Album;
@@ -20,6 +22,7 @@ export const AlbumDetailsPage: React.FC<AlbumDetailsPageProps> = ({
   onSelectAlbum,
 }) => {
   const { playQueue } = useAudio();
+  const [isShared, setIsShared] = useState(false);
   const albumTracks: Track[] = MusicService.getAlbumTracks(album);
 
   const handlePlayAll = () => {
@@ -32,6 +35,15 @@ export const AlbumDetailsPage: React.FC<AlbumDetailsPageProps> = ({
     if (albumTracks.length > 0) {
       const shuffled = [...albumTracks].sort(() => Math.random() - 0.5);
       playQueue(shuffled, 0);
+    }
+  };
+
+  const handleShareAlbum = async () => {
+    triggerHaptic('light');
+    const result = await shareAlbum(album);
+    if (result.success) {
+      setIsShared(true);
+      setTimeout(() => setIsShared(false), 2400);
     }
   };
 
@@ -116,10 +128,33 @@ export const AlbumDetailsPage: React.FC<AlbumDetailsPageProps> = ({
             <button
               onClick={handleShuffle}
               disabled={albumTracks.length === 0}
-              className="min-h-[40px] px-4 rounded-full bg-white/10 hover:bg-white/15 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 border border-white/15 backdrop-blur-md disabled:opacity-50 transition-colors cursor-pointer"
+              className="min-h-[40px] px-4 rounded-full bg-white/10 hover:bg-white/15 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 border border-white/15 backdrop-blur-md disabled:opacity-50 transition-colors cursor-pointer active:scale-95"
             >
               <Shuffle className="w-3.5 h-3.5" />
               <span>Shuffle</span>
+            </button>
+
+            <button
+              onClick={handleShareAlbum}
+              className={`min-h-[40px] px-4 rounded-full font-semibold text-xs sm:text-sm flex items-center gap-1.5 border backdrop-blur-md active:scale-95 transition-all cursor-pointer ${
+                isShared
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40 shadow-sm shadow-emerald-500/20'
+                  : 'bg-white/10 hover:bg-white/15 text-white border-white/15 hover:border-white/30'
+              }`}
+              title="Share album via Web Share"
+              aria-label={`Share ${album.title}`}
+            >
+              {isShared ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400 animate-bounce" />
+                  <span>Shared!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-3.5 h-3.5 text-[#ED1025]" />
+                  <span>Share Album</span>
+                </>
+              )}
             </button>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   X,
   Play,
@@ -16,12 +16,17 @@ import {
   Clock,
   Info,
   Youtube,
+  Share2,
+  Check,
 } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { VinylDiscPlayer } from './VinylDiscPlayer';
+import { shareTrack } from '../utils/share';
+import { triggerHaptic } from '../utils/haptics';
 
 export const ExpandedPlayer: React.FC = () => {
+  const [isShared, setIsShared] = useState(false);
   const {
     currentTrack,
     isPlaying,
@@ -107,14 +112,41 @@ export const ExpandedPlayer: React.FC = () => {
           </span>
         </div>
 
-        <button
-          onClick={() => setIsExpanded(false)}
-          className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
-          title="Close player"
-          aria-label="Close"
-        >
-          <X className="w-4 h-4 sm:w-5 sm:h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Quick Share Track */}
+          <button
+            onClick={async () => {
+              triggerHaptic('light');
+              const res = await shareTrack(currentTrack);
+              if (res.success) {
+                setIsShared(true);
+                setTimeout(() => setIsShared(false), 2200);
+              }
+            }}
+            className={`min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full transition-all cursor-pointer active:scale-95 ${
+              isShared
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-400/40 shadow-xs'
+                : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
+            }`}
+            title="Share this track (Web Share)"
+            aria-label={`Share ${currentTrack.title}`}
+          >
+            {isShared ? (
+              <Check className="w-4 h-4 text-emerald-400 animate-bounce" />
+            ) : (
+              <Share2 className="w-4 h-4" />
+            )}
+          </button>
+
+          <button
+            onClick={() => setIsExpanded(false)}
+            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+            title="Close player"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Main Center Content: Single Rotating Round Vinyl Disc & Song Metadata */}

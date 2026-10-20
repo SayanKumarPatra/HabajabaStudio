@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Play,
   Pause,
@@ -10,12 +10,17 @@ import {
   Loader2,
   Volume2,
   VolumeX,
+  Share2,
+  Check,
 } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { CoverImage } from './CoverImage';
+import { shareTrack } from '../utils/share';
+import { triggerHaptic } from '../utils/haptics';
 
 export const MiniPlayer: React.FC = () => {
+  const [isShared, setIsShared] = useState(false);
   const {
     currentTrack,
     isPlaying,
@@ -217,6 +222,31 @@ export const MiniPlayer: React.FC = () => {
               aria-label="Volume slider"
             />
           </div>
+
+          {/* Share Track Button */}
+          <button
+            onClick={async () => {
+              triggerHaptic('light');
+              const res = await shareTrack(currentTrack);
+              if (res.success) {
+                setIsShared(true);
+                setTimeout(() => setIsShared(false), 2200);
+              }
+            }}
+            className={`min-h-[40px] min-w-[40px] sm:min-h-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer active:scale-95 ${
+              isShared
+                ? 'text-emerald-400 bg-emerald-500/15'
+                : 'text-neutral-400 hover:text-white hover:bg-white/10'
+            }`}
+            title="Share track (Web Share)"
+            aria-label={`Share ${currentTrack.title}`}
+          >
+            {isShared ? (
+              <Check className="w-4 h-4 text-emerald-400 animate-bounce" />
+            ) : (
+              <Share2 className="w-4 h-4" />
+            )}
+          </button>
 
           {/* Expand Full Player Button */}
           <button

@@ -33,7 +33,32 @@ export async function uploadImageToCloud(
   // 1. Optimize image first (instant downscaling to lightweight size)
   const optimizedDataUrl = await optimizeImageFile(file, maxWidth, maxHeight, quality, format);
 
-  // 2. Try Firebase Storage with 5-second timeout
+  // 2. Try Local Node / Express Server Upload API first (fastest, saves to /uploads/ folder)
+  try {
+    const uploadRes = await fetch('/api/upload-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        dataUrl: optimizedDataUrl,
+        folder,
+        filename: file.name,
+      }),
+    });
+    if (uploadRes.ok) {
+      const data = await uploadRes.json();
+      if (data?.url) {
+        return {
+          url: data.url,
+          isCloudStorage: true,
+          message: 'ছবি সার্ভারে সফলভাবে সেভ হয়েছে।',
+        };
+      }
+    }
+  } catch {
+    // Server API unavailable (e.g. static preview or offline)
+  }
+
+  // 3. Try Firebase Storage with 3-second timeout
   const storageInstance = getFirebaseStorage();
   if (storageInstance) {
     try {
@@ -42,7 +67,6 @@ export async function uploadImageToCloud(
       const fileRef = ref(storageInstance.storage, filename);
 
       const performStorageUpload = async (): Promise<string | null> => {
-        // Convert optimized data URL to blob
         const res = await fetch(optimizedDataUrl);
         const blob = await res.blob();
 
@@ -54,9 +78,8 @@ export async function uploadImageToCloud(
         return await getDownloadURL(fileRef);
       };
 
-      // Race upload with a fast 700ms timeout so the user never experiences lag
       const timeoutPromise = new Promise<null>((resolve) =>
-        setTimeout(() => resolve(null), 700)
+        setTimeout(() => resolve(null), 3000)
       );
 
       const downloadUrl = await Promise.race([performStorageUpload(), timeoutPromise]);
@@ -73,7 +96,7 @@ export async function uploadImageToCloud(
     }
   }
 
-  // Instant fallback to optimized inline data URL
+  // 4. Instant reliable fallback to optimized inline data URL (RTDB stores data URLs directly)
   return {
     url: optimizedDataUrl,
     isCloudStorage: false,

@@ -20,9 +20,12 @@ import { AdminPage } from './pages/AdminPage';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { ScrollingNoticeTicker } from './components/ScrollingNoticeTicker';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ShareToast } from './components/ShareToast';
+import { AnimatedCosmicBackground } from './components/AnimatedCosmicBackground';
+import { TouchAnimationOverlay } from './components/TouchAnimationOverlay';
 
 function AppContent() {
-  const { currentTrack } = useAudio();
+  const { currentTrack, playTrack } = useAudio();
   const [currentTab, setCurrentTab] = useState<NavigationTab>('home');
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [selectedArtistName, setSelectedArtistName] = useState<string | null>(null);
@@ -98,9 +101,31 @@ function AppContent() {
           return;
         }
 
+        if (hash.startsWith('song-') || hash.startsWith('track-')) {
+          const trackId = hash.replace(/^(song-|track-)/, '');
+          const allTracks = MusicService.getAllTracks('newest', true);
+          const found = allTracks.find((t) => t.id === trackId);
+          if (found) {
+            playTrack(found);
+            setSelectedAlbum(null);
+            setSelectedArtistName(null);
+            setSelectedPlaylistId(null);
+            setCurrentTab('songs');
+            return;
+          }
+        }
+
         if (hash.startsWith('album-')) {
           const albumId = hash;
-          const found = MusicService.getAlbumById(albumId);
+          let found = MusicService.getAlbumById(albumId);
+          if (!found) {
+            const rawSlug = hash.replace('album-', '').toLowerCase();
+            found = MusicService.getAlbums().find(
+              (a) =>
+                a.id.toLowerCase() === rawSlug ||
+                a.title.toLowerCase().replace(/\s+/g, '-') === rawSlug
+            );
+          }
           if (found) {
             setSelectedAlbum(found);
             setCurrentTab('album-details');
@@ -228,14 +253,12 @@ function AppContent() {
     : 'pb-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:pb-8';
 
   return (
-    <div className="mesh-gradient-container flex flex-col text-white overflow-x-hidden relative">
-      {/* Background Animated Mesh Gradient Layer ONLY on page background */}
-      <div className="mesh-gradient-layer" aria-hidden="true">
-        <div className="mesh-orb-1" />
-        <div className="mesh-orb-2" />
-        <div className="mesh-orb-3" />
-        <div className="mesh-orb-4" />
-      </div>
+    <div className="red-aurora-container flex flex-col text-white overflow-x-hidden relative min-h-screen">
+      {/* Dynamic Animated Cosmic Aurora & Floating Studio Embers Canvas Background */}
+      <AnimatedCosmicBackground />
+
+      {/* Global Interactive Mobile Touch Ripple Animation Layer */}
+      <TouchAnimationOverlay />
 
       {/* Top Application Header */}
       <AppHeader
@@ -392,6 +415,9 @@ function AppContent() {
         isOpen={isDropboxGuideOpen}
         onClose={() => setIsDropboxGuideOpen(false)}
       />
+
+      {/* Global Share Feedback Toast */}
+      <ShareToast />
     </div>
   );
 }

@@ -103,20 +103,20 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </button>
 
-          {/* Compact English Official Login Button */}
+          {/* Compact, Sleek Official Login Button (English, minimal footprint) */}
           <button
             type="button"
             onClick={() => onNavigate('admin')}
             title="Official Login (Admin Panel)"
             aria-label="Official Login"
-            className={`h-7 sm:h-8 px-2.5 flex items-center gap-1.5 rounded-full text-[11px] sm:text-xs font-semibold tracking-tight transition-all cursor-pointer active:scale-95 ${
+            className={`h-7 px-2.5 flex items-center gap-1 rounded-full text-[11px] font-medium tracking-tight transition-all cursor-pointer active:scale-95 ${
               currentTab === 'admin'
-                ? 'bg-white text-[#ED1025] shadow-xs font-bold'
-                : 'bg-black/40 hover:bg-white/20 text-white/95 border border-white/20 shadow-xs'
+                ? 'bg-white text-[#ED1025] shadow-sm font-semibold'
+                : 'bg-black/35 hover:bg-black/50 text-white/95 border border-white/20 hover:border-white/35 backdrop-blur-xs'
             }`}
           >
-            <ShieldCheck className="w-3.5 h-3.5 text-[#ED1025] shrink-0" />
-            <span className="font-sans whitespace-nowrap">Official Login</span>
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+            <span className="font-sans whitespace-nowrap text-[11px]">Official Login</span>
           </button>
         </div>
       </div>

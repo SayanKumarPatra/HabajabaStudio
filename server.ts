@@ -14,9 +14,19 @@ const PORT = Number(process.env.PORT) || 3000;
 
 function getYtDlpPath(): string {
   const localBin = path.resolve(__dirname, 'bin', 'yt-dlp');
-  if (fs.existsSync(localBin)) return localBin;
+  if (fs.existsSync(localBin)) {
+    try {
+      fs.chmodSync(localBin, 0o755);
+    } catch {}
+    return localBin;
+  }
   const tmpBin = '/tmp/yt-dlp';
-  if (fs.existsSync(tmpBin)) return tmpBin;
+  if (fs.existsSync(tmpBin)) {
+    try {
+      fs.chmodSync(tmpBin, 0o755);
+    } catch {}
+    return tmpBin;
+  }
   return 'yt-dlp';
 }
 
@@ -68,9 +78,61 @@ async function getYouTubeAudioStreamUrl(videoId: string): Promise<string> {
 async function startServer() {
   const app = express();
 
+  // Body parser for JSON payloads (e.g. base64 image uploads)
+  app.use(express.json({ limit: '20mb' }));
+
+  // Ensure public uploads directories exist
+  const uploadsDir = path.resolve(__dirname, 'public', 'uploads');
+  fs.mkdirSync(path.join(uploadsDir, 'artists'), { recursive: true });
+  fs.mkdirSync(path.join(uploadsDir, 'images'), { recursive: true });
+  fs.mkdirSync(path.join(uploadsDir, 'branding'), { recursive: true });
+  fs.mkdirSync(path.join(uploadsDir, 'banners'), { recursive: true });
+
+  // Serve uploads statically
+  app.use('/uploads', express.static(uploadsDir));
+
   // Health check endpoint
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
+  });
+
+  // Local Image Upload API Endpoint
+  // Saves compressed image files locally and returns public URL
+  app.post('/api/upload-image', (req: Request, res: Response): void => {
+    try {
+      const { dataUrl, folder = 'images', filename } = req.body || {};
+      if (!dataUrl || typeof dataUrl !== 'string') {
+        res.status(400).json({ error: 'dataUrl is required' });
+        return;
+      }
+
+      const match = dataUrl.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
+      if (!match) {
+        res.status(400).json({ error: 'Invalid data URL format' });
+        return;
+      }
+
+      const ext = match[1] === 'jpeg' ? 'jpg' : match[1].toLowerCase();
+      const base64Data = match[2];
+      const buffer = Buffer.from(base64Data, 'base64');
+
+      const safeFolder = ['artists', 'banners', 'branding', 'images'].includes(folder) ? folder : 'images';
+      const cleanBaseName = (filename || 'img').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
+      const outputFileName = `${cleanBaseName}_${Date.now()}.${ext}`;
+      const targetPath = path.join(uploadsDir, safeFolder, outputFileName);
+
+      fs.writeFileSync(targetPath, buffer);
+      const publicUrl = `/uploads/${safeFolder}/${outputFileName}`;
+
+      res.json({
+        success: true,
+        url: publicUrl,
+        message: 'Image uploaded and saved successfully',
+      });
+    } catch (err: any) {
+      console.error('[Upload Image Error]:', err);
+      res.status(500).json({ error: 'Failed to process image upload' });
+    }
   });
 
   // Direct Audio Streaming Proxy for YouTube Video IDs

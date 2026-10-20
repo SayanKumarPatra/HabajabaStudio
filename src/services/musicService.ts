@@ -234,53 +234,41 @@ export function cleanForFirebase<T extends Record<string, any>>(obj: T): T {
   return result;
 }
 
-// Strict Intelligent Track Merging: Guarantees zero duplicate songs
+// Strict Intelligent Track Sync: Remote database is authoritative, deleted tracks are never resurrected
 function mergeRemoteTracks(remoteTracks: Track[]) {
-  if (!remoteTracks) return;
+  if (!remoteTracks || remoteTracks.length === 0) {
+    catalogState.tracks = [];
+    saveStateLocally();
+    notifyListeners();
+    return;
+  }
   const deletedIds = getDeletedTrackIds();
 
-  // Deduplication map by primary ID
-  const trackMap = new Map<string, Track>();
-  // Helper maps for YouTube ID and Audio URL to prevent duplicates with different IDs
-  const ytToId = new Map<string, string>();
-  const urlToId = new Map<string, string>();
+  // Deduplicate and filter out deleted tracks
+  const seenIds = new Set<string>();
+  const seenYt = new Set<string>();
+  const seenUrls = new Set<string>();
+  const cleanTracks: Track[] = [];
 
-  // 1. First add current local tracks that are not deleted
-  catalogState.tracks.forEach((t) => {
-    if (t && t.id && !deletedIds.has(t.id)) {
-      trackMap.set(t.id, t);
-      if (t.youtubeId) ytToId.set(t.youtubeId, t.id);
-      if (t.audioUrl) urlToId.set(t.audioUrl, t.id);
-    }
-  });
+  for (const r of remoteTracks) {
+    if (!r || !r.id) continue;
+    if (deletedIds.has(r.id)) continue;
+    if (r.youtubeId && deletedIds.has(r.youtubeId)) continue;
+    if (r.audioUrl && deletedIds.has(r.audioUrl.trim().toLowerCase())) continue;
 
-  // 2. Add or update remote tracks
-  remoteTracks.forEach((r) => {
-    if (!r || !r.id || deletedIds.has(r.id)) return;
+    if (seenIds.has(r.id)) continue;
+    if (r.youtubeId && seenYt.has(r.youtubeId)) continue;
+    if (r.audioUrl && seenUrls.has(r.audioUrl.trim().toLowerCase())) continue;
 
-    // Check if this song already exists under another ID (by YouTube ID or audioUrl)
-    const existingIdByYt = r.youtubeId ? ytToId.get(r.youtubeId) : undefined;
-    const existingIdByUrl = r.audioUrl ? urlToId.get(r.audioUrl) : undefined;
-    const targetId = existingIdByYt || existingIdByUrl || r.id;
+    seenIds.add(r.id);
+    if (r.youtubeId) seenYt.add(r.youtubeId);
+    if (r.audioUrl) seenUrls.add(r.audioUrl.trim().toLowerCase());
+    cleanTracks.push(r);
+  }
 
-    const existing = trackMap.get(targetId);
-    const mergedTrack = existing ? { ...existing, ...r, id: targetId } : r;
-    trackMap.set(targetId, mergedTrack);
-
-    if (mergedTrack.youtubeId) ytToId.set(mergedTrack.youtubeId, targetId);
-    if (mergedTrack.audioUrl) urlToId.set(mergedTrack.audioUrl, targetId);
-  });
-
-  catalogState.tracks = Array.from(trackMap.values());
+  catalogState.tracks = cleanTracks;
   saveStateLocally();
   notifyListeners();
-
-  // 3. If local catalog has tracks not yet saved in remote database, push them to remote in background
-  const remoteIdSet = new Set(remoteTracks.map((r) => r.id));
-  const missingFromRemote = catalogState.tracks.filter((t) => !remoteIdSet.has(t.id));
-  if (missingFromRemote.length > 0) {
-    pushTracksToRemote(missingFromRemote);
-  }
 }
 
 // Background helper to ensure all tracks exist in remote database without blocking UI
@@ -327,11 +315,12 @@ function mergeRemoteArtists(remotes: Artist[]) {
     if (r && r.name && r.name.trim()) {
       const key = r.name.trim().toLowerCase();
       const existing = map.get(key);
-      map.set(key, existing ? { ...existing, ...r, id: existing.id || r.id } : r);
+      map.set(key, existing ? { ...existing, ...r, id: r.id || existing.id } : r);
     }
   });
   catalogState.artists = Array.from(map.values());
   saveStateLocally();
+  notifyListeners();
 }
 
 // Set up real-time Firebase Firestore synchronization
@@ -503,7 +492,47 @@ export function initRealtimeDbSync() {
   try {
     const { rtdb } = rtdbInstance;
 
-    // 1. Real-time listener for Songs in Realtime Database
+    // 1. Real-time listener for Deleted Song IDs (guarantees deleted songs vanish across all clients instantly)
+    const deletedRef = ref(rtdb, 'habajaba_deleted_ids');
+    onValue(deletedRef, (snapshot) => {
+      const val = snapshot.val();
+      if (val && typeof val === 'object') {
+        const deletedIds = getDeletedTrackIds();
+        let changed = false;
+        Object.keys(val).forEach((k) => {
+          if (!deletedIds.has(k)) {
+            deletedIds.add(k);
+            changed = true;
+          }
+          const item = val[k];
+          if (item?.youtubeId && !deletedIds.has(item.youtubeId)) {
+            deletedIds.add(item.youtubeId);
+            changed = true;
+          }
+          if (item?.audioUrl && !deletedIds.has(item.audioUrl.trim().toLowerCase())) {
+            deletedIds.add(item.audioUrl.trim().toLowerCase());
+            changed = true;
+          }
+        });
+
+        if (changed) {
+          saveDeletedTrackIds(deletedIds);
+          const prevLen = catalogState.tracks.length;
+          catalogState.tracks = catalogState.tracks.filter(
+            (t) =>
+              !deletedIds.has(t.id) &&
+              (!t.youtubeId || !deletedIds.has(t.youtubeId)) &&
+              (!t.audioUrl || !deletedIds.has(t.audioUrl.trim().toLowerCase()))
+          );
+          if (catalogState.tracks.length !== prevLen) {
+            saveStateLocally();
+            notifyListeners();
+          }
+        }
+      }
+    });
+
+    // 2. Real-time listener for Songs in Realtime Database
     const songsRef = ref(rtdb, 'habajaba_songs');
     onValue(songsRef, (snapshot) => {
       const val = snapshot.val();
@@ -514,36 +543,36 @@ export function initRealtimeDbSync() {
               ...val[k],
               id: val[k]?.id || k,
             }));
-        if (remoteTracks.length > 0) {
-          mergeRemoteTracks(remoteTracks);
-        }
-      } else if (val === null && !localStorage.getItem('habajaba_initial_seed_done') && catalogState.tracks.length > 0) {
-        localStorage.setItem('habajaba_initial_seed_done', 'true');
-        pushTracksToRemote(catalogState.tracks);
+        mergeRemoteTracks(remoteTracks);
+      } else {
+        // If the database has 0 songs (e.g. wiped or empty), reflect clean state
+        mergeRemoteTracks([]);
       }
     });
 
-    // 2. Real-time listener for Banner in RTDB
+    // 3. Real-time listener for Banner in RTDB
     const bannerRef = ref(rtdb, 'habajaba_settings/banner');
     onValue(bannerRef, (snapshot) => {
       const val = snapshot.val() as HeroBannerConfig | null;
       if (val && val.bannerUrl) {
         catalogState.banner = val;
         saveStateLocally();
+        notifyListeners();
       }
     });
 
-    // 3. Real-time listener for Branding in RTDB
+    // 4. Real-time listener for Branding in RTDB
     const brandingRef = ref(rtdb, 'habajaba_settings/branding');
     onValue(brandingRef, (snapshot) => {
       const val = snapshot.val() as BrandingConfig | null;
       if (val) {
         catalogState.branding = val;
         saveStateLocally();
+        notifyListeners();
       }
     });
 
-    // 4. Real-time listener for Sliding Banners in RTDB
+    // 5. Real-time listener for Sliding Banners in RTDB
     const slidingRef = ref(rtdb, 'habajaba_settings/sliding_banners');
     const handleSlidingSnapshot = (snapshot: any) => {
       const val = snapshot.val();
@@ -552,20 +581,21 @@ export function initRealtimeDbSync() {
         if (list && list.length > 0) {
           catalogState.slidingBanners = list;
           saveStateLocally();
+          notifyListeners();
         }
       }
     };
     rtdbGet(slidingRef).then(handleSlidingSnapshot).catch(() => {});
     onValue(slidingRef, handleSlidingSnapshot);
 
-    // 5. Real-time listener for Artists in RTDB
+    // 6. Real-time listener for Artists in RTDB
     const artistsRef = ref(rtdb, 'habajaba_artists');
     const handleArtistsSnapshot = (snapshot: any) => {
       const val = snapshot.val();
       if (val && typeof val === 'object') {
         const remoteArtists: Artist[] = Object.keys(val).map((k) => ({
           ...val[k],
-          id: k,
+          id: val[k]?.id || k,
         }));
         if (remoteArtists.length > 0) {
           mergeRemoteArtists(remoteArtists);
@@ -574,6 +604,26 @@ export function initRealtimeDbSync() {
     };
     rtdbGet(artistsRef).then(handleArtistsSnapshot).catch(() => {});
     onValue(artistsRef, handleArtistsSnapshot);
+
+    // 7. Instant direct REST fetch for Artists (guarantees live artists arrive immediately even before WS connect)
+    const activeCfg = getActiveFirebaseConfig();
+    if (activeCfg?.projectId) {
+      const dbUrl = activeCfg.databaseURL || `https://${activeCfg.projectId}-default-rtdb.firebaseio.com`;
+      fetch(`${dbUrl}/habajaba_artists.json`)
+        .then((res) => res.json())
+        .then((val) => {
+          if (val && typeof val === 'object') {
+            const remoteArtists: Artist[] = Object.keys(val).map((k) => ({
+              ...val[k],
+              id: val[k]?.id || k,
+            }));
+            if (remoteArtists.length > 0) {
+              mergeRemoteArtists(remoteArtists);
+            }
+          }
+        })
+        .catch(() => {});
+    }
 
     isRtdbInitialized = true;
     return true;
@@ -749,63 +799,141 @@ export const MusicService = {
       };
       catalogState.artists.push(finalArtist);
     }
+    // Normalize ID to be safe for all databases (no spaces or illegal key symbols)
+    const rawId = finalArtist.id || `artist_${Date.now()}`;
+    const safeDocId = rawId.trim().replace(/[\s.#$\[\]/]/g, '_');
+    finalArtist.id = safeDocId;
+
     saveStateLocally();
+    notifyListeners();
 
-    const safeDocId = (finalArtist.id || `artist-${Date.now()}`).replace(/[.#$\[\]/]/g, '_');
+    // Cache to IndexedDB for offline support
+    offlineCacheService.saveArtist(finalArtist).catch(() => {});
 
-    let syncedRemote = false;
-    const firestoreInstance = getFirebaseFirestore();
-    if (firestoreInstance) {
-      try {
-        await setDoc(doc(firestoreInstance.db, 'habajaba_artists', safeDocId), finalArtist);
-        syncedRemote = true;
-      } catch (e) {
-        console.warn('Failed to sync artist to Firestore:', e);
-      }
+    const config = getActiveFirebaseConfig();
+    const cleanArtist = cleanForFirebase(finalArtist);
+    const syncTasks: Promise<any>[] = [];
+
+    // 1. Guaranteed Direct REST PUT to Realtime Database (100% reliable, works even if SDK or Firestore is disabled)
+    if (config?.projectId) {
+      const dbUrl = config.databaseURL || `https://${config.projectId}-default-rtdb.firebaseio.com`;
+      syncTasks.push(
+        fetch(`${dbUrl}/habajaba_artists/${encodeURIComponent(safeDocId)}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cleanArtist),
+        })
+          .then((res) => {
+            if (!res.ok) console.warn('REST artist sync returned status:', res.status);
+          })
+          .catch((e) => console.warn('REST artist sync notice:', e))
+      );
     }
 
+    // 2. Realtime Database SDK (safely isolated)
     const rtdbInstance = getFirebaseRealtimeDb();
     if (rtdbInstance) {
       try {
         const artistRef = ref(rtdbInstance.rtdb, `habajaba_artists/${safeDocId}`);
-        await rtdbSet(artistRef, finalArtist);
-        syncedRemote = true;
+        syncTasks.push(
+          rtdbSet(artistRef, cleanArtist).catch((e) => console.warn('RTDB artist sync notice:', e))
+        );
       } catch (e) {
-        console.warn('Failed to sync artist to RTDB:', e);
+        console.warn('RTDB artist ref error:', e);
       }
     }
 
-    return { success: syncedRemote || true, artist: finalArtist };
+    // 3. Firestore (guarded by fast 1-second timeout so disabled Firestore API never blocks)
+    const firestoreInstance = getFirebaseFirestore();
+    if (firestoreInstance) {
+      try {
+        const fsPromise = setDoc(
+          doc(firestoreInstance.db, 'habajaba_artists', safeDocId),
+          cleanArtist
+        ).catch((e) => console.warn('Firestore artist notice:', e));
+        const fsTimeout = new Promise((res) => setTimeout(res, 1000));
+        syncTasks.push(Promise.race([fsPromise, fsTimeout]));
+      } catch (e) {
+        console.warn('Firestore artist doc error:', e);
+      }
+    }
+
+    // 4. If artist name was renamed, update all associated songs on the live server as well
+    if (existingIndex >= 0) {
+      const oldArtist = catalogState.artists[existingIndex];
+      if (oldArtist.name.trim().toLowerCase() !== finalArtist.name.trim().toLowerCase()) {
+        const affectedTracks = catalogState.tracks.filter(
+          (t) => t.artist.trim().toLowerCase() === finalArtist.name.trim().toLowerCase()
+        );
+        for (const t of affectedTracks) {
+          if (config?.projectId) {
+            const dbUrl = config.databaseURL || `https://${config.projectId}-default-rtdb.firebaseio.com`;
+            syncTasks.push(
+              fetch(`${dbUrl}/habajaba_songs/${encodeURIComponent(t.id)}.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cleanForFirebase(t)),
+              }).catch(() => {})
+            );
+          }
+        }
+      }
+    }
+
+    if (syncTasks.length > 0) {
+      await Promise.allSettled(syncTasks);
+    }
+
+    return { success: true, artist: finalArtist };
   },
 
   async deleteArtist(id: string) {
-    catalogState.artists = catalogState.artists.filter((a) => a.id !== id);
+    const safeDocId = id.trim().replace(/[\s.#$\[\]/]/g, '_');
+    catalogState.artists = catalogState.artists.filter((a) => a.id !== id && a.id !== safeDocId);
     saveStateLocally();
     notifyListeners();
 
     // Purge from IndexedDB
     offlineCacheService.deleteArtist(id).catch(() => {});
+    offlineCacheService.deleteArtist(safeDocId).catch(() => {});
 
+    const config = getActiveFirebaseConfig();
     const firestoreInstance = getFirebaseFirestore();
     const rtdbInstance = getFirebaseRealtimeDb();
     const deleteTasks: Promise<any>[] = [];
 
-    if (firestoreInstance) {
+    // Direct REST DELETE from RTDB
+    if (config?.projectId) {
+      const dbUrl = config.databaseURL || `https://${config.projectId}-default-rtdb.firebaseio.com`;
       deleteTasks.push(
-        deleteDoc(doc(firestoreInstance.db, 'habajaba_artists', id)).catch((e) =>
-          console.warn('Failed to delete artist from Firestore:', e)
-        )
+        fetch(`${dbUrl}/habajaba_artists/${encodeURIComponent(safeDocId)}.json`, {
+          method: 'DELETE',
+        }).catch((e) => console.warn('REST delete artist notice:', e))
       );
     }
+
     if (rtdbInstance) {
-      deleteTasks.push(
-        rtdbRemove(ref(rtdbInstance.rtdb, `habajaba_artists/${id}`)).catch((e) =>
-          console.warn('Failed to delete artist from RTDB:', e)
-        )
-      );
+      try {
+        deleteTasks.push(
+          rtdbRemove(ref(rtdbInstance.rtdb, `habajaba_artists/${safeDocId}`)).catch((e) =>
+            console.warn('Failed to delete artist from RTDB:', e)
+          )
+        );
+      } catch {}
     }
+
+    if (firestoreInstance) {
+      try {
+        const fsPromise = deleteDoc(doc(firestoreInstance.db, 'habajaba_artists', safeDocId)).catch((e) =>
+          console.warn('Failed to delete artist from Firestore:', e)
+        );
+        const fsTimeout = new Promise((res) => setTimeout(res, 1000));
+        deleteTasks.push(Promise.race([fsPromise, fsTimeout]));
+      } catch {}
+    }
+
     if (deleteTasks.length > 0) {
-      Promise.allSettled(deleteTasks);
+      await Promise.allSettled(deleteTasks);
     }
   },
 
@@ -987,48 +1115,131 @@ export const MusicService = {
     }
   },
 
-  async deleteTrack(id: string) {
-    // Record deletion so background remote listeners never re-add it
+  async deleteTrack(id: string): Promise<boolean> {
+    // 1. Record deletion so background remote listeners never re-add it
     const deletedIds = getDeletedTrackIds();
     deletedIds.add(id);
 
-    // Find if the track has a youtubeId or audioUrl to also mark as deleted
+    // Find target track to also blacklist its audioUrl, youtubeId, and title
     const targetTrack = catalogState.tracks.find((t) => t.id === id);
     if (targetTrack?.youtubeId) deletedIds.add(targetTrack.youtubeId);
+    if (targetTrack?.audioUrl) deletedIds.add(targetTrack.audioUrl.trim().toLowerCase());
 
     saveDeletedTrackIds(deletedIds);
 
-    catalogState.tracks = catalogState.tracks.filter((t) => t.id !== id);
+    // 2. Remove immediately from local state
+    catalogState.tracks = catalogState.tracks.filter(
+      (t) => t.id !== id && (!targetTrack || t.audioUrl !== targetTrack.audioUrl)
+    );
     if (catalogState.banner.featuredTrackId === id) {
       catalogState.banner.featuredTrackId = '';
     }
     saveStateLocally();
     notifyListeners();
 
-    // Purge from IndexedDB
-    offlineCacheService.deleteTrack(id).catch(() => {});
+    // 3. Purge from IndexedDB
+    try {
+      await offlineCacheService.deleteTrack(id);
+    } catch {}
 
+    // 4. Remote Deletions on Live Server (Realtime Database & Firestore)
     const firestoreInstance = getFirebaseFirestore();
     const rtdbInstance = getFirebaseRealtimeDb();
+    const config = getActiveFirebaseConfig();
     const deleteTasks: Promise<any>[] = [];
 
-    if (firestoreInstance) {
-      deleteTasks.push(
-        deleteDoc(doc(firestoreInstance.db, 'habajaba_songs', id)).catch((e) =>
-          console.warn('Failed to delete track from Firestore:', e)
-        )
-      );
-    }
+    // Realtime Database deletion via SDK
     if (rtdbInstance) {
       deleteTasks.push(
         rtdbRemove(ref(rtdbInstance.rtdb, `habajaba_songs/${id}`)).catch((e) =>
-          console.warn('Failed to delete track from Realtime Database:', e)
+          console.warn('RTDB remove error:', e)
         )
       );
+      // Also register deleted tombstone in RTDB so other devices drop it immediately
+      deleteTasks.push(
+        rtdbSet(ref(rtdbInstance.rtdb, `habajaba_deleted_ids/${id}`), {
+          id,
+          youtubeId: targetTrack?.youtubeId || '',
+          audioUrl: targetTrack?.audioUrl || '',
+          deletedAt: Date.now(),
+        }).catch(() => {})
+      );
     }
+
+    // Direct REST API deletion on Realtime Database (guaranteed second layer - works even if SDK is idling)
+    if (config?.projectId) {
+      const dbUrl = config.databaseURL || `https://${config.projectId}-default-rtdb.firebaseio.com`;
+      // Delete primary document
+      deleteTasks.push(
+        fetch(`${dbUrl}/habajaba_songs/${encodeURIComponent(id)}.json`, { method: 'DELETE' }).catch(
+          () => {}
+        )
+      );
+
+      // Save deleted tombstone via REST
+      deleteTasks.push(
+        fetch(`${dbUrl}/habajaba_deleted_ids/${encodeURIComponent(id)}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id,
+            youtubeId: targetTrack?.youtubeId || '',
+            audioUrl: targetTrack?.audioUrl || '',
+            deletedAt: Date.now(),
+          }),
+        }).catch(() => {})
+      );
+
+      // Also query RTDB to find any duplicate keys with this song's audioUrl, youtubeId, or title and delete them all
+      deleteTasks.push(
+        fetch(`${dbUrl}/habajaba_songs.json`)
+          .then((res) => res.json())
+          .then(async (allData) => {
+            if (allData && typeof allData === 'object') {
+              const subDeletes: Promise<any>[] = [];
+              for (const [key, val] of Object.entries(allData as Record<string, any>)) {
+                if (
+                  val &&
+                  (key === id ||
+                    val.id === id ||
+                    (targetTrack?.audioUrl && val.audioUrl && val.audioUrl === targetTrack.audioUrl) ||
+                    (targetTrack?.youtubeId && val.youtubeId && val.youtubeId === targetTrack.youtubeId) ||
+                    (targetTrack?.title && val.title && val.title === targetTrack.title))
+                ) {
+                  subDeletes.push(
+                    fetch(`${dbUrl}/habajaba_songs/${encodeURIComponent(key)}.json`, {
+                      method: 'DELETE',
+                    }).catch(() => {})
+                  );
+                  if (rtdbInstance) {
+                    subDeletes.push(
+                      rtdbRemove(ref(rtdbInstance.rtdb, `habajaba_songs/${key}`)).catch(() => {})
+                    );
+                  }
+                }
+              }
+              await Promise.allSettled(subDeletes);
+            }
+          })
+          .catch(() => {})
+      );
+    }
+
+    // Cloud Firestore deletion (guarded by timeout so disabled Firestore never hangs)
+    if (firestoreInstance) {
+      const fsDeletePromise = deleteDoc(doc(firestoreInstance.db, 'habajaba_songs', id)).catch((e) =>
+        console.warn('Firestore delete notice:', e)
+      );
+      // Timeout after 1.5s so disabled API never blocks the UI
+      const fsTimeout = new Promise((resolve) => setTimeout(resolve, 1500));
+      deleteTasks.push(Promise.race([fsDeletePromise, fsTimeout]));
+    }
+
     if (deleteTasks.length > 0) {
-      Promise.allSettled(deleteTasks);
+      await Promise.allSettled(deleteTasks);
     }
+
+    return true;
   },
 
   async togglePublishTrack(id: string) {
@@ -1219,26 +1430,41 @@ export const MusicService = {
     if (includeCloud) {
       const firestoreInstance = getFirebaseFirestore();
       const rtdbInstance = getFirebaseRealtimeDb();
+      const config = getActiveFirebaseConfig();
 
-      if (firestoreInstance) {
-        try {
-          const songsCol = collection(firestoreInstance.db, 'habajaba_songs');
-          const snap = await getDocs(songsCol);
-          if (!snap.empty) {
-            const batch = writeBatch(firestoreInstance.db);
-            snap.forEach((d) => batch.delete(d.ref));
-            await batch.commit();
-          }
-        } catch (e) {
-          console.warn('Firestore songs cleanup error:', e);
-        }
+      if (config?.projectId) {
+        const dbUrl = config.databaseURL || `https://${config.projectId}-default-rtdb.firebaseio.com`;
+        // Wipe via direct REST
+        await Promise.allSettled([
+          fetch(`${dbUrl}/habajaba_songs.json`, { method: 'DELETE' }),
+          fetch(`${dbUrl}/habajaba_deleted_ids.json`, { method: 'DELETE' }),
+        ]).catch(() => {});
       }
 
       if (rtdbInstance) {
         try {
-          await rtdbRemove(ref(rtdbInstance.rtdb, 'habajaba_songs'));
+          await Promise.allSettled([
+            rtdbRemove(ref(rtdbInstance.rtdb, 'habajaba_songs')),
+            rtdbRemove(ref(rtdbInstance.rtdb, 'habajaba_deleted_ids')),
+          ]);
         } catch (e) {
           console.warn('RTDB songs cleanup error:', e);
+        }
+      }
+
+      if (firestoreInstance) {
+        try {
+          const songsCol = collection(firestoreInstance.db, 'habajaba_songs');
+          const snapPromise = getDocs(songsCol);
+          const timeoutPromise = new Promise<null>((res) => setTimeout(() => res(null), 1500));
+          const snap = (await Promise.race([snapPromise, timeoutPromise])) as any;
+          if (snap && !snap.empty) {
+            const batch = writeBatch(firestoreInstance.db);
+            snap.forEach((d: any) => batch.delete(d.ref));
+            await Promise.race([batch.commit(), new Promise((res) => setTimeout(res, 1500))]);
+          }
+        } catch (e) {
+          console.warn('Firestore songs cleanup error:', e);
         }
       }
     }

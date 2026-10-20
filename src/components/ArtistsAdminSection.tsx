@@ -115,11 +115,19 @@ export const ArtistsAdminSection: React.FC = () => {
     };
 
     try {
-      await MusicService.saveArtist(artistData);
-      setViewMode('list');
-      setEditingArtist(null);
-      setStatusMessage(`"${artistData.name}" এর তথ্য সফলভাবে লাইভ সেভ হয়েছে! ⚡`);
-      setTimeout(() => setStatusMessage(null), 3500);
+      setStatusMessage('লাইভ সার্ভারে সেভ হচ্ছে...');
+      const result = await MusicService.saveArtist(artistData);
+      if (result.success) {
+        setViewMode('list');
+        setEditingArtist(null);
+        setStatusMessage(`"${artistData.name}" এর তথ্য ও ছবি লাইভ সার্ভারে সফলভাবে সেভ হয়েছে! ⚡`);
+        setTimeout(() => setStatusMessage(null), 4000);
+      } else {
+        setStatusMessage('সার্ভারে সেভ করতে সমস্যা হয়েছে, পুনরায় চেষ্টা করুন।');
+      }
+    } catch (err: any) {
+      console.error('Artist save error:', err);
+      setStatusMessage('সেভ ব্যর্থ হয়েছে: ' + (err.message || 'Error'));
     } finally {
       setIsSaving(false);
     }

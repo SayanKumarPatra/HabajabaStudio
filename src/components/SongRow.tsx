@@ -3,16 +3,15 @@ import {
   Play,
   Pause,
   Heart,
-  MoreVertical,
-  Plus,
   Share2,
-  Disc3,
   Check,
 } from 'lucide-react';
 import { Track } from '../types/music';
 import { useAudio } from '../context/AudioContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { CoverImage } from './CoverImage';
+import { shareTrack } from '../utils/share';
+import { triggerHaptic } from '../utils/haptics';
 
 interface SongRowProps {
   track: Track;
@@ -26,13 +25,11 @@ export const SongRow: React.FC<SongRowProps> = ({
   track,
   index,
   playlistContext,
-  onOpenAlbum,
   onOpenArtist,
 }) => {
   const { currentTrack, isPlaying, playTrack, togglePlay } = useAudio();
-  const { favorites, toggleFavorite, userPlaylists, addTrackToPlaylist } = useFavorites();
-  const [showMenu, setShowMenu] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { favorites, toggleFavorite } = useFavorites();
+  const [isShared, setIsShared] = useState(false);
 
   const isCurrent = currentTrack?.id === track.id;
   const isRowPlaying = isCurrent && isPlaying;
@@ -47,11 +44,14 @@ export const SongRow: React.FC<SongRowProps> = ({
     }
   };
 
-  const handleCopyLink = () => {
-    const url = `${window.location.origin}/#song-${track.id}`;
-    navigator.clipboard?.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    triggerHaptic('light');
+    const result = await shareTrack(track);
+    if (result.success) {
+      setIsShared(true);
+      setTimeout(() => setIsShared(false), 2200);
+    }
   };
 
   return (
@@ -130,104 +130,50 @@ export const SongRow: React.FC<SongRowProps> = ({
         </div>
       </div>
 
-      {/* Right: Duration, Favorite Heart, More Actions */}
+      {/* Right: Duration, Favorite Heart, Share Button (Always visibly shown, no three dots) */}
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         {/* Duration */}
-        <span className="text-[11px] sm:text-xs font-mono tabular-nums text-neutral-400 mr-1 hidden sm:inline">
+        <span className="text-[11px] sm:text-xs font-mono tabular-nums text-neutral-400 mr-1 sm:mr-1.5 hidden xs:inline-block">
           {track.duration || '--:--'}
         </span>
 
-        {/* Favorite heart button */}
+        {/* Favorite heart button - Always Visibly Present Without Needing Touch/Hover */}
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
+            triggerHaptic('selection');
             toggleFavorite(track.id);
           }}
-          className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-colors ${
+          className={`w-9 h-9 sm:w-9.5 sm:h-9.5 flex items-center justify-center rounded-full transition-all cursor-pointer active:scale-90 ${
             isFav
-              ? 'text-[#ED1025]'
-              : 'text-neutral-400 hover:text-white opacity-60 sm:opacity-0 group-hover:opacity-100'
+              ? 'text-white bg-[#ED1025] border border-[#ED1025] shadow-xs shadow-[#ED1025]/40'
+              : 'text-neutral-100 bg-white/10 hover:bg-white/20 border border-white/15 hover:border-white/30'
           }`}
-          title={isFav ? 'Remove from favorites' : 'Add to favorites'}
+          title={isFav ? 'পছন্দের তালিকা থেকে বাদ দিন' : 'পছন্দের তালিকায় যুক্ত করুন'}
           aria-label={isFav ? 'Remove favorite' : 'Add favorite'}
         >
-          <Heart className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
+          <Heart className={`w-4 h-4 sm:w-4.5 sm:h-4.5 ${isFav ? 'fill-current text-white' : 'stroke-[2] text-neutral-100'}`} />
         </button>
 
-        {/* More options menu button */}
-        <div className="relative">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowMenu(!showMenu);
-            }}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full text-neutral-400 hover:text-white transition-colors"
-            title="More options"
-            aria-label="Track options"
-          >
-            <MoreVertical className="w-4 h-4" />
-          </button>
-
-          {/* Dropdown Options */}
-          {showMenu && (
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="absolute right-0 top-10 z-50 w-48 bg-[#121319]/95 backdrop-blur-2xl rounded-xl shadow-2xl border border-white/15 py-1 text-xs text-white animate-in fade-in duration-150"
-            >
-              {onOpenAlbum && track.album && (
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    onOpenAlbum(track.album);
-                  }}
-                  className="w-full text-left px-3 py-2 hover:bg-white/10 flex items-center gap-2 text-neutral-200 hover:text-white"
-                >
-                  <Disc3 className="w-3.5 h-3.5 text-neutral-400" />
-                  <span className="truncate">Go to Album: {track.album}</span>
-                </button>
-              )}
-
-
-              {userPlaylists.length > 0 && (
-                <div className="border-t border-white/10 my-1 pt-1">
-                  <span className="px-3 py-1 text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">
-                    Add to Playlist
-                  </span>
-                  {userPlaylists.map((pl) => (
-                    <button
-                      key={pl.id}
-                      onClick={() => {
-                        addTrackToPlaylist(pl.id, track.id);
-                        setShowMenu(false);
-                      }}
-                      className="w-full text-left px-3 py-1.5 hover:bg-white/10 flex items-center gap-2 truncate text-neutral-200 hover:text-white cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5 text-[#ED1025]" />
-                      <span className="truncate">{pl.title}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <button
-                onClick={handleCopyLink}
-                className="w-full text-left px-3 py-2 hover:bg-white/10 flex items-center gap-2 border-t border-white/10 text-neutral-200 hover:text-white cursor-pointer"
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-emerald-400">Copied Link!</span>
-                  </>
-                ) : (
-                  <>
-                    <Share2 className="w-3.5 h-3.5 text-neutral-400" />
-                    <span>Copy Share Link</span>
-                  </>
-                )}
-              </button>
-            </div>
+        {/* Dedicated Web Share API Button - Always Visibly Present Without Needing Touch/Hover */}
+        <button
+          type="button"
+          onClick={handleShare}
+          className={`w-9 h-9 sm:w-9.5 sm:h-9.5 flex items-center justify-center rounded-full transition-all cursor-pointer active:scale-90 ${
+            isShared
+              ? 'text-emerald-300 bg-emerald-500/25 border border-emerald-400/50 shadow-xs shadow-emerald-500/30'
+              : 'text-neutral-100 bg-white/10 hover:bg-white/20 border border-white/15 hover:border-white/30'
+          }`}
+          title={isShared ? 'লিঙ্ক শেয়ার করা হয়েছে!' : 'গান শেয়ার করুন'}
+          aria-label={`Share ${track.title}`}
+        >
+          {isShared ? (
+            <Check className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-emerald-400 animate-bounce" />
+          ) : (
+            <Share2 className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-neutral-100" />
           )}
-        </div>
+        </button>
       </div>
     </div>
   );
